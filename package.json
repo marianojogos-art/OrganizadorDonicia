@@ -1,0 +1,23 @@
+{
+  "name": "donicia-gestao",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "db:generate": "drizzle-kit generate",
+    "dev": "node scripts/dev.mjs"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.2",
+    "linkedom": "0.18.12"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.10",
+    "esbuild": "0.25.12"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

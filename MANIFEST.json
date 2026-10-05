@@ -1,0 +1,62 @@
+{
+  "format": 1,
+  "target": "Cloudflare Workers",
+  "source_files": [
+    "dist/index.html",
+    "package.json",
+    "package-lock.json",
+    "drizzle.config.ts",
+    ".gitignore"
+  ],
+  "excluded": [
+    ".git/",
+    "node_modules/",
+    ".openai/",
+    ".env*",
+    "caches"
+  ],
+  "missing": [
+    "scripts/build.mjs",
+    "scripts/dev.mjs",
+    "tests/*.test.mjs",
+    "db/schema.ts"
+  ],
+  "files": [
+    {
+      "path": "dist/index.html",
+      "bytes": 23530,
+      "sha256": "40392d98271bc081afa3be80873df7a4ed976ac0b2adf0fb19d237968b65b0d5",
+      "origin": "source"
+    },
+    {
+      "path": "package.json",
+      "bytes": 415,
+      "sha256": "64a384449e13cdfb19ccbd843368860acc2bcaaf39ed6c1bdcf6a488625d8eea",
+      "origin": "source"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 57269,
+      "sha256": "be249396c77f3d7a1b74f91342d5cedeca856d781af7d927afe79f18e20c6c57",
+      "origin": "source"
+    },
+    {
+      "path": "drizzle.config.ts",
+      "bytes": 140,
+      "sha256": "1b23f85e803c4445cef92769769b1e6dd34ad9e9f1ce25fb83ac9db101d00259",
+      "origin": "source"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 62,
+      "sha256": "5b2da5c43b0c44edd70aada8a3458168b3e59c239b70427c6363f161faf4b7b9",
+      "origin": "source"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1494,
+      "sha256": "c093ff508825c012d90030858f01a77b6401c78b4f05876dc5d942b300091b81",
+      "origin": "transfer documentation"
+    }
+  ]
+}

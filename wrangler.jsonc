@@ -1,0 +1,11 @@
+{
+ "$schema":"node_modules/wrangler/config-schema.json",
+ "name":"donicia-school-candidate",
+ "main":"src/worker.mjs",
+ "compatibility_date":"2026-10-03",
+ "workers_dev":false,
+ "preview_urls":false,
+ "assets":{"directory":"./dist","binding":"ASSETS","run_worker_first":true},
+ "d1_databases":[{"binding":"DB","database_name":"donicia-school","database_id":"REPLACE_WITH_AUTHORIZED_DATABASE_ID","migrations_dir":"migrations"}],
+ "vars":{"ACCESS_ISSUER":"","ACCESS_AUD":""}
+}
