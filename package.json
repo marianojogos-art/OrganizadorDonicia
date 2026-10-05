@@ -7,7 +7,8 @@
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
     "db:generate": "drizzle-kit generate",
-    "dev": "node scripts/dev.mjs"
+    "dev": "node scripts/dev.mjs",
+    "deploy:cloudflare": "npx --yes wrangler@4 d1 migrations apply donicia-school --remote && npx --yes wrangler@4 deploy"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
