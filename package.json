@@ -8,7 +8,9 @@
     "test": "node --test tests/*.test.mjs",
     "db:generate": "drizzle-kit generate",
     "dev": "node scripts/dev.mjs",
-    "deploy:cloudflare": "npx --yes wrangler@4 d1 migrations apply donicia-school --remote && npx --yes wrangler@4 deploy"
+    "check:cloudflare": "wrangler deploy --dry-run",
+    "db:migrate:cloudflare": "wrangler d1 migrations apply donicia-school --remote",
+    "deploy:cloudflare": "node scripts/build.mjs && wrangler d1 migrations apply donicia-school --remote && wrangler deploy"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
@@ -16,7 +18,8 @@
   },
   "devDependencies": {
     "drizzle-kit": "0.31.10",
-    "esbuild": "0.25.12"
+    "esbuild": "0.25.12",
+    "wrangler": "4.147.0"
   },
   "engines": {
     "node": ">=24.0.0"

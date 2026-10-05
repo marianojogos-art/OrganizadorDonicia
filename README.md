@@ -1,10 +1,10 @@
 # Organizador Donícia — candidato Cloudflare Workers
 
-Projeto escolar independente para a EBM Donícia Maria da Costa. Não usa recursos, conta ou ferramentas operacionais da Lepidus. Nenhum deploy, banco remoto, OAuth app ou segredo foi criado.
+Projeto escolar independente para a EBM Donícia Maria da Costa. Não usa recursos, conta ou ferramentas operacionais da Lepidus. O Worker e o vínculo D1 estão configurados no repositório; o acesso e a publicação remotos dependem de autenticação na conta Cloudflare.
 
 ## Executar localmente
 
-Requer Node.js 24 (SQLite nativo). Sem instalar dependências:
+Requer Node.js 24 (SQLite nativo). Execute `npm ci` para instalar as versões fixadas, incluindo Wrangler:
 
 - `npm run build`: gera `dist/index.html` e `dist/app.js` a partir de `src/index.html`
 - `npm test`: testes de API com SQLite real local, JWT RSA e contratos de renderização
@@ -34,7 +34,7 @@ Perfis iniciais: `direction` e `teacher`. As permissões são verificadas na API
 
 ## Banco
 
-`migrations/0001_initial.sql` é a fonte executável do esquema SQLite/D1 e dos triggers. `db/schema.ts` descreve as tabelas para Drizzle. Não usar o resultado de `db:generate` como substituto dos triggers revisados. Nenhuma migração foi aplicada remotamente. Testes usam SQLite nativo, não o runtime D1.
+`migrations/0001_initial.sql` é a fonte executável do esquema SQLite/D1 e dos triggers. `db/schema.ts` descreve as tabelas para Drizzle. Não usar o resultado de `db:generate` como substituto dos triggers revisados. O banco configurado é `donicia-school`, ID `e8a8a803-273b-42a6-bcc6-1aefeb78ad78`, binding `DB`. O estado remoto das migrações ainda precisa ser verificado na conta. Testes usam SQLite nativo, não o runtime D1.
 
 Não há exportação de dados, uploads, anexos, notificações externas, importação SGE ou sincronização WebHorário. O link externo original permanece consulta manual.
 
@@ -48,8 +48,40 @@ Não há exportação de dados, uploads, anexos, notificações externas, import
 6. Confirmar política escolar de 32 aulas por semana (configurável na tabela settings por migração administrativa), duração das aulas e cadastro de ocupação fixa
 7. Para estudantes: definir finalidade, acesso, retenção, base de autorização e integração antes de ativar qualquer armazenamento
 
-O `wrangler.jsonc` é intencionalmente incompleto e não publicável como está: ID do banco e identidade são placeholders; workers.dev e previews públicos desativados. Wrangler não foi instalado nem usado. Não há comando de deploy automático.
+## Conectar GitHub e Cloudflare
+
+No painel Cloudflare, abra o Worker `organizadordonicia` em **Workers & Pages → Settings → Builds → Connect** e selecione `marianojogos-art/OrganizadorDonicia`:
+
+- Branch de produção: `main`
+- Diretório raiz: `/`
+- Versão de Node.js: `24` (variável de build `NODE_VERSION=24`)
+- Comando de build: `npm run build`
+- Comando de deploy: `npm run deploy:cloudflare`
+- O token do build precisa de permissão para editar Workers e o banco D1 configurado, pois o deploy aplica migrações pendentes.
+
+O nome do Worker no painel deve coincidir com `name` em `wrangler.jsonc`. O deploy usa Wrangler fixado no lockfile, gera os assets e aplica as migrações antes de publicar. Se o banco já foi inicializado manualmente por SQL, confira o esquema e o histórico `d1_migrations` antes de executar a migração inicial novamente; não apague tabelas para resolver um erro de tabela existente.
+
+Em **Settings → Variables & Secrets**, configure as variáveis de runtime:
+
+- `ACCESS_ISSUER`: URL do time Zero Trust, por exemplo `https://seu-time.cloudflareaccess.com`, sem barra final.
+- `ACCESS_AUD`: Application Audience (AUD) da aplicação Access que protege este Worker.
+
+`keep_vars: true` preserva essas variáveis do painel em novos deploys. Elas não recebem valores vazios do repositório. Variáveis de build não substituem variáveis de runtime. Sem configuração válida do Access e usuário nominal ativo no D1, o Worker recusa o acesso.
+
+`workers.dev` e previews continuam desativados. Configure uma rota ou domínio protegido por Access; para usar `workers.dev`, configure a proteção Access e habilite essa rota também no arquivo Wrangler. Escolha o provedor Google institucional e uma política de acesso correspondente à equipe autorizada. O cadastro nominal na tabela `users` continua obrigatório, mesmo depois do login Google.
+
+Para publicar pelo terminal após autenticar a conta:
+
+```sh
+npx wrangler login --device --browser=false
+npm test
+npm run check:cloudflare
+npx wrangler d1 migrations list donicia-school --remote
+npm run deploy:cloudflare
+```
+
+Referências: [Git integration](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/), [Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/) e [Wrangler configuration](https://developers.cloudflare.com/workers/wrangler/configuration/).
 
 ## Evidência e limites
 
-Vinte e cinco testes locais passam. A suíte inicia/reinicia o servidor real local e percorre por HTTP substituições, auxiliares, reservas, tarefas, xerox, atas, calendário e ocupação fixa com dados sintéticos, verificando persistência de todos os módulos. Um smoke HTTP local verificou criar/listar reserva, servir assets e persistência após reinício do servidor. O build verifica sintaxe e separa JS para CSP. Os testes de UI verificam renderização de strings/escape e contratos, não um navegador real. O navegador de nuvem recusou localhost com `ERR_BLOCKED_BY_CLIENT`; não foi publicado um preview para contornar a restrição. Nenhuma captura visual ou teste responsive real foi obtido. D1 remoto, ambiente Workers, Google/Access, Drizzle generate e deploy ainda não foram verificados.
+Em 05/10/2026, os 25 testes locais passaram no Windows com Node.js 24, incluindo os fluxos HTTP e a persistência após reinício. O build separa JS para CSP. `wrangler deploy --dry-run` validou o pacote Worker, os dois assets e os bindings `DB`/`ASSETS` com Wrangler 4.147.0, sem publicação. Os testes de UI verificam renderização e contratos, não um navegador real. D1 remoto, login Google/Access, Drizzle generate e deploy efetivo ainda não foram verificados. O estado remoto será confirmado após autenticação na Cloudflare.
