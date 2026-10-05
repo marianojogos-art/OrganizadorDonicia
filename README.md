@@ -1,6 +1,6 @@
 # Organizador Donícia — candidato Cloudflare Workers
 
-Projeto escolar independente para a EBM Donícia Maria da Costa. Não usa recursos, conta ou ferramentas operacionais da Lepidus. O Worker e o vínculo D1 estão configurados no repositório; o acesso e a publicação remotos dependem de autenticação na conta Cloudflare.
+Projeto escolar independente para a EBM Donícia Maria da Costa. Não usa recursos, conta ou ferramentas operacionais da Lepidus. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. O banco D1 remoto foi inicializado. A rota para visitantes e o login Cloudflare Access ainda precisam ser ativados.
 
 ## Executar localmente
 
@@ -34,7 +34,7 @@ Perfis iniciais: `direction` e `teacher`. As permissões são verificadas na API
 
 ## Banco
 
-`migrations/0001_initial.sql` é a fonte executável do esquema SQLite/D1 e dos triggers. `db/schema.ts` descreve as tabelas para Drizzle. Não usar o resultado de `db:generate` como substituto dos triggers revisados. O banco configurado é `donicia-school`, ID `e8a8a803-273b-42a6-bcc6-1aefeb78ad78`, binding `DB`. O estado remoto das migrações ainda precisa ser verificado na conta. Testes usam SQLite nativo, não o runtime D1.
+`migrations/0001_initial.sql` é a fonte executável do esquema SQLite/D1 e dos triggers. `db/schema.ts` descreve as tabelas para Drizzle. Não usar o resultado de `db:generate` como substituto dos triggers revisados. O banco configurado é `donicia-school`, ID `e8a8a803-273b-42a6-bcc6-1aefeb78ad78`, binding `DB`. A migração inicial foi aplicada remotamente em 05/10/2026 e registrada em `d1_migrations`; os 13 triggers foram criados. As condições dos triggers usam `SELECT RAISE(...) WHERE ...`, pois o parser remoto falha ao separar lotes com `CASE ... END` dentro de triggers. Testes usam SQLite nativo; a migração também foi validada no D1 local e remoto.
 
 Não há exportação de dados, uploads, anexos, notificações externas, importação SGE ou sincronização WebHorário. O link externo original permanece consulta manual.
 
@@ -50,7 +50,7 @@ Não há exportação de dados, uploads, anexos, notificações externas, import
 
 ## Conectar GitHub e Cloudflare
 
-No painel Cloudflare, abra o Worker `organizadordonicia` em **Workers & Pages → Settings → Builds → Connect** e selecione `marianojogos-art/OrganizadorDonicia`:
+A conexão já existe entre o Worker `organizadordonicia` e `marianojogos-art/OrganizadorDonicia`. Para conferir, abra **Workers & Pages → organizadordonicia → Settings → Builds**. A configuração validada é:
 
 - Branch de produção: `main`
 - Diretório raiz: `/`
@@ -68,7 +68,7 @@ Em **Settings → Variables & Secrets**, configure as variáveis de runtime:
 
 `keep_vars: true` preserva essas variáveis do painel em novos deploys. Elas não recebem valores vazios do repositório. Variáveis de build não substituem variáveis de runtime. Sem configuração válida do Access e usuário nominal ativo no D1, o Worker recusa o acesso.
 
-`workers.dev` e previews continuam desativados. Configure uma rota ou domínio protegido por Access; para usar `workers.dev`, configure a proteção Access e habilite essa rota também no arquivo Wrangler. Escolha o provedor Google institucional e uma política de acesso correspondente à equipe autorizada. O cadastro nominal na tabela `users` continua obrigatório, mesmo depois do login Google.
+`workers.dev` e previews continuam desativados, e não há domínio associado ao Worker. Cloudflare Access ainda não está ativado nesta conta; `ACCESS_ISSUER` e `ACCESS_AUD` estão vazios. É necessário configurar Zero Trust/Access e uma rota protegida antes de disponibilizar a aplicação. Para usar `workers.dev`, configure a proteção Access e habilite essa rota também no arquivo Wrangler. O cadastro nominal na tabela `users` continua obrigatório; nenhum usuário foi provisionado no banco remoto. Google institucional exige configurar o respectivo provedor de identidade; o código não contém credenciais Google.
 
 Para publicar pelo terminal após autenticar a conta:
 
@@ -84,4 +84,4 @@ Referências: [Git integration](https://developers.cloudflare.com/workers/ci-cd/
 
 ## Evidência e limites
 
-Em 05/10/2026, os 25 testes locais passaram no Windows com Node.js 24, incluindo os fluxos HTTP e a persistência após reinício. O build separa JS para CSP. `wrangler deploy --dry-run` validou o pacote Worker, os dois assets e os bindings `DB`/`ASSETS` com Wrangler 4.147.0, sem publicação. Os testes de UI verificam renderização e contratos, não um navegador real. D1 remoto, login Google/Access, Drizzle generate e deploy efetivo ainda não foram verificados. O estado remoto será confirmado após autenticação na Cloudflare.
+Em 05/10/2026, os 25 testes locais passaram no Windows com Node.js 24, incluindo os fluxos HTTP e a persistência após reinício. O build separa JS para CSP. `wrangler deploy --dry-run` validou o pacote Worker, os dois assets e os bindings `DB`/`ASSETS` com Wrangler 4.147.0. O build automático do commit `b4ee36ae2eca09ca9e71305d39b6c629171326fc` concluiu a migração D1 e a publicação remota com sucesso às 20h46 (America/Sao_Paulo). A versão `a405efd3-eff9-48a4-b9a8-c73b0ada9ca9` foi ativada com 100% do tráfego, porém sem rota pública. Os testes de UI verificam renderização e contratos, não um navegador real. Login institucional, verificação visual desktop/mobile e Drizzle generate ainda não foram verificados.
