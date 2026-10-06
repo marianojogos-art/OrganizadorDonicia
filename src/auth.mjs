@@ -7,7 +7,7 @@ export async function identity(request,env){
   const header=JSON.parse(new TextDecoder().decode(decode(parts[0])));const claims=JSON.parse(new TextDecoder().decode(decode(parts[1])));
   const now=Math.floor(Date.now()/1000);
   if(header.alg!=='RS256'||typeof header.kid!=='string'||claims.iss!==env.ACCESS_ISSUER||!Array.isArray(claims.aud)||!claims.aud.includes(env.ACCESS_AUD)||!Number.isFinite(claims.exp)||claims.exp<=now||!Number.isFinite(claims.iat)||claims.iat>now+60||(claims.nbf!==undefined&&(!Number.isFinite(claims.nbf)||claims.nbf>now)))return null;
-  if(typeof claims.email!=='string'||!claims.email.endsWith('@prof.sc.gov.br'))return null;
+  if(typeof claims.email!=='string'||!claims.email.endsWith('@prof.pmf.sc.gov.br'))return null;
   const response=await fetch(env.ACCESS_ISSUER+'/cdn-cgi/access/certs',{redirect:'error'}); if(!response.ok)return null;
   const {keys}=await response.json();const jwk=keys.find(k=>k.kid===header.kid&&k.kty==='RSA');if(!jwk)return null;
   const key=await crypto.subtle.importKey('jwk',jwk,{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);

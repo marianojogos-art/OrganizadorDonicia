@@ -28,7 +28,7 @@ Edições e remoções usam a versão do registro para detectar mudanças concor
 
 ## Acesso
 
-O candidato usa Cloudflare Access como fronteira de identidade humana, compatível com provedor Google institucional a configurar. O Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
+O candidato usa Cloudflare Access como fronteira de identidade humana, compatível com provedor Google institucional a configurar. O Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.pmf.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
 
 Perfis iniciais: `direction` e `teacher`. As permissões são verificadas na API. A escola ainda precisa confirmar quem recebe cada papel e se supervisão precisa de perfil próprio. Usuários são provisionados por migração administrativa revisada; não existe cadastro aberto.
 
