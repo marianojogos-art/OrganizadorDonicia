@@ -1,6 +1,6 @@
-# Organizador Donícia — candidato Cloudflare Workers
+# Organizador Donícia — Cloudflare Workers
 
-Projeto escolar independente para a EBM Donícia Maria da Costa. Não usa recursos, conta ou ferramentas operacionais da Lepidus. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. O banco D1 remoto foi inicializado. A rota para visitantes e o login Cloudflare Access ainda precisam ser ativados.
+Projeto escolar independente para a EBM Donícia Maria da Costa. Não usa recursos, conta ou ferramentas operacionais da Lepidus. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. O banco D1 remoto foi inicializado. O endereço é https://organizadordonicia.carijo.workers.dev, protegido por Cloudflare Access.
 
 ## Executar localmente
 
@@ -28,7 +28,7 @@ Edições e remoções usam a versão do registro para detectar mudanças concor
 
 ## Acesso
 
-O candidato usa Cloudflare Access como fronteira de identidade humana, compatível com provedor Google institucional a configurar. O Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.pmf.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
+A aplicação usa Cloudflare Access como fronteira de identidade humana. O login inicial usa código enviado ao e-mail institucional (One-time PIN), com política nominal para a conta de direção autorizada. A aplicação Access protege o Worker inteiro, incluindo todos os seus destinos. O Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.pmf.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
 
 Perfis iniciais: `direction` e `teacher`. As permissões são verificadas na API. A escola ainda precisa confirmar quem recebe cada papel e se supervisão precisa de perfil próprio. Usuários são provisionados por migração administrativa revisada; não existe cadastro aberto.
 
@@ -38,12 +38,12 @@ Perfis iniciais: `direction` e `teacher`. As permissões são verificadas na API
 
 Não há exportação de dados, uploads, anexos, notificações externas, importação SGE ou sincronização WebHorário. O link externo original permanece consulta manual.
 
-## Antes de publicar
+## Antes de ampliar o uso escolar
 
 1. Confirmar conta Cloudflare autorizada, nome/projeto separado e domínio, preservando o site atual
 2. Confirmar pessoas/perfis, política de tarefas restritas e responsáveis por aprovação de xerox
-3. Criar recursos e configurar Access/Google apenas com autorização correspondente; preencher DB, ACCESS_ISSUER e ACCESS_AUD
-4. Aprovar migração, provisionar usuários nominais, testar D1/Wrangler e login institucional real
+3. Revisar novas políticas Access ou provedores de identidade antes de alterar a configuração inicial
+4. Provisionar os novos usuários nominais e validar login institucional real; a migração inicial e o cadastro de direção já foram aplicados
 5. Validar visual e fluxos em navegador desktop/mobile, CSP e recuperação do banco
 6. Confirmar política escolar de 32 aulas por semana (configurável na tabela settings por migração administrativa), duração das aulas e cadastro de ocupação fixa
 7. Para estudantes: definir finalidade, acesso, retenção, base de autorização e integração antes de ativar qualquer armazenamento
@@ -61,19 +61,19 @@ A conexão já existe entre o Worker `organizadordonicia` e `marianojogos-art/Or
 
 O nome do Worker no painel deve coincidir com `name` em `wrangler.jsonc`. O deploy usa Wrangler fixado no lockfile, gera os assets e aplica as migrações antes de publicar. Se o banco já foi inicializado manualmente por SQL, confira o esquema e o histórico `d1_migrations` antes de executar a migração inicial novamente; não apague tabelas para resolver um erro de tabela existente.
 
-Em **Settings → Variables & Secrets**, configure as variáveis de runtime:
+As variáveis de runtime foram configuradas em **Settings → Variables & Secrets**. Se a aplicação Access for recriada, atualize:
 
 - `ACCESS_ISSUER`: URL do time Zero Trust, por exemplo `https://seu-time.cloudflareaccess.com`, sem barra final.
 - `ACCESS_AUD`: Application Audience (AUD) da aplicação Access que protege este Worker.
 
 `keep_vars: true` preserva essas variáveis do painel em novos deploys. Elas não recebem valores vazios do repositório. Variáveis de build não substituem variáveis de runtime. Sem configuração válida do Access e usuário nominal ativo no D1, o Worker recusa o acesso.
 
-`workers.dev` e previews continuam desativados, e não há domínio associado ao Worker. Cloudflare Access ainda não está ativado nesta conta; `ACCESS_ISSUER` e `ACCESS_AUD` estão vazios. É necessário configurar Zero Trust/Access e uma rota protegida antes de disponibilizar a aplicação. Para usar `workers.dev`, configure a proteção Access e habilite essa rota também no arquivo Wrangler. O cadastro nominal na tabela `users` continua obrigatório; nenhum usuário foi provisionado no banco remoto. Google institucional exige configurar o respectivo provedor de identidade; o código não contém credenciais Google.
+`workers.dev` está habilitado também no arquivo Wrangler; previews continuam desativados. A organização Zero Trust `Organizador Donícia` e a aplicação Access foram criadas, com proteção apenas deste Worker. `ACCESS_ISSUER` e `ACCESS_AUD` foram confirmados no runtime, preservando `DB` e `ASSETS`. Uma conta nominal de direção está ativa no D1 remoto. O cadastro nominal continua obrigatório para qualquer usuário adicional, assim como a inclusão na política Access. Google institucional pode ser configurado posteriormente como outro provedor de identidade; o código não contém credenciais Google.
 
 Para publicar pelo terminal após autenticar a conta:
 
 ```sh
-npx wrangler login --device --browser=false
+npx wrangler login --browser=false --callback-host=127.0.0.1
 npm test
 npm run check:cloudflare
 npx wrangler d1 migrations list donicia-school --remote

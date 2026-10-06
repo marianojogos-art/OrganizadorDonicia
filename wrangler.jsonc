@@ -5,7 +5,7 @@
  "compatibility_date":"2026-10-03",
  "build":{"command":"node scripts/build.mjs"},
  "keep_vars":true,
- "workers_dev":false,
+ "workers_dev":true,
  "preview_urls":false,
  "assets":{"directory":"./dist","binding":"ASSETS","run_worker_first":true},
  "d1_databases":[{"binding":"DB","database_name":"donicia-school","database_id":"e8a8a803-273b-42a6-bcc6-1aefeb78ad78","migrations_dir":"migrations"}]
