@@ -1,8 +1,14 @@
 const decode=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+function accessToken(request){
+ const assertion=request.headers.get('Cf-Access-Jwt-Assertion');
+ if(assertion!==null)return assertion;
+ const cookies=(request.headers.get('Cookie')||'').split(';').map(s=>s.trim()).filter(s=>s.startsWith('CF_Authorization='));
+ return cookies.length===1?cookies[0].slice('CF_Authorization='.length):null;
+}
 export async function identity(request,env){
  if(!/^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(env.ACCESS_ISSUER||'')||!env.ACCESS_AUD)return null;
  try {
-  const token=request.headers.get('Cf-Access-Jwt-Assertion'); if(!token||token.length>16000)return null;
+  const token=accessToken(request); if(!token||token.length>16000)return null;
   const parts=token.split('.'); if(parts.length!==3)return null;
   const header=JSON.parse(new TextDecoder().decode(decode(parts[0])));const claims=JSON.parse(new TextDecoder().decode(decode(parts[1])));
   const now=Math.floor(Date.now()/1000);
