@@ -7,7 +7,7 @@ Projeto escolar independente para a EBM Donícia Maria da Costa. Não usa recurs
 Requer Node.js 24 (SQLite nativo). Execute `npm ci` para instalar as versões fixadas, incluindo Wrangler:
 
 - `npm run build`: gera `dist/index.html` e `dist/app.js` a partir de `src/index.html`
-- `npm test`: testes de API com SQLite real local, JWT RSA e contratos de renderização
+- `npm test`: testes de API com SQLite real local, JWT RSA no Node e no runtime Workers (Miniflare instalado com Wrangler), e contratos de renderização
 - `npm run dev`: demonstração em `http://127.0.0.1:8787`, somente loopback, com direção fictícia e SQLite em `.local/demo-v3.sqlite`
 
 A identidade fixa do servidor de demonstração está exclusivamente em `scripts/dev.mjs`. O Worker de produção não tem bypass nem modo demo. Reiniciar o servidor preserva o SQLite local. Não inserir dados reais de estudantes ou funcionários na demonstração.
@@ -31,6 +31,8 @@ Edições e remoções usam a versão do registro para detectar mudanças concor
 A aplicação usa Cloudflare Access como fronteira de identidade humana. O login inicial usa código enviado ao e-mail institucional (One-time PIN), com política nominal para a conta de direção autorizada. A aplicação Access protege o Worker inteiro, incluindo todos os seus destinos. O Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.pmf.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
 
 O JWT é lido do cabeçalho `Cf-Access-Jwt-Assertion` ou, quando o cabeçalho não está presente, do cookie de aplicação `CF_Authorization`. Ambos passam pela mesma verificação criptográfica. Isso permite autenticar quando o roteador de Static Assets não encaminha o contexto de identidade ao Worker. Cookies duplicados são recusados e um cabeçalho inválido não usa o cookie como alternativa.
+
+A consulta às chaves públicas usa `redirect: 'manual'` e recusa respostas sem sucesso, incluindo redirecionamentos. O runtime Workers não aceita `redirect: 'error'`; essa opção interrompia a validação antes de consultar as chaves, mesmo depois de um login Access válido. O teste no Miniflare reproduziu a falha anterior e verifica login por cabeçalho e cookie, assinatura inválida e recusa de redirecionamentos. Diagnóstico opcional com `ACCESS_DIAGNOSTICS=1` registra somente códigos fixos de falha, sem JWT, cookies ou e-mail; fica desativado por padrão.
 
 Perfis iniciais: `direction` e `teacher`. As permissões são verificadas na API. A escola ainda precisa confirmar quem recebe cada papel e se supervisão precisa de perfil próprio. Usuários são provisionados por migração administrativa revisada; não existe cadastro aberto.
 
@@ -86,4 +88,4 @@ Referências: [Git integration](https://developers.cloudflare.com/workers/ci-cd/
 
 ## Evidência e limites
 
-Em 05/10/2026, os 25 testes locais passaram no Windows com Node.js 24, incluindo os fluxos HTTP e a persistência após reinício. O build separa JS para CSP. `wrangler deploy --dry-run` validou o pacote Worker, os dois assets e os bindings `DB`/`ASSETS` com Wrangler 4.147.0. O build automático do commit `b4ee36ae2eca09ca9e71305d39b6c629171326fc` concluiu a migração D1 e a publicação remota com sucesso às 20h46 (America/Sao_Paulo). A versão `a405efd3-eff9-48a4-b9a8-c73b0ada9ca9` foi ativada com 100% do tráfego, porém sem rota pública. Os testes de UI verificam renderização e contratos, não um navegador real. Login institucional, verificação visual desktop/mobile e Drizzle generate ainda não foram verificados.
+Em 05/10/2026, os 30 testes locais passaram no Windows com Node.js 24, incluindo autenticação no runtime Workers, fluxos HTTP e persistência após reinício. O build separa JS para CSP. `wrangler deploy --dry-run` validou o pacote Worker, os dois assets e os bindings `DB`/`ASSETS` com Wrangler 4.147.0. A migração D1 foi aplicada remotamente e o Worker está publicado em `https://organizadordonicia.carijo.workers.dev/`, protegido pelo Access. Requisições anônimas são redirecionadas ao login institucional. A correção da consulta de chaves foi publicada; a abertura da interface na sessão do usuário ainda aguarda confirmação. Os testes de UI verificam renderização e contratos, não um navegador real. Verificação visual desktop/mobile e Drizzle generate ainda não foram verificados.
