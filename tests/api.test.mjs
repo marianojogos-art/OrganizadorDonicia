@@ -1,9 +1,50 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import {sqlite} from '../scripts/sqlite-adapter.mjs';import {handle} from '../src/worker.mjs';
 const migration=await readFile(new URL('../migrations/0001_initial.sql',import.meta.url),'utf8');
-function setup(){const DB=sqlite();DB.exec(migration);DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
+const planningMigration=await readFile(new URL('../migrations/0002_substitution_planning.sql',import.meta.url),'utf8');
+function setup(){const DB=sqlite();DB.exec(migration+planningMigration);DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
 const send=async(env,path,method='GET',data,email='director@prof.pmf.sc.gov.br',origin='https://school.example')=>{if(['PATCH','DELETE'].includes(method)&&data&&data.version===undefined){const [kind,id]=path.split('/');const table=kind.replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?').bind(id).first();data={...data,version:row?.version||1}}const r=await handle(new Request('https://school.example/api/'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(data)}),env,async()=>email);return {status:r.status,body:await r.json()}};
 const reservation={space:'Biblioteca',date:'2026-10-05',start:'09:00',end:'10:00',purpose:'Leitura fictícia'};
 const taskData={title:'Conferir calendário',due:'2026-10-05',owner:'one@prof.pmf.sc.gov.br',restricted:false};
+
+test('multiple absence dates are atomic, enforce weekly capacity and roll back audit',async()=>{
+ const e=setup();const auxiliary='aux-example-ana';
+ const absence={dates:['2026-10-04','2026-10-05','2026-10-06'],start:'08:00',end:'08:45',class:'Turma fictícia',teacher:'Professor fictício',auxiliary};
+ const created=await send(e,'substitutions','POST',absence);assert.equal(created.status,201);assert.equal(created.body.count,3);
+ const rows=(await send(e,'substitutions')).body;assert.deepEqual(rows.map(x=>x.week),['2026-09-28','2026-10-05','2026-10-05']);assert.ok(rows.every(x=>x.auxiliary===auxiliary));
+ const report=(await send(e,'auxiliaries/weekly?date=2026-10-06')).body;assert.equal(report.week,'2026-10-05');assert.equal(report.auxiliaries.find(x=>x.id===auxiliary).scheduled,2);
+ const auditCount=(await send(e,'audit')).body.length;
+ const conflicting=await send(e,'substitutions','POST',{...absence,dates:['2026-10-07','2026-10-06']});assert.equal(conflicting.status,409);
+ assert.equal((await send(e,'substitutions')).body.length,3);assert.equal((await send(e,'audit')).body.length,auditCount);
+ assert.equal((await send(e,'substitutions','POST',{...absence,dates:['2026-10-08','2026-10-08']})).status,400);
+ assert.equal((await send(e,'substitutions','POST',{...absence,dates:['2026-02-30']})).status,400);
+ assert.equal((await send(e,'substitutions','POST',absence,'one@prof.pmf.sc.gov.br')).status,403);
+ e.DB.exec("UPDATE settings SET value=3 WHERE key='auxiliary_weekly_limit'");
+ const overflow=await send(e,'substitutions','POST',{...absence,dates:['2026-10-07','2026-10-08']});assert.equal(overflow.status,409);
+ assert.equal((await send(e,'substitutions')).body.length,3);assert.equal((await send(e,'audit')).body.length,auditCount);
+ const parallel=await send(e,'substitutions','POST',{...absence,dates:['2026-10-07','2026-10-05'],class:'Outra turma'});assert.equal(parallel.status,409);
+ assert.equal((await send(e,'substitutions')).body.length,3);
+ assert.equal((await send(e,'auxiliaries/weekly?date=2026-02-30')).status,400);
+});
+
+test('realized lessons have explicit status, version checks and preserved auxiliary history',async()=>{
+ const e=setup(),auxiliary='aux-example-ana';
+ const absence={date:'2000-01-03',start:'08:00',end:'08:45',class:'Turma fictícia',teacher:'Professor fictício',auxiliary};
+ const created=await send(e,'substitutions','POST',absence);assert.equal(created.status,201);const path='substitutions/'+created.body.id;
+ assert.equal((await send(e,path,'PATCH',{completed:true},'one@prof.pmf.sc.gov.br')).status,403);
+ assert.equal((await send(e,path,'PATCH',{completed:true,version:1})).status,200);
+ assert.equal((await send(e,path,'PATCH',{completed:false,version:1})).status,409);
+ assert.equal((await send(e,path,'PATCH',{auxiliary:null})).status,409);
+ const report=(await send(e,'auxiliaries/weekly?date=2000-01-04')).body;
+ const row=report.auxiliaries.find(x=>x.id===auxiliary);assert.equal(row.completed,1);assert.equal(row.scheduled,0);assert.equal(row.total,1);assert.equal(row.remaining,31);
+ assert.equal((await send(e,'auxiliaries/'+auxiliary,'DELETE',{})).status,200);
+ const historical=(await send(e,'auxiliaries/weekly?date=2000-01-04')).body.auxiliaries.find(x=>x.id===auxiliary);assert.equal(historical.active,0);assert.equal(historical.completed,1);
+ assert.equal((await send(e,path,'PATCH',{completed:false})).status,200);
+ assert.equal((await send(e,path,'PATCH',{auxiliary:null})).status,200);
+ const future=await send(e,'substitutions','POST',{...absence,date:'2099-10-05',auxiliary:'aux-example-beatriz'});
+ assert.equal((await send(e,'substitutions/'+future.body.id,'PATCH',{completed:true})).status,400);
+ const pending=await send(e,'substitutions','POST',{...absence,date:'2000-01-04',auxiliary:null});
+ assert.equal((await send(e,'substitutions/'+pending.body.id,'PATCH',{completed:true})).status,400);
+});
 test('fail closed: missing DB, JWT, nominal authorization and inactive users',async()=>{assert.equal((await send({},'tasks')).status,503);const e=setup();assert.equal((await send(e,'tasks','GET',undefined,null)).status,401);assert.equal((await send(e,'tasks','GET',undefined,'unknown@prof.pmf.sc.gov.br')).status,403);assert.equal((await send(e,'tasks','GET',undefined,'inactive@prof.pmf.sc.gov.br')).status,403);const real=await handle(new Request('https://school.example/api/tasks',{headers:{'Cf-Access-Authenticated-User-Email':'director@prof.pmf.sc.gov.br'}}),e);assert.equal(real.status,401);});
 test('reservations: persistent, atomic overlap, adjacency, validation, ownership cancellation',async()=>{const e=setup();const a=await send(e,'reservations','POST',reservation,'one@prof.pmf.sc.gov.br');assert.equal(a.status,201);assert.equal((await send(e,'reservations')).body.length,1);assert.equal((await send(e,'reservations','POST',reservation)).status,409);assert.equal((await send(e,'reservations','POST',{...reservation,start:'10:00',end:'11:00'})).status,201);assert.equal((await send(e,'reservations','POST',{...reservation,date:'2026-02-30'})).status,400);assert.equal((await send(e,'reservations','POST',{...reservation,start:'25:00'})).status,400);assert.equal((await send(e,'reservations/'+a.body.id,'DELETE',{},'two@prof.pmf.sc.gov.br')).status,403);assert.equal((await send(e,'reservations/'+a.body.id,'DELETE',{},'one@prof.pmf.sc.gov.br')).status,200)});
 test('tasks: restricted filtering, delegated owner and updates enforced by server',async()=>{const e=setup();assert.equal((await send(e,'tasks','POST',{...taskData,restricted:true},'one@prof.pmf.sc.gov.br')).status,403);assert.equal((await send(e,'tasks','POST',taskData,'two@prof.pmf.sc.gov.br')).status,403);const t=await send(e,'tasks','POST',{...taskData,restricted:true});assert.equal(t.status,201);assert.equal((await send(e,'tasks','GET',undefined,'two@prof.pmf.sc.gov.br')).body.length,0);assert.equal((await send(e,'tasks','GET',undefined,'one@prof.pmf.sc.gov.br')).body.length,1);assert.equal((await send(e,'tasks/'+t.body.id,'PATCH',{status:'Concluída'},'two@prof.pmf.sc.gov.br')).status,403);assert.equal((await send(e,'tasks/'+t.body.id,'PATCH',{status:'Concluída'},'one@prof.pmf.sc.gov.br')).status,200);assert.equal((await send(e,'tasks')).body[0].status,'Concluída');assert.equal((await send(e,'tasks/'+t.body.id,'PATCH',{status:'arbitrary'})).status,400)});

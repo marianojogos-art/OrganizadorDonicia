@@ -1,4 +1,5 @@
 import {identity} from './auth.mjs';
+import {readTeachers} from './teachers.mjs';
 export const spaces=['Biblioteca','Auditório','Sala de informática','Laboratório de ciências','Sala de jogos','Sala de projetos','Quadra coberta','Quadra descoberta'];
 const statuses=['Pendente','Em andamento','Concluída'];
 const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
@@ -6,6 +7,8 @@ const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers}
 const validDate=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&!Number.isNaN(Date.parse(s))&&new Date(s).toISOString().slice(0,10)===s;
 const validTime=s=>typeof s==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(s);
 const text=(s,max=250)=>typeof s==='string'&&s.trim().length>0&&s.length<=max;
+const schoolToday=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const weekOf=date=>{const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);return monday.toISOString().slice(0,10)};
 async function handleInner(request,env,authenticate=identity){
  const path=new URL(request.url).pathname;
  if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy'],studentData:false});
@@ -19,6 +22,15 @@ async function handleInner(request,env,authenticate=identity){
  if(request.method==='GET'){
   if(path==='/api/me')return json(user);
   if(path==='/api/users')return json((await env.DB.prepare('SELECT email,name FROM users WHERE active=1 ORDER BY name').all()).results);
+  if(path==='/api/teachers'){try{return json(await readTeachers(env.DB))}catch(e){return json({error:e.message},503)}}
+  if(path==='/api/auxiliaries/weekly'){
+   const date=new URL(request.url).searchParams.get('date')||schoolToday();if(!validDate(date))return json({error:'Semana inválida'},400);
+   const week=weekOf(date);
+   const settings=await env.DB.prepare("SELECT value FROM settings WHERE key='auxiliary_weekly_limit'").first();
+   const lessons=(await env.DB.prepare('SELECT id,date,start,end,class,teacher,auxiliary,completed FROM substitutions WHERE week=? AND auxiliary IS NOT NULL ORDER BY date,start').bind(week).all()).results;
+   const auxiliaries=(await env.DB.prepare('SELECT id,name,active FROM auxiliaries WHERE active=1 OR id IN (SELECT auxiliary FROM substitutions WHERE week=?) ORDER BY name').bind(week).all()).results;
+   return json({week,limit:settings.value,auxiliaries:auxiliaries.map(aux=>{const assigned=lessons.filter(s=>s.auxiliary===aux.id);const completed=assigned.filter(s=>s.completed===1).length;return {...aux,total:assigned.length,completed,scheduled:assigned.length-completed,remaining:Math.max(0,settings.value-assigned.length),lessons:assigned}})});
+  }
   if(path==='/api/reservations')return json((await env.DB.prepare('SELECT r.*,u.name AS owner_name FROM reservations r JOIN users u ON u.email=r.owner ORDER BY date,start').all()).results);
   if(path==='/api/settings')return json(await env.DB.prepare("SELECT value AS auxiliaryWeeklyLimit FROM settings WHERE key='auxiliary_weekly_limit'").first());
   if(path==='/api/fixed-occupancy')return json((await env.DB.prepare('SELECT * FROM fixed_occupancy ORDER BY space,weekday,start').all()).results);
@@ -39,6 +51,10 @@ async function handleInner(request,env,authenticate=identity){
  const resource=/^\/api\/(reservations|tasks|substitutions|auxiliaries|xerox|minutes|events|fixed-occupancy)\/([^/]+)$/.exec(path);
  if(resource){if(!Number.isInteger(data.version)||data.version<1)return json({error:'Versão do registro necessária. Atualize a tela'},400);const table=resource[1].replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?').bind(resource[2]).first();if(!row)return json({error:'Registro não encontrado'},404);if(row.version!==data.version)return json({error:'Este registro mudou. Atualize a tela'},409)}
  try{
+  if(path==='/api/teachers/refresh'&&request.method==='POST'){
+   if(user.role!=='direction')return json({error:'Somente a direção pode atualizar a lista'},403);
+   try{return json(await readTeachers(env.DB,{force:true}))}catch(e){return json({error:e.message},503)}
+  }
   if(path==='/api/fixed-occupancy'&&request.method==='POST'){
    if(user.role!=='direction')return json({error:'Somente a direção pode definir horários fixos'},403);if(!spaces.includes(data.space)||!Number.isInteger(data.weekday)||data.weekday<0||data.weekday>6||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!validDate(data.from_date)||!validDate(data.to_date)||data.to_date<data.from_date||!text(data.purpose))return json({error:'Ocupação fixa inválida'},400);const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO fixed_occupancy(id,space,weekday,start,end,from_date,to_date,purpose,creator) VALUES(?,?,?,?,?,?,?,?,?)').bind(id,data.space,data.weekday,data.start,data.end,data.from_date,data.to_date,data.purpose.trim(),email),path+'/'+id);return json({id},201);
   }
@@ -55,7 +71,7 @@ async function handleInner(request,env,authenticate=identity){
    let columns=[],values=[];
    if(table==='reservations'){if(!spaces.includes(data.space)||!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.purpose))return json({error:'Reserva inválida'},400);columns=['space','date','start','end','purpose'];values=columns.map(k=>data[k]);}
    if(table==='tasks'){if(!text(data.title)||!validDate(data.due)||typeof data.owner!=='string'||typeof data.restricted!=='boolean')return json({error:'Tarefa inválida'},400);if(user.role!=='direction'&&(data.owner!==email||data.restricted!==!!row.restricted))return json({error:'Somente a direção pode delegar ou restringir'},403);if(!await env.DB.prepare('SELECT email FROM users WHERE email=? AND active=1').bind(data.owner).first())return json({error:'Responsável inválido'},400);columns=['title','due','owner','restricted'];values=[data.title,data.due,data.owner,Number(data.restricted)]}
-   if(table==='substitutions'){if(!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.class,80)||!text(data.teacher,100))return json({error:'Aula inválida'},400);const monday=new Date(data.date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);columns=['date','week','start','end','class','teacher'];values=[data.date,monday.toISOString().slice(0,10),data.start,data.end,data.class,data.teacher]}
+   if(table==='substitutions'){if(!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.class,80)||!text(data.teacher,100))return json({error:'Aula inválida'},400);if(row.completed&&data.date>schoolToday())return json({error:'Aula realizada não pode ter data futura'},400);columns=['date','week','start','end','class','teacher'];values=[data.date,weekOf(data.date),data.start,data.end,data.class,data.teacher]}
    if(table==='auxiliaries'){if(!text(data.name,100))return json({error:'Nome inválido'},400);columns=['name'];values=[data.name]}
    if(table==='xerox'){if(!text(data.title)||!validDate(data.deadline)||!Number.isInteger(data.copies)||data.copies<1||data.copies>10000)return json({error:'Pedido inválido'},400);columns=['title','copies','deadline'];values=[data.title,data.copies,data.deadline]}
    if(table==='minutes'){if(!text(data.title)||!validDate(data.date)||!text(data.participants,2000)||!text(data.decisions,4000))return json({error:'Ata inválida'},400);columns=['title','date','participants','decisions'];values=columns.map(k=>data[k])}
@@ -67,11 +83,28 @@ async function handleInner(request,env,authenticate=identity){
    if(user.role!=='direction')return json({error:'Somente a direção pode cadastrar auxiliares'},403);if(!text(data.name,100))return json({error:'Nome inválido'},400);const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO auxiliaries(id,name) VALUES(?,?)').bind(id,data.name.trim()),path+'/'+id);return json({id},201);
   }
   if(path==='/api/substitutions'&&request.method==='POST'){
-   if(user.role!=='direction')return json({error:'Somente a direção pode organizar substituições'},403);if(!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.class,80)||!text(data.teacher,100))return json({error:'Ausência inválida'},400);
-   const monday=new Date(data.date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);const week=monday.toISOString().slice(0,10);const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO substitutions(id,date,week,start,end,class,teacher,creator) VALUES(?,?,?,?,?,?,?,?)').bind(id,data.date,week,data.start,data.end,data.class.trim(),data.teacher.trim(),email),path+'/'+id);return json({id},201);
+   if(user.role!=='direction')return json({error:'Somente a direção pode organizar substituições'},403);
+   const dates=data.dates===undefined?[data.date]:data.dates;
+   if(!Array.isArray(dates)||!dates.length||dates.length>31||!dates.every(validDate)||new Set(dates).size!==dates.length||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.class,80)||!text(data.teacher,100))return json({error:'Selecione dias distintos (até 31), professor, turma e horário válidos'},400);
+   const auxiliary=data.auxiliary===undefined||data.auxiliary===''?null:data.auxiliary;
+   if(auxiliary!==null&&(typeof auxiliary!=='string'||!await env.DB.prepare('SELECT id FROM auxiliaries WHERE id=? AND active=1').bind(auxiliary).first()))return json({error:'Auxiliar inválida'},400);
+   const ids=dates.map(()=>crypto.randomUUID());
+   const statements=dates.map((date,i)=>env.DB.prepare('INSERT INTO substitutions(id,date,week,start,end,class,teacher,creator,auxiliary) VALUES(?,?,?,?,?,?,?,?,?)').bind(ids[i],date,weekOf(date),data.start,data.end,data.class.trim(),data.teacher.trim(),email,auxiliary));
+   // One transaction: any date, overlap or weekly-limit failure rolls back the entire absence.
+   await env.DB.batch([...statements,env.DB.prepare('INSERT INTO audit(id,actor,action,target) VALUES(?,?,?,?)').bind(crypto.randomUUID(),email,request.method,dates.length===1?path+'/'+ids[0]:path+'/batch')]);
+   return json({id:ids[0],ids,count:ids.length},201);
   }
   if(resource&&resource[1]==='substitutions'&&request.method==='PATCH'){
-   if(user.role!=='direction')return json({error:'Somente a direção pode distribuir aulas'},403);if(data.auxiliary!==null&&(typeof data.auxiliary!=='string'||!await env.DB.prepare('SELECT id FROM auxiliaries WHERE id=? AND active=1').bind(data.auxiliary).first()))return json({error:'Auxiliar inválida'},400);const id=path.split('/')[3];if(!await env.DB.prepare('SELECT id FROM substitutions WHERE id=?').bind(id).first())return json({error:'Aula não encontrada'},404);await write(env.DB.prepare('UPDATE substitutions SET auxiliary=?,version=version+1 WHERE id=? AND version=?').bind(data.auxiliary,id,data.version));return json({ok:true});
+   if(user.role!=='direction')return json({error:'Somente a direção pode distribuir aulas'},403);
+   const id=resource[2],row=await env.DB.prepare('SELECT auxiliary,completed,date FROM substitutions WHERE id=?').bind(id).first();
+   if(Object.hasOwn(data,'completed')){
+    if(typeof data.completed!=='boolean'||Object.hasOwn(data,'auxiliary'))return json({error:'Situação da aula inválida'},400);
+    if(data.completed&&(!row.auxiliary||row.date>schoolToday()))return json({error:'Somente aulas com auxiliar, de hoje ou de dias anteriores, podem ser realizadas'},400);
+    await write(env.DB.prepare('UPDATE substitutions SET completed=?,version=version+1 WHERE id=? AND version=?').bind(Number(data.completed),id,data.version));return json({ok:true});
+   }
+   if(row.completed)return json({error:'Desmarque a aula realizada antes de trocar ou retirar a auxiliar'},409);
+   if(data.auxiliary!==null&&(typeof data.auxiliary!=='string'||!await env.DB.prepare('SELECT id FROM auxiliaries WHERE id=? AND active=1').bind(data.auxiliary).first()))return json({error:'Auxiliar inválida'},400);
+   await write(env.DB.prepare('UPDATE substitutions SET auxiliary=?,version=version+1 WHERE id=? AND version=?').bind(data.auxiliary,id,data.version));return json({ok:true});
   }
   if(path==='/api/xerox'&&request.method==='POST'){
    if(!text(data.title)||!validDate(data.deadline)||!Number.isInteger(data.copies)||data.copies<1||data.copies>10000)return json({error:'Pedido inválido'},400);const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO xerox(id,title,copies,deadline,requester) VALUES(?,?,?,?,?)').bind(id,data.title.trim(),data.copies,data.deadline,email),path+'/'+id);return json({id},201);

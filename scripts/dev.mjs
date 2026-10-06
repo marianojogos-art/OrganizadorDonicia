@@ -1,6 +1,7 @@
 import {createServer} from 'node:http';import {readFile,mkdir} from 'node:fs/promises';import {sqlite} from './sqlite-adapter.mjs';import {handle} from '../src/worker.mjs';
+import {migrateLocal} from './migrate-local.mjs';
 await import('./build.mjs');await mkdir('.local',{recursive:true});const DB=sqlite(process.env.LOCAL_DB||'.local/demo-v3.sqlite');
-try{DB.exec(await readFile('migrations/0001_initial.sql','utf8'))}catch(e){if(!e.message.includes('already exists'))throw e}
+await migrateLocal(DB);
 DB.exec("INSERT OR IGNORE INTO users VALUES('direction.demo@prof.pmf.sc.gov.br','Direção fictícia','direction',1),('teacher.demo@prof.pmf.sc.gov.br','Professor fictício','teacher',1)");
 const port=Number(process.env.PORT||8787);const env={DB,ASSETS:{async fetch(r){const p=new URL(r.url).pathname;const name=p==='/'?'index.html':p.slice(1);if(!['index.html','app.js'].includes(name))return new Response('Não encontrado',{status:404});return new Response(await readFile('dist/'+name),{headers:{'Content-Type':name.endsWith('.js')?'text/javascript':'text/html'}})}}};
 createServer(async(req,res)=>{try{const chunks=[];for await(const c of req)chunks.push(c);const r=new Request('http://127.0.0.1:'+port+req.url,{method:req.method,headers:req.headers,body:['GET','HEAD'].includes(req.method)?undefined:Buffer.concat(chunks)});const out=await handle(r,env,async()=> 'direction.demo@prof.pmf.sc.gov.br');res.writeHead(out.status,Object.fromEntries(out.headers));res.end(Buffer.from(await out.arrayBuffer()))}catch{res.writeHead(500);res.end('Erro local')}}).listen(port,'127.0.0.1',()=>console.log('DEMO LOCAL FICTÍCIA http://127.0.0.1:'+port+' — SQLite local, não D1 remoto. Sem login de produção.'));
