@@ -3,16 +3,16 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {sqlite} from '../scripts/sqlite-adapter.mjs';
 import {migrateLocal} from '../scripts/migrate-local.mjs';
-import {parseTeachers,readTeachers,teacherSource} from '../src/teachers.mjs';
+import {parseTeachers,parseSchoolGrade,readTeachers,teacherSource} from '../src/teachers.mjs';
 import {Miniflare,convertV4MiniflareOptions} from 'miniflare';
 import {build} from 'esbuild';
 
-const grade=`<h1>Donícia 2026</h1><p>Versão: 2026-08-20_15-40-49</p><table class="tableProf"><tr><th>Ágata - 2 aulas - 2 de ARTES</th></tr><tr><td>Nome que aparece somente numa aula</td></tr></table><table class="tableProf"><tr><th>Bruna &amp; equipe - 1 aula - 1 de APOIO</th></tr></table><table class="tableProf"><tr><th>Ágata - 2 aulas - 2 de ARTES</th></tr></table>`;
+const grade=await readFile(new URL('./fixtures/webhorario-grade.html',import.meta.url),'utf8');
 test('WebHorário parser reads only teacher headings, deduplicates and validates the school and format',()=>{
  const result=parseTeachers(grade);assert.deepEqual(result.names,['Ágata','Bruna & equipe']);assert.equal(result.sourceVersion,'2026-08-20_15-40-49');
  assert.throws(()=>parseTeachers(grade.replace('Donícia','Outra escola')));
  assert.throws(()=>parseTeachers('<h1>Donícia</h1><p>Login necessário</p>'));
- assert.throws(()=>parseTeachers(grade.replace('Ágata - 2 aulas','Formato alterado')));
+ assert.throws(()=>parseTeachers(grade.replace('Ágata - 4 aulas','Formato alterado')));
  assert.deepEqual(parseTeachers('<h1>Donícia 2026</h1><table class="tableProf"><tr><th>Marina e Paula - 2 aulas</th></tr></table>').names,['Marina','Paula']);
 });
 test('directory survives source outage without replacing the previous verified names',async()=>{

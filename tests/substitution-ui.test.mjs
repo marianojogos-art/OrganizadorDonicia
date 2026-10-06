@@ -3,9 +3,13 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 import {parseHTML} from 'linkedom';
+import {parseSchoolGrade} from '../src/teachers.mjs';
+import {makeSubstitutionPlan} from '../src/substitution-plan.mjs';
 
 const html=await readFile(new URL('../src/index.html',import.meta.url),'utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace('});boot();','});');
+const grade=parseSchoolGrade(await readFile(new URL('./fixtures/webhorario-grade.html',import.meta.url),'utf8'));
+const directory={teachers:grade.names,schedule:grade.schedule,sourceVersion:grade.sourceVersion,updatedAt:'2026-10-05T16:00:00Z',stale:false};
 function page(){
  const {document,window}=parseHTML(html);let active=null;
  Object.defineProperty(document,'activeElement',{get:()=>active});
@@ -28,15 +32,27 @@ test('teacher combobox filters accents, selects by keyboard and shows the curren
  input.value='ka';event(input,'input');event(input,'keydown','ArrowUp');event(input,'keydown','Enter');assert.equal(input.value,'Karol');
  input.value='jo';event(input,'input');event(input,'keydown','Escape');assert.equal(input.getAttribute('aria-expanded'),'false');assert.ok(document.querySelector('.modal'));
 });
-test('absence form adds and removes date fields, saves one batch, and refuses duplicates',async()=>{
+function selectValue(select,value){for(const option of select.querySelectorAll('option')){if(option.getAttribute('value')===value)option.setAttribute('selected','');else option.removeAttribute('selected')}}
+test('additional-day count shows total, previews grade lessons and supports bulk and individual auxiliaries',async()=>{
  const {document,context,event}=page();context.calls=[];
- vm.runInContext("api=async(...args)=>{calls.push(args);return {ok:true}};refresh=async()=>{};toast=()=>{}",context);
- vm.runInContext("modal('new-sub')",context);
- const add=document.querySelector('[data-add-absence-date]');event(add,'click');event(add,'click');assert.equal(document.querySelectorAll('[name=extraDate]').length,2);
- event(document.querySelector('[data-remove-absence-date]'),'click');assert.equal(document.querySelectorAll('[name=extraDate]').length,1);
- const form=new FormData();for(const [key,value]of Object.entries({date:'2026-10-05',teacher:'Ágata',class:'Turma fictícia',start:'08:00',end:'08:45',auxiliary:'a'}))form.append(key,value);form.append('extraDate','2026-10-06');context.form=form;
- await vm.runInContext("save('new-sub',null,form)",context);assert.equal(context.calls.length,1);assert.equal(context.calls[0][0],'substitutions');assert.deepEqual(Array.from(context.calls[0][2].dates),['2026-10-05','2026-10-06']);assert.equal(context.calls[0][2].auxiliary,'a');
- vm.runInContext("modal('new-sub')",context);form.set('extraDate','2026-10-05');await vm.runInContext("save('new-sub',null,form)",context);assert.equal(context.calls.length,1);assert.match(document.querySelector('#formerror').textContent,/dias distintos/);
+ context.planApi=async(path,method,data)=>{context.calls.push([path,method,data]);if(path.startsWith('substitutions/preview?')){const params=new URLSearchParams(path.split('?')[1]);context.pending=makeSubstitutionPlan(directory,params.get('teacher'),params.get('date'),Number(params.get('extraDays'))).then(plan=>({...plan,limit:32}));return context.pending}return {ok:true}};
+ vm.runInContext("api=planApi;refresh=async()=>{};toast=()=>{};modal('new-sub')",context);
+ assert.equal(document.querySelector('[name=extraDate]'),null);assert.equal(document.querySelector('[name=class]'),null);assert.match(document.querySelector('#absence-total').textContent,/Total: 1 dia/);
+ const teacher=document.querySelector('#teacher-input');teacher.value='Ágata';event(teacher,'change');await context.pending;await new Promise(setImmediate);
+ assert.equal(document.querySelectorAll('[data-plan-aux]').length,2);assert.ok([...document.querySelectorAll('[data-plan-aux]')].every(select=>select.value==='a'));
+ const count=document.querySelector('#extra-days');selectValue(count,'2');event(count,'change');await context.pending;await new Promise(setImmediate);
+ assert.match(document.querySelector('#absence-total').textContent,/Total: 3 dias/);assert.equal(document.querySelectorAll('[data-plan-aux]').length,4);assert.match(document.querySelector('#absence-plan').textContent,/14:30–15:15/);
+ let row=document.querySelectorAll('[data-plan-aux]')[1];selectValue(row,'b');event(row,'change');assert.match(document.querySelector('#auxiliary-load').textContent,/Beatriz/);
+ const master=document.querySelector('[data-auxiliary-picker]');selectValue(master,'c');event(master,'change');assert.ok([...document.querySelectorAll('[data-plan-aux]')].every(select=>select.value==='c'));
+ row=document.querySelectorAll('[data-plan-aux]')[1];selectValue(row,'b');event(row,'change');
+ const form=new FormData();for(const [key,value]of Object.entries({date:'2026-10-05',extraDays:'2',teacher:'Ágata',auxiliary:'c'}))form.append(key,value);context.form=form;
+ await vm.runInContext("save('new-sub',null,form)",context);const saved=context.calls.find(call=>call[0]==='substitutions/from-schedule');assert.ok(saved);assert.equal(saved[2].extraDays,2);assert.equal(saved[2].auxiliary,'c');assert.deepEqual(JSON.parse(JSON.stringify(saved[2].overrides)),[{key:'2026-10-05:1',auxiliary:'b'}]);assert.equal(saved[2].class,undefined);assert.equal(saved[2].start,undefined);
+});
+test('weekly table changes the auxiliary of one lesson directly, with its version',async()=>{
+ const {document,context,event}=page();context.calls=[];
+ vm.runInContext("state.section='substituicoes';state.subs=[{id:'lesson-1',version:4,date:iso,week:weekOf(iso),start:'07:30',end:'08:15',slot:'07:30–08:15',class:'71',teacher:'Ágata',auxiliary:'a',aux:'Ana (fictícia)',completed:0,status:'Agendada'}];api=async(...args)=>{calls.push(args);return {ok:true}};refresh=async()=>{};toast=()=>{};render()",context);
+ const picker=document.querySelector('[data-assign-lesson]');assert.ok(picker);selectValue(picker,'b');event(picker,'change');await Promise.resolve();await Promise.resolve();
+ assert.equal(context.calls[0][0],'substitutions/lesson-1');assert.equal(context.calls[0][2].auxiliary,'b');assert.equal(context.calls[0][2].version,4);
 });
 test('weekly report exposes realized and scheduled totals, history and selected-week navigation',async()=>{
  const {document,context,event}=page();context.calls=[];

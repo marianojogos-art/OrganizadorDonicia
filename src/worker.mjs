@@ -1,5 +1,6 @@
 import {identity} from './auth.mjs';
 import {readTeachers} from './teachers.mjs';
+import {consecutiveDates,mondayOf,makeSubstitutionPlan,PlanInputError} from './substitution-plan.mjs';
 export const spaces=['Biblioteca','Auditório','Sala de informática','Laboratório de ciências','Sala de jogos','Sala de projetos','Quadra coberta','Quadra descoberta'];
 const statuses=['Pendente','Em andamento','Concluída'];
 const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
@@ -16,13 +17,26 @@ async function handleInner(request,env,authenticate=identity){
  const email=await authenticate(request,env);if(!email)return json({error:'Login institucional necessário'},401);
  const write=async(statement,target=path)=>{const results=await env.DB.batch([statement,env.DB.prepare('INSERT INTO audit(id,actor,action,target) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),email,request.method,target)]);if(path.split('/').length===4&&!results[0].meta?.changes)throw Error('version_conflict');return results[0]};
  const user=await env.DB.prepare('SELECT email,name,role FROM users WHERE email=? AND active=1').bind(email).first();if(!user)return json({error:'Usuário não autorizado pela direção'},403);
+ const preparePlan=async(teacher,date,extraDays)=>{
+  const dates=consecutiveDates(date,extraDays);
+  const directory=await readTeachers(env.DB);
+  const rows=(await env.DB.prepare('SELECT s.id,s.version,s.date,s.week,s.start,s.end,s.class,s.teacher,s.auxiliary,s.completed,a.name AS aux FROM substitutions s LEFT JOIN auxiliaries a ON a.id=s.auxiliary WHERE s.week BETWEEN ? AND ? ORDER BY s.date,s.start').bind(mondayOf(date),mondayOf(dates.at(-1))).all()).results;
+  const plan=await makeSubstitutionPlan(directory,teacher,date,extraDays,rows);
+  const settings=await env.DB.prepare("SELECT value FROM settings WHERE key='auxiliary_weekly_limit'").first();
+  return {...plan,limit:settings.value};
+ };
  if(!path.startsWith('/api/')){
   const asset=await env.ASSETS.fetch(request);const out=new Response(asset.body,asset);out.headers.set('Cache-Control','no-store');out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");return out;
  }
  if(request.method==='GET'){
   if(path==='/api/me')return json(user);
   if(path==='/api/users')return json((await env.DB.prepare('SELECT email,name FROM users WHERE active=1 ORDER BY name').all()).results);
-  if(path==='/api/teachers'){try{return json(await readTeachers(env.DB))}catch(e){return json({error:e.message},503)}}
+  if(path==='/api/teachers'){try{const {schedule,...directory}=await readTeachers(env.DB);return json(directory)}catch{return json({error:'Não foi possível ler os professores no WebHorário. Tente atualizar a lista.'},503)}}
+  if(path==='/api/substitutions/preview'){
+   if(user.role!=='direction')return json({error:'Somente a direção pode organizar substituições'},403);
+   const query=new URL(request.url).searchParams;
+   try{return json(await preparePlan(query.get('teacher'),query.get('date'),Number(query.get('extraDays')||0)))}catch(e){return json({error:e instanceof PlanInputError?e.message:'Não foi possível consultar a grade do WebHorário. Tente atualizar.'},e instanceof PlanInputError?e.status:503)}
+  }
   if(path==='/api/auxiliaries/weekly'){
    const date=new URL(request.url).searchParams.get('date')||schoolToday();if(!validDate(date))return json({error:'Semana inválida'},400);
    const week=weekOf(date);
@@ -46,14 +60,37 @@ async function handleInner(request,env,authenticate=identity){
  if(!['POST','PATCH','DELETE'].includes(request.method))return json({error:'Método indisponível'},405);
  if(request.headers.get('Origin')!==new URL(request.url).origin)return json({error:'Origem inválida'},403);
  if(!request.headers.get('Content-Type')?.startsWith('application/json'))return json({error:'JSON necessário'},415);
- const raw=await request.text();if(raw.length>8192)return json({error:'Conteúdo muito grande'},413);let data;try{data=JSON.parse(raw)}catch{return json({error:'JSON inválido'},400)}
+ const raw=await request.text();if(raw.length>(path==='/api/substitutions/from-schedule'?65536:8192))return json({error:'Conteúdo muito grande'},413);let data;try{data=JSON.parse(raw)}catch{return json({error:'JSON inválido'},400)}
  if(!data||typeof data!=='object'||Array.isArray(data))return json({error:'Dados inválidos'},400);
- const resource=/^\/api\/(reservations|tasks|substitutions|auxiliaries|xerox|minutes|events|fixed-occupancy)\/([^/]+)$/.exec(path);
+ const resource=path==='/api/substitutions/from-schedule'?null:/^\/api\/(reservations|tasks|substitutions|auxiliaries|xerox|minutes|events|fixed-occupancy)\/([^/]+)$/.exec(path);
  if(resource){if(!Number.isInteger(data.version)||data.version<1)return json({error:'Versão do registro necessária. Atualize a tela'},400);const table=resource[1].replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?').bind(resource[2]).first();if(!row)return json({error:'Registro não encontrado'},404);if(row.version!==data.version)return json({error:'Este registro mudou. Atualize a tela'},409)}
  try{
   if(path==='/api/teachers/refresh'&&request.method==='POST'){
    if(user.role!=='direction')return json({error:'Somente a direção pode atualizar a lista'},403);
-   try{return json(await readTeachers(env.DB,{force:true}))}catch(e){return json({error:e.message},503)}
+   try{const {schedule,...directory}=await readTeachers(env.DB,{force:true});return json(directory)}catch{return json({error:'Não foi possível atualizar a grade do WebHorário. Tente novamente.'},503)}
+  }
+  if(path==='/api/substitutions/from-schedule'&&request.method==='POST'){
+   if(user.role!=='direction')return json({error:'Somente a direção pode organizar substituições'},403);
+   let plan;try{plan=await preparePlan(data.teacher,data.date,data.extraDays)}catch(e){return json({error:e instanceof PlanInputError?e.message:'Não foi possível consultar a grade do WebHorário. Tente atualizar.'},e instanceof PlanInputError?e.status:503)}
+   if(typeof data.fingerprint!=='string'||data.fingerprint!==plan.fingerprint)return json({error:'A grade ou os registros mudaram. Consulte as aulas novamente antes de salvar.'},409);
+   if(plan.conflictCount)return json({error:'Há turmas com horários já registrados. Corrija os conflitos antes de salvar.'},409);
+   const lessons=plan.lessons.filter(lesson=>!lesson.existing);
+   if(!lessons.length)return json({error:'Não há novas aulas a registrar nesse intervalo.'},409);
+   const active=(await env.DB.prepare('SELECT id FROM auxiliaries WHERE active=1').all()).results;
+   const activeIds=new Set(active.map(aux=>aux.id));
+   const validAux=value=>value===null||(typeof value==='string'&&activeIds.has(value));
+   const auxiliary=data.auxiliary===undefined||data.auxiliary===''?null:data.auxiliary;
+   const overrides=data.overrides===undefined?[]:data.overrides;
+   if(!validAux(auxiliary)||!Array.isArray(overrides)||overrides.length>350)return json({error:'Distribuição de auxiliares inválida'},400);
+   const keys=new Set(lessons.map(lesson=>lesson.key)),assignments=new Map();
+   for(const override of overrides){if(!override||typeof override!=='object'||typeof override.key!=='string'||!keys.has(override.key)||assignments.has(override.key)||!validAux(override.auxiliary))return json({error:'Alteração de aula inválida. Consulte a grade novamente.'},400);assignments.set(override.key,override.auxiliary)}
+   const absenceId=crypto.randomUUID(),ids=lessons.map(()=>crypto.randomUUID());
+   const statements=[env.DB.prepare('INSERT INTO substitution_absences(id,teacher,start_date,total_days,source_version,creator) VALUES(?,?,?,?,?,?)').bind(absenceId,plan.teacher,plan.startDate,plan.totalDays,plan.sourceVersion,email)];
+   // Nine rows × eleven bindings stays below D1's per-statement binding limit.
+   for(let offset=0;offset<lessons.length;offset+=9){const chunk=lessons.slice(offset,offset+9);const values=chunk.flatMap((lesson,index)=>[ids[offset+index],lesson.date,lesson.week,lesson.start,lesson.end,lesson.class,plan.teacher,email,assignments.has(lesson.key)?assignments.get(lesson.key):auxiliary,absenceId,lesson.subject]);statements.push(env.DB.prepare('INSERT INTO substitutions(id,date,week,start,end,class,teacher,creator,auxiliary,absence_id,subject) VALUES '+chunk.map(()=>'(?,?,?,?,?,?,?,?,?,?,?)').join(',')).bind(...values))}
+   statements.push(env.DB.prepare('INSERT INTO audit(id,actor,action,target) VALUES(?,?,?,?)').bind(crypto.randomUUID(),email,request.method,path+'/'+absenceId));
+   await env.DB.batch(statements);
+   return json({absenceId,ids,count:ids.length,totalDays:plan.totalDays,existingCount:plan.lessonCount-ids.length},201);
   }
   if(path==='/api/fixed-occupancy'&&request.method==='POST'){
    if(user.role!=='direction')return json({error:'Somente a direção pode definir horários fixos'},403);if(!spaces.includes(data.space)||!Number.isInteger(data.weekday)||data.weekday<0||data.weekday>6||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!validDate(data.from_date)||!validDate(data.to_date)||data.to_date<data.from_date||!text(data.purpose))return json({error:'Ocupação fixa inválida'},400);const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO fixed_occupancy(id,space,weekday,start,end,from_date,to_date,purpose,creator) VALUES(?,?,?,?,?,?,?,?,?)').bind(id,data.space,data.weekday,data.start,data.end,data.from_date,data.to_date,data.purpose.trim(),email),path+'/'+id);return json({id},201);
