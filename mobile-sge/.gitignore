@@ -1,0 +1,8 @@
+node_modules/
+.expo/
+.export/
+credentials.json
+*.jks
+android/
+artifacts/
+public/*.apk
