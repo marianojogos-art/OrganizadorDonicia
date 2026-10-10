@@ -291,7 +291,7 @@ function supervisionOccurrences(r,t){
  const items=[];
  if(!t){for(const c of r.coverage.filter(c=>!c.ok))items.push({context:c.className,detail:'Falha de leitura: '+c.errors.join('; '),next:'Consultar novamente a turma.'});return items}
  for(const a of t.assignments||[]){
-  if(!a.ok)items.push({context:a.className+' · '+a.subject,detail:'Falha na consulta do vínculo; dados anteriores podem estar preservados.',next:'Repetir a consulta antes de concluir a supervisão.'});
+  if(!a.ok)items.push({context:a.className+' · '+a.subject,detail:'Falha na consulta do vínculo; dados anteriores podem estar preservados.'+(a.error?' Motivo: '+a.error:''),next:'Repetir a consulta antes de concluir a supervisão.'});
   else if(!t.plans.some(p=>p.classId===a.classId&&p.assignmentId===a.assignmentId&&!p.notFound))items.push({context:a.className+' · '+a.subject,detail:'Nenhum planejamento atual retornado nesta leitura.',next:'Verificar com o professor e consultar novamente.'});
  }
  for(const p of t.plans){

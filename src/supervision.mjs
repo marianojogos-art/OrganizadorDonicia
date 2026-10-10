@@ -15,7 +15,7 @@ async function read(env,path){
  if(!env.SGE?.fetch)throw new SupervisionError('Conexão com o SGE ainda não configurada. Informe a página de turmas e exemplos das páginas de professores e planejamentos para concluir a integração.',503);
  let response;try{response=await env.SGE.fetch(new Request('https://sge-adapter.internal'+path,{signal:AbortSignal.timeout(15000)}))}catch{throw new SupervisionError('O SGE não respondeu. Tente novamente.',503)}
  if(response.status===401||response.status===403)throw new SupervisionError('A sessão do SGE precisa ser autenticada novamente.',503);
- if(!response.ok||!response.headers.get('content-type')?.includes('application/json'))throw new SupervisionError('Não foi possível ler esta página do SGE.');
+ if(!response.ok||!response.headers.get('content-type')?.includes('application/json'))throw new SupervisionError(env.SGE.readFailure?.(path)||'Não foi possível ler esta página do SGE.');
  const raw=await response.text();if(raw.length>2_000_000)throw new SupervisionError('Página do SGE excedeu o limite de leitura.');
  try{return JSON.parse(raw)}catch{throw new SupervisionError('Resposta do SGE inválida.')}
 }
@@ -74,7 +74,7 @@ export async function collectSupervision(env,input){
     });
     if(label(data.name,150))teacher.name=data.name;
     teacher.plans.push(...plans);
-   }catch(e){assignment.ok=false;result.ok=false;result.errors.push(t.name+' · '+t.subject+': '+e.message)}
+   }catch(e){assignment.ok=false;assignment.error=e.message;result.ok=false;result.errors.push(t.name+' · '+t.subject+': '+e.message)}
   }
  }
  for(const t of teachers.values()){
@@ -103,7 +103,11 @@ export function snapshotAdapter(snapshot){
   }
   if(!previous||previous.error||!entry.error)entries.set(entry.path,entry);
  }
- return {async fetch(request){
+ return {readFailure(path){
+  const entry=entries.get(path);
+  if(!entry)return 'Esta etapa não foi consultada; a consulta pode ter sido interrompida.';
+  return typeof entry.error==='string'?entry.error.replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,1000)||'O conector não informou o motivo da falha.':null;
+ },async fetch(request){
   const path=new URL(request.url).pathname;if(path==='/classes')return Response.json(snapshot.directory);
   const entry=entries.get(path);if(!entry||entry.error)return Response.json({error:'Leitura não concluída'},{status:502});
   return Response.json(entry.data);
