@@ -1,5 +1,11 @@
 # Conector SGE para Supervisão
 
+## Subseções e reinício da Supervisão
+
+“Consultar turmas” reúne seleção de turmas, configuração do conector, progresso e atualização por Situação. “Trabalhar por professor” reúne seleção do professor, filtros, resultados, acesso à aprovação no SGE e relatório de ocorrências. Concluir uma consulta ou carregar resultados salvos abre automaticamente o trabalho por professor. Alternar as subseções preserva a consulta e a seleção.
+
+“Reiniciar supervisão”, no início da aba, limpa a consulta e os filtros locais, incluindo turmas selecionadas, prévia, mensagens e contadores, e retorna à subseção de consulta. Não exclui dados compartilhados: os resultados podem ser carregados novamente. A revisão salva é preservada internamente para evitar sobrescritas concorrentes. O botão fica desativado durante consultas; respostas atrasadas de carregamento de dados salvos são ignoradas após o reinício.
+
 ## Diagnóstico de falhas de leitura
 
 Os erros originais enviados pelo conector são preservados no relatório da turma e, quando a falha ocorre em um vínculo, no respectivo relatório de ocorrências e download. Antes desta correção, o adaptador substituía esses motivos por uma mensagem genérica. Etapas ausentes são identificadas como não consultadas, com possível interrupção. Mensagens são limitadas a 1000 caracteres, têm controles removidos e são escapadas na interface; respostas arbitrárias de rede continuam usando mensagens genéricas.

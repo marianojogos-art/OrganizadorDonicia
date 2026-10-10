@@ -199,3 +199,41 @@ test('a failed query with no returned plans still produces a downloadable occurr
  const text=vm.runInContext('supervisionOccurrenceText(supervisionPreviewReport(),null)',context);
  assert.match(text,/SGE indisponível/);assert.match(text,/PARCIAL/);
 });
+
+test('supervision subsections separate class setup from teacher work and retain selection when switching',async()=>{
+ const {document,context,window}=await filterUi();context.report=await collectSupervision({SGE:snapshotAdapter(fixture().snapshot)},fixture().input);
+ vm.runInContext('supervision.report=report;render()',context);
+ assert.equal(document.querySelector('[data-supervision-panel="classes"]').hasAttribute('hidden'),false);
+ assert.equal(document.querySelector('[data-supervision-panel="teachers"]').hasAttribute('hidden'),true);
+ assert.ok(document.querySelector('[data-supervision-panel="classes"] [data-supervision-load]'));
+ assert.equal(document.querySelector('[data-supervision-panel="teachers"] [data-supervision-load]'),null);
+ document.querySelector('.supervision-subnav [data-supervision-view="teachers"]').dispatchEvent(new window.Event('click',{bubbles:true}));
+ assert.equal(document.querySelector('[data-supervision-panel="classes"]').hasAttribute('hidden'),true);
+ assert.equal(document.querySelector('[data-supervision-panel="teachers"]').hasAttribute('hidden'),false);
+ assert.ok(document.querySelector('[data-supervision-panel="teachers"] [data-supervision-occurrences]'));
+ const selected=vm.runInContext('supervision.resultTeacher',context);
+ document.querySelector('.supervision-subnav [data-supervision-view="classes"]').dispatchEvent(new window.Event('click',{bubbles:true}));
+ assert.equal(vm.runInContext('supervision.resultTeacher',context),selected);
+});
+
+test('restart clears supervision screen state without API mutations or losing the shared save revision',async()=>{
+ const {document,context,window}=await filterUi();context.report=await collectSupervision({SGE:snapshotAdapter(fixture().snapshot)},fixture().input);context.report.version=7;
+ vm.runInContext("supervision.report=report;supervision.saved=report;supervision.view='teachers';supervision.directory={classes:[]};supervision.selected.add('class');supervision.teacher='Ana';supervision.situation='Pendente';supervision.teacherSituations.set('t','Pendente');supervision.error='Falha';supervision.updateSituation='Pendente';supervision.activity=['Etapa'];supervision.preview.set('x',{id:'x',teacherId:'t',teacherName:'Ana',plans:[]});api=()=>{throw new Error('API não deveria ser chamada')};render()",context);
+ document.querySelector('[data-supervision-reset]').dispatchEvent(new window.Event('click',{bubbles:true}));
+ assert.equal(vm.runInContext('supervision.view',context),'classes');assert.equal(vm.runInContext('supervision.report',context),null);assert.equal(vm.runInContext('supervision.directory',context),null);
+ assert.equal(vm.runInContext('supervision.selected.size+supervision.preview.size+supervision.teacherSituations.size+supervision.activity.length',context),0);
+ assert.equal(vm.runInContext('supervision.teacher+supervision.situation+supervision.error+supervision.updateSituation+supervision.resultTeacher',context),'');
+ assert.equal(vm.runInContext('supervision.saved.version',context),7);assert.equal(context.report.version,7);
+ assert.equal(document.querySelector('[data-supervision-report]'),null);assert.equal(document.querySelector('[data-supervision-update-situation]'),null);
+ vm.runInContext("supervision.loading=true;supervision.selected.add('keep');render();resetSupervision()",context);
+ assert.equal(document.querySelector('[data-supervision-reset]').disabled,true);assert.equal(vm.runInContext("supervision.selected.has('keep')",context),true);
+});
+
+test('restart ignores saved results arriving late, while explicit reload opens the professor workspace',async()=>{
+ const {document,context}=await filterUi();context.report=await collectSupervision({SGE:snapshotAdapter(fixture().snapshot)},fixture().input);
+ let release;context.gate=new Promise(resolve=>{release=resolve});vm.runInContext('api=()=>gate;render()',context);
+ const pending=vm.runInContext('loadSavedSupervision()',context);vm.runInContext('resetSupervision()',context);release(context.report);await pending;
+ assert.equal(vm.runInContext('supervision.report',context),null);assert.equal(vm.runInContext('supervision.view',context),'classes');
+ await vm.runInContext('loadSavedSupervision()',context);
+ assert.equal(vm.runInContext('supervision.view',context),'teachers');assert.equal(document.querySelector('[data-supervision-panel="teachers"]').hasAttribute('hidden'),false);
+});
