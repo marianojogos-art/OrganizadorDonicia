@@ -1,5 +1,7 @@
 import {identity} from './auth.mjs';
 import {readTeachers} from './teachers.mjs';
+import {readSupervisionClasses,collectSupervision,snapshotAdapter,SupervisionError} from './supervision.mjs';
+import {loadSupervision,saveSupervision,updateTargets} from './supervision-store.mjs';
 import {consecutiveDates,mondayOf,makeSubstitutionPlan,PlanInputError} from './substitution-plan.mjs';
 export const spaces=['Biblioteca','Auditório','Sala de informática','Laboratório de ciências','Sala de jogos','Sala de projetos','Quadra coberta','Quadra descoberta'];
 const statuses=['Pendente','Em andamento','Concluída'];
@@ -17,6 +19,7 @@ async function handleInner(request,env,authenticate=identity){
  const email=await authenticate(request,env);if(!email)return json({error:'Login institucional necessário'},401);
  const write=async(statement,target=path)=>{const results=await env.DB.batch([statement,env.DB.prepare('INSERT INTO audit(id,actor,action,target) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),email,request.method,target)]);if(path.split('/').length===4&&!results[0].meta?.changes)throw Error('version_conflict');return results[0]};
  const user=await env.DB.prepare('SELECT email,name,role FROM users WHERE email=? AND active=1').bind(email).first();if(!user)return json({error:'Usuário não autorizado pela direção'},403);
+ if(path.startsWith('/api/supervision/')&&user.role!=='direction')return json({error:'Somente a direção pode consultar a supervisão'},403);
  const preparePlan=async(teacher,date,extraDays)=>{
   const dates=consecutiveDates(date,extraDays);
   const directory=await readTeachers(env.DB);
@@ -29,6 +32,8 @@ async function handleInner(request,env,authenticate=identity){
   const asset=await env.ASSETS.fetch(request);const out=new Response(asset.body,asset);out.headers.set('Cache-Control','no-store');out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");return out;
  }
  if(request.method==='GET'){
+  if(path==='/api/supervision/saved'){return json(await loadSupervision(env.DB))}
+  if(path==='/api/supervision/classes'){try{return json(await readSupervisionClasses(env))}catch(e){return json({error:e instanceof SupervisionError?e.message:'Não foi possível consultar o SGE.'},e.status||503)}}
   if(path==='/api/me')return json(user);
   if(path==='/api/users')return json((await env.DB.prepare('SELECT email,name FROM users WHERE active=1 ORDER BY name').all()).results);
   if(path==='/api/teachers'){try{const {schedule,...directory}=await readTeachers(env.DB);return json(directory)}catch{return json({error:'Não foi possível ler os professores no WebHorário. Tente atualizar a lista.'},503)}}
@@ -60,11 +65,38 @@ async function handleInner(request,env,authenticate=identity){
  if(!['POST','PATCH','DELETE'].includes(request.method))return json({error:'Método indisponível'},405);
  if(request.headers.get('Origin')!==new URL(request.url).origin)return json({error:'Origem inválida'},403);
  if(!request.headers.get('Content-Type')?.startsWith('application/json'))return json({error:'JSON necessário'},415);
- const raw=await request.text();if(raw.length>(path==='/api/substitutions/from-schedule'?65536:8192))return json({error:'Conteúdo muito grande'},413);let data;try{data=JSON.parse(raw)}catch{return json({error:'JSON inválido'},400)}
+ const raw=await request.text();if(raw.length>(['/api/supervision/preview','/api/supervision/save'].includes(path)?16_000_000:path==='/api/substitutions/from-schedule'?65536:8192))return json({error:'Conteúdo muito grande'},413);let data;try{data=JSON.parse(raw)}catch{return json({error:'JSON inválido'},400)}
  if(!data||typeof data!=='object'||Array.isArray(data))return json({error:'Dados inválidos'},400);
  const resource=path==='/api/substitutions/from-schedule'?null:/^\/api\/(reservations|tasks|substitutions|auxiliaries|xerox|minutes|events|fixed-occupancy)\/([^/]+)$/.exec(path);
  if(resource){if(!Number.isInteger(data.version)||data.version<1)return json({error:'Versão do registro necessária. Atualize a tela'},400);const table=resource[1].replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?').bind(resource[2]).first();if(!row)return json({error:'Registro não encontrado'},404);if(row.version!==data.version)return json({error:'Este registro mudou. Atualize a tela'},409)}
  try{
+  if(path==='/api/supervision/save'&&request.method==='POST'){
+   try{
+    const saved=await loadSupervision(env.DB);
+    if(data.version!==saved.version)return json({error:'A consulta salva mudou. Recarregue os dados antes de atualizar.'},409);
+    if(data.updateSituation!==undefined&&(typeof data.updateSituation!=='string'||data.updateSituation.length>200))return json({error:'Situação inválida'},400);
+    let targets;
+    if(data.updateSituation){
+     if(!Array.isArray(data.classIds)||typeof data.teacher!=='string')return json({error:'Seleção inválida'},400);
+     targets=updateTargets(saved,data);if(!targets.length)return json({error:'Nenhum planejamento salvo nessa Situação nas turmas e professor selecionados.'},400);
+    }
+    const fresh=await collectSupervision(data.snapshot?{SGE:snapshotAdapter(data.snapshot)}:env,{...data,targetAssignments:targets});
+    for(const target of targets||[]){
+     const coverage=fresh.coverage.find(c=>c.classId===target.classId);
+     if(coverage?.ok&&!fresh.teachers.some(t=>t.assignments.some(a=>a.classId===target.classId&&a.assignmentId===target.assignmentId))){
+      coverage.ok=false;coverage.errors.push('Vínculo selecionado não encontrado no SGE; dados anteriores preservados.');
+      const old=saved.teachers.find(t=>t.assignments.some(a=>a.classId===target.classId&&a.assignmentId===target.assignmentId));
+      const assignment=old.assignments.find(a=>a.classId===target.classId&&a.assignmentId===target.assignmentId);
+      let teacher=fresh.teachers.find(t=>t.id===old.id);if(!teacher){teacher={id:old.id,name:old.name,plans:[],assignments:[]};fresh.teachers.push(teacher)}
+      teacher.assignments.push({...assignment,ok:false});
+     }
+    }
+    return json(await saveSupervision(env.DB,saved,fresh,{actor:email,actorName:user.name,situation:data.updateSituation||''}));
+   }catch(e){return json({error:e instanceof SupervisionError?e.message:'Não foi possível salvar a consulta. Os dados anteriores foram preservados.'},e.status||503)}
+  }
+  if(path==='/api/supervision/preview'&&request.method==='POST'){
+   try{return json(await collectSupervision(data.snapshot?{SGE:snapshotAdapter(data.snapshot)}:env,data))}catch(e){return json({error:e instanceof SupervisionError?e.message:'Não foi possível consultar os planejamentos no SGE.'},e.status||503)}
+  }
   if(path==='/api/teachers/refresh'&&request.method==='POST'){
    if(user.role!=='direction')return json({error:'Somente a direção pode atualizar a lista'},403);
    try{const {schedule,...directory}=await readTeachers(env.DB,{force:true});return json(directory)}catch{return json({error:'Não foi possível atualizar a grade do WebHorário. Tente novamente.'},503)}
@@ -106,7 +138,7 @@ async function handleInner(request,env,authenticate=identity){
     else await write(env.DB.prepare('DELETE FROM '+table+' WHERE id=? AND version=?').bind(id,data.version));return json({ok:true});
    }
    let columns=[],values=[];
-   if(table==='reservations'){if(!spaces.includes(data.space)||!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.purpose))return json({error:'Reserva inválida'},400);columns=['space','date','start','end','purpose'];values=columns.map(k=>data[k]);}
+   if(table==='reservations'){if(!spaces.includes(data.space)||!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.purpose)||!text(data.responsible))return json({error:'Confira espaço, data, horários, responsável e atividade'},400);columns=['space','date','start','end','purpose','responsible'];values=columns.map(k=>data[k].trim());}
    if(table==='tasks'){if(!text(data.title)||!validDate(data.due)||typeof data.owner!=='string'||typeof data.restricted!=='boolean')return json({error:'Tarefa inválida'},400);if(user.role!=='direction'&&(data.owner!==email||data.restricted!==!!row.restricted))return json({error:'Somente a direção pode delegar ou restringir'},403);if(!await env.DB.prepare('SELECT email FROM users WHERE email=? AND active=1').bind(data.owner).first())return json({error:'Responsável inválido'},400);columns=['title','due','owner','restricted'];values=[data.title,data.due,data.owner,Number(data.restricted)]}
    if(table==='substitutions'){if(!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.class,80)||!text(data.teacher,100))return json({error:'Aula inválida'},400);if(row.completed&&data.date>schoolToday())return json({error:'Aula realizada não pode ter data futura'},400);columns=['date','week','start','end','class','teacher'];values=[data.date,weekOf(data.date),data.start,data.end,data.class,data.teacher]}
    if(table==='auxiliaries'){if(!text(data.name,100))return json({error:'Nome inválido'},400);columns=['name'];values=[data.name]}
@@ -159,8 +191,8 @@ async function handleInner(request,env,authenticate=identity){
    if(user.role!=='direction')return json({error:'Somente a direção pode editar o calendário'},403);if(!text(data.title)||!validDate(data.date)||!['Reunião','Dia letivo','Feriado','Recesso','Conselho de classe','Evento escolar'].includes(data.type))return json({error:'Evento inválido'},400);const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO events(id,title,date,type,creator) VALUES(?,?,?,?,?)').bind(id,data.title.trim(),data.date,data.type,email),path+'/'+id);return json({id},201);
   }
   if(path==='/api/reservations'&&request.method==='POST'){
-   if(!spaces.includes(data.space)||!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.purpose))return json({error:'Reserva inválida'},400);
-   const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO reservations(id,space,date,start,end,owner,purpose) VALUES(?,?,?,?,?,?,?)').bind(id,data.space,data.date,data.start,data.end,email,data.purpose.trim()),path+'/'+id);return json({id},201);
+   if(!spaces.includes(data.space)||!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.purpose)||!text(data.responsible))return json({error:'Confira espaço, data, horários, responsável e atividade'},400);
+   const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO reservations(id,space,date,start,end,owner,purpose,responsible) VALUES(?,?,?,?,?,?,?,?)').bind(id,data.space,data.date,data.start,data.end,email,data.purpose.trim(),data.responsible.trim()),path+'/'+id);return json({id},201);
   }
   if(path==='/api/tasks'&&request.method==='POST'){
    if(!text(data.title)||!validDate(data.due)||typeof data.restricted!=='boolean'||typeof data.owner!=='string')return json({error:'Tarefa inválida'},400);

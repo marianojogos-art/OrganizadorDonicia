@@ -1,0 +1,10 @@
+{
+ "manifest_version":3,
+ "name":"Organizador Donícia — Supervisão SGE",
+ "version":"1.2.0",
+ "description":"Consulta turmas e planejamentos usando a sessão do SGE no navegador.",
+ "permissions":["scripting","tabs"],
+ "host_permissions":["https://www.sgebr.net.br/sge8105/*"],
+ "background":{"service_worker":"background.mjs","type":"module"},
+ "content_scripts":[{"matches":["https://organizadordonicia.carijo.workers.dev/*","http://127.0.0.1:8787/*"],"js":["bridge.js"]}]
+}
