@@ -43,3 +43,5 @@ A interface também oferece um filtro geral por Situação e um filtro independe
 O conector 1.2.0 aceita atualizações seletivas: lê a lista do vínculo e abre apenas os planejamentos escolhidos pela Situação salva e os novos encontrados. Os registros preservados mantêm suas datas e links no Organizador. Substituir os arquivos da extensão e recarregá-la para usar essa otimização.
 
 O conector 1.2.1 reconhece as sessões do SGE em `www.sgebr.com.br` e `www.sgebr.net.br`. Substitua os arquivos da extensão pela nova distribuição, recarregue-a em Extensões e recarregue o Organizador. A consulta mantém o domínio da sessão aberta.
+## Builds da Cloudflare
+Em 10/10/2026, o comando das branches de prévia foi corrigido de `npx wrangler preview` para `npx wrangler versions upload`. O comando anterior exigia um bloco `previews` com banco D1 separado e falhava após o build. O upload registra uma versão sem promovê-la à produção. As URLs de prévia permanecem desativadas (`preview_urls: false`). A branch `main` mantém `npm run deploy:cloudflare` como comando de publicação.
