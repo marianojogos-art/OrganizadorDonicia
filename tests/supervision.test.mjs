@@ -43,6 +43,27 @@ test('SGE failures remain partial rather than silently reporting no planning',as
  const report=await collectSupervision({SGE:snapshotAdapter(f.snapshot)},f.input);assert.equal(report.complete,false);assert.equal(report.coverage.filter(c=>!c.ok).length,1);assert.equal(report.teachers[0].summary.total,1);
  f.snapshot.directory.classes[0].url='https://evil.example/';await assert.rejects(collectSupervision({SGE:snapshotAdapter(f.snapshot)},f.input),/origem/);
 });
+
+test('snapshot failures preserve connector reasons for class and teacher diagnostics',async()=>{
+ const f=fixture();f.snapshot.entries[0]={path:f.snapshot.entries[0].path,error:'A página do SGE demorou a abrir.'};
+ const classReport=await collectSupervision({SGE:snapshotAdapter(f.snapshot)},f.input);
+ assert.deepEqual(classReport.coverage[0].errors,['A página do SGE demorou a abrir.']);
+ const g=fixture();g.snapshot.entries[1]={path:g.snapshot.entries[1].path,error:'Ação de consulta não encontrada no SGE.'};
+ const teacherReport=await collectSupervision({SGE:snapshotAdapter(g.snapshot)},g.input);
+ assert.equal(teacherReport.teachers[0].assignments[0].error,'Ação de consulta não encontrada no SGE.');
+ assert.match(teacherReport.coverage[0].errors[0],/Ágata · Português: Ação de consulta não encontrada/);
+ const absent=fixture();absent.snapshot.entries.splice(1,1);const interrupted=await collectSupervision({SGE:snapshotAdapter(absent.snapshot)},absent.input);
+ assert.match(interrupted.coverage[0].errors[0],/Esta etapa não foi consultada/);
+ const adapter=snapshotAdapter({directory:g.snapshot.directory,entries:[{path:g.snapshot.entries[0].path,error:'Falha\u0000\n'+ 'x'.repeat(2000)}]});
+ assert.equal(adapter.readFailure(g.snapshot.entries[0].path).length,1000);assert.doesNotMatch(adapter.readFailure(g.snapshot.entries[0].path),/[\u0000\n]/);
+});
+
+test('connector failure reasons are escaped in UI and included in occurrence downloads',async()=>{
+ const {document,context}=await filterUi();const f=fixture();f.snapshot.entries[1]={path:f.snapshot.entries[1].path,error:'Ação indisponível <img src=x onerror=bad>'};
+ context.report=await collectSupervision({SGE:snapshotAdapter(f.snapshot)},f.input);vm.runInContext('supervision.report=report;render()',context);
+ assert.equal(document.querySelectorAll('#page img').length,0);assert.match(document.querySelector('[data-supervision-occurrences]').textContent,/Motivo: Ação indisponível/);
+ assert.match(vm.runInContext('supervisionOccurrenceText(report,report.teachers[0])',context),/Motivo: Ação indisponível/);
+});
 test('repeated teacher slots from legacy connectors do not reject two classes or double-count plans',async()=>{
  const f=fixture();
  for(const entry of [...f.snapshot.entries]){

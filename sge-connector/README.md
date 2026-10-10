@@ -1,5 +1,11 @@
 # Conector SGE para Supervisão
 
+## Diagnóstico de falhas de leitura
+
+Os erros originais enviados pelo conector são preservados no relatório da turma e, quando a falha ocorre em um vínculo, no respectivo relatório de ocorrências e download. Antes desta correção, o adaptador substituía esses motivos por uma mensagem genérica. Etapas ausentes são identificadas como não consultadas, com possível interrupção. Mensagens são limitadas a 1000 caracteres, têm controles removidos e são escapadas na interface; respostas arbitrárias de rede continuam usando mensagens genéricas.
+
+Para reproduzir uma falha, consultar apenas uma turma no Chrome ou Edge com o SGE e o Organizador no mesmo perfil. Copiar o motivo em “Ver falhas de leitura” e a etapa da consulta. Conferir a data de cada registro: dados anteriores preservados não representam uma nova leitura bem-sucedida. O motivo antigo descartado não pode ser recuperado; a nova tentativa permite capturá-lo. O ajuste de preservação dos erros é no site/API e não exige atualização da extensão.
+
 ## Melhorias locais em 10/10/2026 — ainda sem publicação
 
 Os resultados oferecem uma lista de professores, ordenada pelo nome e selecionada por identidade. A tela mostra um professor de cada vez, com indicadores, filtros por Situação e planejamentos organizados por trimestre. Com resultados disponíveis, os controles de consulta ficam recolhidos em “Consultar ou atualizar dados do SGE”. A seleção permanece enquanto chegam novos registros na prévia.
