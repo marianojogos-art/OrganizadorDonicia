@@ -1,9 +1,8 @@
 import {createSgeReader} from '../src/sge-reader.mjs';
 const organizerOrigins=new Set(['https://organizadordonicia.carijo.workers.dev','http://127.0.0.1:8787']);
-const sgeOrigin='https://www.sgebr.net.br';
+import {sgeOrigins,allowedSgeUrl as allowed} from '../src/sge-origin.mjs';
 let running=false;
 const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-function allowed(url){const u=new URL(url);if(u.origin!==sgeOrigin||!u.pathname.startsWith('/sge8105/')||u.username||u.password)throw Error('Link fora do SGE.');return u.href}
 function completed(tabId){
  let timer,listener;
  const promise=new Promise((resolve,reject)=>{
@@ -31,14 +30,14 @@ async function navigate(tabId,url){
 chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
  let origin;try{origin=new URL(sender.url).origin}catch{return false}
  if(!organizerOrigins.has(origin))return false;
- if(message.command==='ping'){sendResponse({ok:true,data:{version:'1.2.0',progress:true,selective:true}});return false}
+ if(message.command==='ping'){sendResponse({ok:true,data:{version:'1.2.1',progress:true,selective:true}});return false}
  if(!['directory','teachers','planning'].includes(message.command))return false;
  if(running){sendResponse({error:'Já há uma consulta ao SGE em andamento. Aguarde.'});return false}
  running=true;
  (async()=>{
   let tabId;
   try{
-   const tabs=await chrome.tabs.query({url:sgeOrigin+'/sge8105/*'});
+   const tabs=await chrome.tabs.query({url:sgeOrigins.map(origin=>origin+'/sge8105/*')});
    const source=tabs.find(t=>new URL(t.url).pathname.toLowerCase().endsWith('/hselgerenciamentoplanoaula.aspx'));
    if(!source)throw Error('Entre no SGE e deixe aberta a página 1, com a lista de turmas dos planejamentos.');
    const tab=await chrome.tabs.create({url:'about:blank',active:false});tabId=tab.id;

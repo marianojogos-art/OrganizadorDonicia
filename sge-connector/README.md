@@ -41,3 +41,13 @@ O conector 1.1.0 envia o progresso da leitura de cada página de turmas e de cad
 A interface também oferece um filtro geral por Situação e um filtro independente em cada professor, tanto na prévia quanto no resultado por trimestre. As opções vêm das situações efetivamente retornadas pelo SGE, incluindo “Não informada”, com contagem por opção. Os filtros se combinam e podem ser limpos. A lista informa quantos planejamentos estão visíveis; a síntese mantém os totais da consulta completa. Os filtros permanecem selecionados enquanto novos planejamentos chegam na prévia. Esse ajuste foi publicado em 06/10/2026 na versão `d4783e1f-b86a-415c-8694-2fe628a11a74`, após os 62 testes passarem.
 
 O conector 1.2.0 aceita atualizações seletivas: lê a lista do vínculo e abre apenas os planejamentos escolhidos pela Situação salva e os novos encontrados. Os registros preservados mantêm suas datas e links no Organizador. Substituir os arquivos da extensão e recarregá-la para usar essa otimização.
+
+O conector 1.2.1 reconhece as sessões do SGE em `www.sgebr.com.br` e `www.sgebr.net.br`. Substitua os arquivos da extensão pela nova distribuição, recarregue-a em Extensões e recarregue o Organizador. A consulta mantém o domínio da sessão aberta.
+
+## Builds da Cloudflare
+
+Verificação em 10/10/2026: produção permanece no commit `58a4b05` (PR3), versão Cloudflare `e6553ede`, com conector 1.2.0 no ZIP online. O PR4 e a distribuição local usam conector 1.2.1, com 86 testes aprovados. O número 2.0.0 de package.json identifica o aplicativo, não a extensão.
+
+A prévia falhou após um build bem-sucedido porque `npx wrangler preview` exige um bloco `previews` com D1 separado. A tentativa com `npx wrangler versions upload` também falhou: o identificador do Worker de prévia não corresponde ao Worker de produção. Essa alternativa foi descartada e o comando `npx wrangler preview` foi restaurado em Previews Base e na própria branch. Não alterar o nome do Worker de produção nem usar seu banco para contornar a falha. O banco isolado ainda não foi criado.
+
+A branch `main` mantém `npm run deploy:cloudflare`, que aplica migrações remotas antes da publicação. O PR4 não altera migrações. As URLs de prévia permanecem desativadas (`preview_urls: false`). Antes do merge, configurar e validar a prévia isolada; depois da publicação, conferir a versão do ZIP online, recarregar a extensão instalada e confirmar o acesso ao domínio com.br.
