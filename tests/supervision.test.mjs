@@ -237,3 +237,13 @@ test('restart ignores saved results arriving late, while explicit reload opens t
  await vm.runInContext('loadSavedSupervision()',context);
  assert.equal(vm.runInContext('supervision.view',context),'teachers');assert.equal(document.querySelector('[data-supervision-panel="teachers"]').hasAttribute('hidden'),false);
 });
+
+test('SGE class parser accepts both official hosts and rejects unrelated or cross-origin forms',()=>{
+ const body=`<table id="GRIDTURMA"><tr>${fields({...classFields,_WVAR:'Turma fictícia'},'_0001')}</tr></table>`;
+ for(const origin of ['https://www.sgebr.com.br','https://www.sgebr.net.br']){
+  const result=parseSgeClasses(doc(body,'hselgerenciamentoplanoaula.aspx'),origin+'/sge8105/');
+  assert.equal(new URL(result.sourceUrl).origin,origin);
+ }
+ assert.throws(()=>parseSgeClasses(doc(body),'https://evil.example/sge8105/'),/Origem/);
+ assert.throws(()=>parseSgeClasses(doc(body,'https://www.sgebr.net.br/sge8105/hselgerenciamentoplanoaula.aspx'),'https://www.sgebr.com.br/sge8105/'),/Origem/);
+});
