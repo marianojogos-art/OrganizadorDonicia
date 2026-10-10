@@ -2,10 +2,23 @@ import test from 'node:test';import assert from 'node:assert/strict';import {rea
 const migration=await readFile(new URL('../migrations/0001_initial.sql',import.meta.url),'utf8');
 const gradeMigration=await readFile(new URL('../migrations/0003_webhorario_lessons.sql',import.meta.url),'utf8');
 const planningMigration=await readFile(new URL('../migrations/0002_substitution_planning.sql',import.meta.url),'utf8');
-function setup(){const DB=sqlite();DB.exec(migration+planningMigration+gradeMigration);DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
+const responsibleMigration=await readFile(new URL('../migrations/0004_reservation_responsible.sql',import.meta.url),'utf8');
+function setup(){const DB=sqlite();DB.exec(migration+planningMigration+gradeMigration+responsibleMigration);DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
 const send=async(env,path,method='GET',data,email='director@prof.pmf.sc.gov.br',origin='https://school.example')=>{if(['PATCH','DELETE'].includes(method)&&data&&data.version===undefined){const [kind,id]=path.split('/');const table=kind.replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?').bind(id).first();data={...data,version:row?.version||1}}const r=await handle(new Request('https://school.example/api/'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(data)}),env,async()=>email);return {status:r.status,body:await r.json()}};
-const reservation={space:'Biblioteca',date:'2026-10-05',start:'09:00',end:'10:00',purpose:'Leitura fictícia'};
+const reservation={space:'Biblioteca',date:'2026-10-05',start:'09:00',end:'10:00',purpose:'Leitura fictícia',responsible:'Responsável fictício'};
 const taskData={title:'Conferir calendário',due:'2026-10-05',owner:'one@prof.pmf.sc.gov.br',restricted:false};
+test('reservation responsible is required, persists and never changes creator permissions',async()=>{
+ const e=setup();for(const responsible of [undefined,'','   ',42,'x'.repeat(251)])assert.equal((await send(e,'reservations','POST',{...reservation,responsible})).status,400);
+ const created=await send(e,'reservations','POST',{...reservation,responsible:'  Pessoa indicada  '},'one@prof.pmf.sc.gov.br');assert.equal(created.status,201);
+ let row=(await send(e,'reservations')).body[0];assert.equal(row.responsible,'Pessoa indicada');assert.equal(row.owner,'one@prof.pmf.sc.gov.br');
+ assert.equal((await send(e,'reservations/'+created.body.id,'PATCH',{...reservation,responsible:'Outra pessoa',edit:true},'two@prof.pmf.sc.gov.br')).status,403);
+ assert.equal((await send(e,'reservations/'+created.body.id,'PATCH',{...reservation,responsible:'  Outra pessoa  ',edit:true},'one@prof.pmf.sc.gov.br')).status,200);
+ row=(await send(e,'reservations')).body[0];assert.equal(row.responsible,'Outra pessoa');assert.equal(row.owner,'one@prof.pmf.sc.gov.br');
+});
+test('responsible migration preserves existing reservations with their creator name',async()=>{
+ const DB=sqlite();DB.exec(migration);DB.exec("INSERT INTO users VALUES('legacy@prof.pmf.sc.gov.br','Pessoa anterior','teacher',1); INSERT INTO reservations(id,space,date,start,end,owner,purpose) VALUES('legacy','Biblioteca','2026-10-05','09:00','10:00','legacy@prof.pmf.sc.gov.br','Leitura')");DB.exec(responsibleMigration);
+ const row=await DB.prepare('SELECT * FROM reservations').first();assert.equal(row.responsible,'Pessoa anterior');assert.equal(row.id,'legacy');assert.equal(row.version,1);
+});
 
 test('multiple absence dates are atomic, enforce weekly capacity and roll back audit',async()=>{
  const e=setup();const auxiliary='aux-example-ana';
