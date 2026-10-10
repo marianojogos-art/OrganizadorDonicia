@@ -45,3 +45,6 @@ O conector 1.2.0 aceita atualizações seletivas: lê a lista do vínculo e abre
 O conector 1.2.1 reconhece as sessões do SGE em `www.sgebr.com.br` e `www.sgebr.net.br`. Substitua os arquivos da extensão pela nova distribuição, recarregue-a em Extensões e recarregue o Organizador. A consulta mantém o domínio da sessão aberta.
 ## Builds da Cloudflare
 Em 10/10/2026, o comando das branches de prévia foi corrigido de `npx wrangler preview` para `npx wrangler versions upload`. O comando anterior exigia um bloco `previews` com banco D1 separado e falhava após o build. O upload registra uma versão sem promovê-la à produção. As URLs de prévia permanecem desativadas (`preview_urls: false`). A branch `main` mantém `npm run deploy:cloudflare` como comando de publicação.
+
+
+A configuração deve ser conferida também em Settings da própria branch: as prévias existentes mantêm um comando específico, mesmo quando Previews Base é atualizado. Para o PR4, o comando foi corrigido nos dois locais.
