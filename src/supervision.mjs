@@ -1,3 +1,4 @@
+import {allowedSgeUrl} from './sge-origin.mjs';
 // SGE is an authenticated, server-side adapter. Its page selectors must be
 // implemented against real SGE pages; the Organizador never receives credentials.
 export class SupervisionError extends Error {
@@ -22,7 +23,8 @@ async function read(env,path){
 export async function readSupervisionClasses(env){
  const data=await read(env,'/classes');
  if(!Array.isArray(data.classes)||data.classes.length>250||data.complete!==true)throw new SupervisionError('Lista de turmas incompleta ou não reconhecida.');
- const source=sourceUrl(data.sourceUrl,'https://www.sgebr.net.br'),origin=new URL(source).origin,ids=new Set();
+ let source;try{source=allowedSgeUrl(data.sourceUrl)}catch{throw new SupervisionError('Link fora da origem do SGE.')}
+ const origin=new URL(source).origin,ids=new Set();
  const classes=data.classes.map(c=>{
   if(!c||!id(c.id)||!label(c.name,120)||ids.has(c.id))throw new SupervisionError('Turma não reconhecida no SGE.');
   ids.add(c.id);return {id:c.id,name:c.name.trim(),url:sourceUrl(c.url,origin)};
