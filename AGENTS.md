@@ -5,4 +5,4 @@
 - Registrar no relatório final o link do commit ou pull request e a validação realizada. Se o envio falhar, comunicar o impedimento sem afirmar que houve sincronização.
 - Não incluir senhas, tokens, credenciais de assinatura, bancos locais, dependências ou artefatos de distribuição gerados nos commits.
 - Arquivos administrativos de provisionamento com dados pessoais ficam apenas localmente em `db/provisioning/`, fora do GitHub público. Não acrescentar dados pessoais de produção à documentação pública.
-- As melhorias da aba Supervisão de 10/10/2026 permanecem sem publicação do site. Commit, push e pull request não autorizam deploy, migrações remotas ou merge que dispare publicação. Aguardar instrução explícita do usuário para publicar.
+- O usuário autorizou explicitamente a publicação das melhorias da aba Supervisão em 10/10/2026, após revisar o registro no GitHub. Para novas mudanças, commit, push e pull request por si só não autorizam deploy, migrações remotas ou merge que dispare publicação; seguir a autorização vigente do usuário.

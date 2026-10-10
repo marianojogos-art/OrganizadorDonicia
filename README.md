@@ -1,10 +1,10 @@
 # Organizador Donícia — Cloudflare Workers
 
-## Supervisão por professor — 10/10/2026, sem publicação
+## Supervisão por professor — 10/10/2026
 
 Os resultados da Supervisão apresentam uma lista para selecionar o professor, indicadores individuais e planejamentos por trimestre. O relatório de ocorrências considera todos os registros do professor, inclusive os ocultos pelos filtros, e oferece download em texto. Consultas interrompidas ou com falhas também geram relatório. O botão “Aprovar no SGE” abre o registro em análise ou a lista do professor para concluir a aprovação no próprio SGE; uma nova consulta confirma a Situação.
 
-As mudanças estão preparadas para revisão no GitHub, sem deploy ou aplicação de migrações remotas. O código anterior do conector, persistência e aplicativo móvel também é versionado para manter o histórico completo do projeto. Em 10/10/2026 passaram os 91 testes do site, conector e aplicativo móvel; os builds do site e runtimes móveis foram concluídos. A verificação visual no navegador permaneceu indisponível por restrição de acesso à ferramenta. A orientação permanente de registrar mudanças no GitHub está em `AGENTS.md`.
+As mudanças foram registradas para revisão no GitHub sem publicação inicial. Em seguida, o usuário autorizou explicitamente a publicação em 10/10/2026; o resultado da publicação é registrado no [PR #1](https://github.com/marianojogos-art/OrganizadorDonicia/pull/1). O código anterior do conector, persistência e aplicativo móvel também é versionado para manter o histórico completo do projeto. Em 10/10/2026 passaram os 91 testes do site, conector e aplicativo móvel; os builds do site e runtimes móveis foram concluídos. A verificação visual no navegador permaneceu indisponível por restrição de acesso à ferramenta. A orientação permanente de registrar mudanças no GitHub está em `AGENTS.md`.
 
 Projeto escolar independente para a EBM Donícia Maria da Costa. Não usa recursos, conta ou ferramentas operacionais da Lepidus. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. O banco D1 remoto foi inicializado. O endereço é https://organizadordonicia.carijo.workers.dev, protegido por Cloudflare Access.
 
