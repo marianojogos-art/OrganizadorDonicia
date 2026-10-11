@@ -92,3 +92,12 @@ test('connector preserves parser failures thrown inside the SGE page',async()=>{
  const result=await b.send('planning',{classId:key,assignmentId:'202:1',sourceUrl:base+'hplanejamentodisciplinasger.aspx?teacher'});
  assert.equal(result.error,b.pages.plans.readError);assert.deepEqual(b.removed,[10]);
 });
+
+test('store permission scope is minimal and manifest carries packaged icons',async()=>{
+ const manifest=JSON.parse(await readFile(new URL('../sge-connector/manifest.json',import.meta.url),'utf8'));
+ assert.deepEqual(manifest.permissions,['scripting']);assert.equal(manifest.minimum_chrome_version,'120');
+ for(const size of [16,32,48,128]){
+  const bytes=await readFile(new URL('../sge-connector/'+manifest.icons[size],import.meta.url));
+  assert.equal(bytes.readUInt32BE(16),size);assert.equal(bytes.readUInt32BE(20),size);
+ }
+});

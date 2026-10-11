@@ -1,5 +1,6 @@
 import {createSgeReader} from '../src/sge-reader.mjs';
-const organizerOrigins=new Set(['https://organizadordonicia.carijo.workers.dev','http://127.0.0.1:8787']);
+const storeBuild=typeof DONICIA_STORE_BUILD!=='undefined'&&DONICIA_STORE_BUILD;
+const organizerOrigins=new Set(storeBuild?['https://organizadordonicia.carijo.workers.dev']:['https://organizadordonicia.carijo.workers.dev','http://127.0.0.1:8787']);
 import {sgeOrigins,allowedSgeUrl as allowed} from '../src/sge-origin.mjs';
 let running=false;
 const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
@@ -45,7 +46,7 @@ async function navigate(tabId,url){
 chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
  let origin;try{origin=new URL(sender.url).origin}catch{return false}
  if(!organizerOrigins.has(origin))return false;
- if(message.command==='ping'){sendResponse({ok:true,data:{version:'1.3.0',progress:true,selective:true}});return false}
+ if(message.command==='ping'){sendResponse({ok:true,data:{version:'1.3.1',progress:true,selective:true}});return false}
  if(!['directory','teachers','planning'].includes(message.command))return false;
  if(running){sendResponse({error:'Já há uma consulta ao SGE em andamento. Aguarde.'});return false}
  running=true;
