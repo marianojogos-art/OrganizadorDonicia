@@ -17,7 +17,7 @@ export async function loadSupervision(DB){
 }
 export function updateTargets(saved,input){
  const query=input.teacher.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
- return saved.teachers.flatMap(t=>{const name=t.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();if(query&&!name.includes(query))return [];return t.assignments.filter(a=>input.classIds.includes(a.classId)&&t.plans.some(p=>p.classId===a.classId&&p.assignmentId===a.assignmentId&&p.situation===input.updateSituation&&!p.notFound)).map(a=>({classId:a.classId,assignmentId:a.assignmentId}))});
+ return saved.teachers.flatMap(t=>{const name=t.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();if(query&&!name.includes(query))return [];return t.assignments.filter(a=>input.classIds.includes(a.classId)&&t.plans.some(p=>p.classId===a.classId&&p.assignmentId===a.assignmentId&&p.situation===input.updateSituation&&(!input.trimester||p.trimester===input.trimester)&&!p.notFound)).map(a=>({classId:a.classId,assignmentId:a.assignmentId}))});
 }
 export function mergeSupervision(saved,fresh,{actor,actorName,situation=''}){
  const time=fresh.updatedAt,teachers=new Map(saved.teachers.map(t=>[t.id,structuredClone(t)]));
@@ -31,9 +31,9 @@ export function mergeSupervision(saved,fresh,{actor,actorName,situation=''}){
    if(a.ok){
     const old=t.plans.filter(matches),current=incoming.plans.filter(matches),ids=new Set(current.map(p=>p.id));
     const merged=current.map(p=>{const previous=old.find(x=>x.id===p.id);return situation&&previous&&previous.situation!==situation?previous:{...p,...stamp,isNew:!previous}});
-    for(const p of old)if(!ids.has(p.id)&&(situation?p.situation===situation:true))merged.push({...p,...stamp,notFound:true,isNew:false});else if(!ids.has(p.id))merged.push(p);
+    for(const p of old)if(!ids.has(p.id)&&(!fresh.trimester||p.trimester===fresh.trimester)&&(situation?p.situation===situation:true))merged.push({...p,...stamp,notFound:true,isNew:false});else if(!ids.has(p.id))merged.push(p);
     t.plans=[...t.plans.filter(p=>!matches(p)),...merged];
-    const next={...a,...stamp,lastAttemptAt:time};t.assignments=t.assignments.filter(x=>x!==oldAssignment);t.assignments.push(next);
+    const next={...a,...stamp,consultedTrimester:fresh.trimester||'',lastAttemptAt:time};t.assignments=t.assignments.filter(x=>x!==oldAssignment);t.assignments.push(next);
    }else{
     t.assignments=t.assignments.filter(x=>x!==oldAssignment);t.assignments.push({...oldAssignment,...a,lastAttemptAt:time});
    }
@@ -45,7 +45,7 @@ export function mergeSupervision(saved,fresh,{actor,actorName,situation=''}){
  return {...fresh,query:'',scope:'classes',classes:[...classMap.values()],coverage:[...coverage.values()],teachers:summarizeTeachers([...teachers.values()]),complete:[...coverage.values()].every(c=>c.ok),updatedBy:actor,updatedByName:actorName,selective:!!situation,updateSituation:situation};
 }
 export async function saveSupervision(DB,saved,fresh,options){
- const report=mergeSupervision(saved,fresh,options),token=crypto.randomUUID(),metadata=JSON.stringify({updatedAt:report.updatedAt,updatedBy:report.updatedBy,updatedByName:report.updatedByName,selective:report.selective,updateSituation:report.updateSituation,sourceUrl:report.sourceUrl});
+ const report=mergeSupervision(saved,fresh,options),token=crypto.randomUUID(),metadata=JSON.stringify({updatedAt:report.updatedAt,updatedBy:report.updatedBy,updatedByName:report.updatedByName,selective:report.selective,trimester:report.trimester,updateSituation:report.updateSituation,sourceUrl:report.sourceUrl});
  const statements=[DB.prepare('UPDATE supervision_state SET version=version+1,token=?,metadata=? WHERE id=1 AND version=?').bind(token,metadata,saved.version)];
  for(const c of report.classes){
   const data=JSON.stringify({...report,classes:[c],coverage:report.coverage.filter(x=>x.classId===c.id),teachers:report.teachers.filter(t=>t.assignments.some(a=>a.classId===c.id)).map(t=>({...t,plans:t.plans.filter(p=>p.classId===c.id),assignments:t.assignments.filter(a=>a.classId===c.id)}))});

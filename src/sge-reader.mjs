@@ -1,3 +1,4 @@
+import {planningTrimester} from './supervision.mjs';
 // Shared read-only SGE traversal for the desktop connector and mobile app.
 import {allowedSgeUrl as allowed} from './sge-origin.mjs';
 const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
@@ -40,7 +41,8 @@ async function readPlanning(input,progress=()=>{}){
  const t=teachers.teachers.find(t=>t.assignmentId===input.assignmentId);if(!t)throw Error('O professor mudou. Consulte as turmas novamente.');
  let page=await transport.move({kind:'teacher',id:t.assignmentId});
  if(page.type!=='plans'||!page.complete||page.plans.some(p=>p.classId!==input.classId||p.subjectCode!==t.assignmentId.split(':')[0])||!normalize(page.teacherName).startsWith(normalize(t.name)))throw Error('Página de planejamentos não corresponde ao professor e à turma.');
- const plans=page.plans,name=page.teacherName,sourceUrl=page.sourceUrl;
+ if(![undefined,'',1,2,3].includes(input.trimester))throw Error('Escolha um trimestre válido.');
+ const plans=page.plans.map(p=>({...p,trimester:p.start&&p.end?planningTrimester(p.start,p.end):p.trimester})).filter(p=>!input.trimester||p.trimester===input.trimester),name=page.teacherName,sourceUrl=page.sourceUrl;
  if(input.query&&!normalize(name).includes(normalize(input.query)))return {classId:input.classId,teacherId:t.id,assignmentId:t.assignmentId,name,sourceUrl,complete:true,plans:[]};
  // Each assignment is a separate request so a school-wide search does not
  // depend on keeping one extension service-worker invocation alive.
