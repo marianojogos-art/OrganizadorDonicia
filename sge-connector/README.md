@@ -8,6 +8,10 @@ A leitura autenticada foi validada, e os resultados compartilhados persistiram a
 
 Para atualizar a extensão, baixe o ZIP na Supervisão, substitua os arquivos da pasta instalada, abra `chrome://extensions` (ou a página de extensões do Edge), recarregue **Organizador Donícia — Supervisão SGE** e depois recarregue o Organizador. Confira `1.2.3` nos detalhes da extensão. Mantenha SGE e Organizador no mesmo perfil do navegador.
 
+## Melhoria preparada no conector 1.3.0
+
+A espera pelo SGE confere o estado atual da aba antes de injetar os scripts e identifica redirecionamentos fora do SGE. A tela informa a versão disponível e a detectada.
+
 ## Subseções e reinício da Supervisão
 
 “Consultar turmas” reúne seleção de turmas, configuração do conector, progresso e atualização por Situação. “Trabalhar por professor” reúne seleção do professor, filtros, resultados, acesso à aprovação no SGE e relatório de ocorrências. Concluir uma consulta ou carregar resultados salvos abre automaticamente o trabalho por professor. Alternar as subseções preserva a consulta e a seleção.
@@ -49,6 +53,12 @@ O conector 1.1.0 envia o progresso da leitura de cada página de turmas e de cad
 A interface também oferece um filtro geral por Situação e um filtro independente em cada professor, tanto na prévia quanto no resultado por trimestre. As opções vêm das situações efetivamente retornadas pelo SGE, incluindo “Não informada”, com contagem por opção. Os filtros se combinam e podem ser limpos. A lista informa quantos planejamentos estão visíveis; a síntese mantém os totais da consulta completa. Os filtros permanecem selecionados enquanto novos planejamentos chegam na prévia. Esse ajuste foi publicado em 06/10/2026 na versão `d4783e1f-b86a-415c-8694-2fe628a11a74`, após os 62 testes passarem.
 
 O conector 1.2.0 aceita atualizações seletivas: lê a lista do vínculo e abre apenas os planejamentos escolhidos pela Situação salva e os novos encontrados. Os registros preservados mantêm suas datas e links no Organizador. Substituir os arquivos da extensão e recarregá-la para usar essa otimização.
+
+## Conector 1.3.0 — consulta por trimestre
+
+A consulta permite escolher todos os períodos ou um trimestre: março a maio, junho a setembro e outubro a dezembro. O conector abre somente os planejamentos cujas datas estejam inteiramente no período selecionado. Períodos que cruzam trimestres aparecem em “Trimestre a conferir” ao consultar todos. O servidor valida o filtro novamente. Atualizações preservam registros e datas dos outros trimestres; apenas ausências dentro do período consultado são marcadas.
+
+Os nomes das turmas são padronizados na apresentação e no relatório, preservando os identificadores do SGE. Exemplo fictício: “6º ano · Turma 61 · Matutino”.
 
 O conector 1.2.1 reconhece as sessões do SGE em `www.sgebr.com.br` e `www.sgebr.net.br`. Substitua os arquivos da extensão pela nova distribuição, recarregue-a em Extensões e recarregue o Organizador. A consulta mantém o domínio da sessão aberta.
 

@@ -66,3 +66,24 @@ test('empty readings differ from failures and disappearing plans remain visibly 
  const newDB=await setup(),empty=await saveSupervision(newDB,await loadSupervision(newDB),fresh,options);assert.equal(empty.teachers[0].summary.total,0);assert.equal(empty.teachers[0].summary.failedAssignments,0);
  f.snapshot.entries[1]={path:f.snapshot.entries[1].path,error:'Falha'};const fail=await saveSupervision(newDB,empty,await read(f),options);assert.equal(fail.teachers[0].summary.failedAssignments,1);
 });
+
+test('trimester save preserves other periods, marks only missing plans in scope and persists scope',async()=>{
+ const DB=await setup(),f=fixture(),fresh=await read(f);fresh.updatedAt='2026-10-06T10:00:00Z';const saved=await saveSupervision(DB,await loadSupervision(DB),fresh,options);
+ f.trimester=1;f.snapshot.entries[1].data.plans=[];
+ const current=await read(f);current.updatedAt='2026-10-06T11:00:00Z';assert.equal(current.teachers[1].plans.length,1);
+ const next=await saveSupervision(DB,saved,current,options),ana=next.teachers.find(t=>t.id==='mat-1');
+ assert.equal(ana.plans.find(p=>p.trimester===1).notFound,true);const preserved=ana.plans.find(p=>p.trimester===2);assert.equal(preserved.notFound,undefined);assert.equal(preserved.checkedAt,fresh.updatedAt);
+ const loaded=await loadSupervision(DB);assert.equal(loaded.trimester,1);assert.equal(loaded.teachers[0].assignments[0].consultedTrimester,1);
+ assert.deepEqual(updateTargets(saved,{...f,updateSituation:'Planejamento finalizado'}),[]);
+ await assert.rejects(read({...f,trimester:4}),/trimestre válido/);
+});
+test('query UI includes trimester in request and formats class names without changing identifiers',async()=>{
+ const f=fixture(),html=await readFile(new URL('../src/index.html',import.meta.url),'utf8'),{document,window}=parseHTML(html),context=vm.createContext({document,window,URL,Date,Intl,setTimeout:()=>{},FormData});
+ vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1].replace('});boot();','});'),context);context.directory=f.snapshot.directory;
+ vm.runInContext("currentUser={role:'direction'};state.section='supervisao';supervision.directory=directory;supervision.directory.classes[0].name='6º ano - 61-TURMA 61 - Matutino';supervision.selected.add(directory.classes[0].id);render()",context);
+ assert.equal(document.querySelector('[data-supervision-class]').textContent,'6º ano · Turma 61 · Matutino');assert.equal(document.querySelector('[data-supervision-class]').dataset.supervisionClass,classId);
+ const picker=document.querySelector('[data-supervision-trimester]');picker.querySelector('[value="2"]').selected=true;picker.dispatchEvent(new window.Event('change',{bubbles:true}));
+ vm.runInContext("api=async()=>({classes:[],teachers:[],coverage:[],updatedAt:new Date().toISOString(),complete:true});supervisionBridge=async()=>({});collectSupervisionSnapshot=async input=>{globalThis.sent=input;return {}}",context);await vm.runInContext('confirmSupervision()',context);assert.equal(context.sent.trimester,2);
+ assert.equal(vm.runInContext("supervisionClassName('Apoio - 2-TURMA APOIO - Vespertino')",context),'Apoio · Turma 2 · Vespertino');assert.equal(vm.runInContext("supervisionClassName('AEE - 1 - Matutino')",context),'AEE · Turma 1 · Matutino');
+ vm.runInContext('resetSupervision()',context);assert.equal(vm.runInContext('supervision.trimester',context),'');
+});
