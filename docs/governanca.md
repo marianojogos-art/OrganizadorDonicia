@@ -23,7 +23,7 @@ Após aprovação específica para limpeza: executar `git fetch --prune origin`,
 
 O arquivo [main-ruleset.proposed.json](main-ruleset.proposed.json) é uma proposta revisável para main, não uma chamada à API. Revisar e aprovar depois que os dois checks aparecerem e passarem em PRs reais. Exigir PR e checks `validate` e `mobile-bundle`, branch atualizada, bloquear force-push/exclusão. Não há bypass proposto. Com proprietário único, iniciar com zero aprovações obrigatórias; exigir uma quando houver segundo revisor habilitado. Não exigir histórico linear: a conciliação Android preserva merge e ambos os pais. Verificar opções/plano do GitHub e identidade dos checks antes de aplicar.
 
-A integração Cloudflare existente publica main automaticamente. Merge exige aprovação de publicação e janela para migração D1; aprovação de um PR draft não equivale a autorização para produção. Actions usa somente `contents: read`, sem secrets, deploy, assinatura ou upload de APK.
+A integração Cloudflare existente publica main automaticamente. A autorização de 11/10/2026 permite integrar/publicar etapas verificadas no destino existente; conferir migrações e janela D1 sem destruir dados. Alteração de segurança ou exclusão continua pendente. Actions usa somente `contents: read`, sem secrets, deploy, assinatura ou upload de APK.
 
 ## Plano de releases
 

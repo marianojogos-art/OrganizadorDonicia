@@ -114,6 +114,6 @@ No navegador do celular, é possível usar a gestão e consultar os resultados s
 
 ## Cloudflare e histórico
 
-A integração GitHub/Cloudflare registrada usa a branch `main`, Worker `organizadordonicia` e banco D1 separado de prévia. Fazer merge pode disparar publicação. Consulte [o procedimento de deploy](docs/deploy.md) antes de alterar a integração ou executar comandos remotos. Commit, push e PR não autorizam merge, migração remota ou publicação.
+A integração GitHub/Cloudflare registrada usa a branch `main`, Worker `organizadordonicia` e banco D1 separado de prévia. Fazer merge pode disparar publicação. Consulte [o procedimento de deploy](docs/deploy.md) antes de alterar a integração ou executar comandos remotos. A autorização vigente de 11/10/2026 permite integrar e publicar etapas concluídas/verificadas no destino existente, conforme [AGENTS.md](AGENTS.md). Alterações de segurança, dados ou destino exigem revisão própria.
 
 As primeiras versões de persistência, Cloudflare Access e Supervisão são documentadas em 06/10/2026. Totais antigos de testes são fotografias das respectivas revisões. O [CHANGELOG.md](CHANGELOG.md) e os PRs vinculados identificam as mudanças; resultados atuais devem apontar para o commit e a execução de CI correspondentes.

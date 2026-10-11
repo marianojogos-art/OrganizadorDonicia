@@ -11,7 +11,7 @@ Leia [AGENTS.md](AGENTS.md) antes de editar. O repositório é público: não in
 5. Revise `git diff --check`, `git diff` e arquivos novos. Atualize a documentação e o [changelog](CHANGELOG.md) quando o comportamento ou processo mudar.
 6. Faça commits descritivos, envie a branch e abra PR **draft**, citando problema, comportamento final, verificações e limitações. Confirme o SHA remoto e a CI antes de informar que está sincronizado.
 
-Commit, push e PR são permitidos no trabalho de organização. Merge na `main`, produção, migração remota, proteção/rulesets, remoção de branches e releases publicadas dependem de autorização específica. A integração Cloudflare pode publicar após um merge.
+Commit, push e PR são permitidos no trabalho de organização. A autorização vigente permite integrar etapas verificadas na `main` e publicar no Worker existente, sem exigir gerenciamento de branches ou testes locais pelo usuário. Proteção/rulesets, remoção de branches e releases publicadas continuam dependendo de autorização específica; nenhuma alteração destrutiva de dados está autorizada. A integração Cloudflare pode publicar após um merge.
 
 ## Revisão
 
