@@ -60,8 +60,8 @@ export function parseSgePlans(document,url){
   if(!start||!end||start>end)throw Error('Período do planejamento não reconhecido.');
   return {id:rowValue(row,'PLAULASEQ'),title:rowValue(row,'_PERIODOPLANO'),start,end,lessons:Number(rowValue(row,'PLAULANUMAULAS')),includedAt:rowValue(row,'PLAULADATHORINC'),situation:row.querySelector('img[id^="_SITUACAO_"]')?.getAttribute('title')?.trim()||null,situationCode:rowValue(row,'PLAULASITUACAO'),trimester:null,row:slot,classId:classKey(row),subjectCode:rowValue(row,'DISCOD'),url:null};
  });
- // The explicit empty page has no grid; its legacy pagination metadata is not a list.
- const pagination=grid?navigation(document):{current:1,last:1};
+ // SGE retains a hidden header-only grid on empty pages with invalid legacy pagination.
+ const pagination=emptyPlans(document)&&plans.length===0?{current:1,last:1}:navigation(document);
  return {type:'plans',teacherName,subject,plans,sourceUrl,pagination,complete:pagination.last===1};
 }
 export function parseSgePage(document,url){
