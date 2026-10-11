@@ -21,7 +21,8 @@ function completed(tabId){
 }
 async function snapshot(tabId){
  await chrome.scripting.executeScript({target:{tabId},world:'MAIN',files:['page-runtime.js']});
- const result=await chrome.scripting.executeScript({target:{tabId},world:'MAIN',func:()=>window.__doniciaSge.snapshot()});
+ const result=await chrome.scripting.executeScript({target:{tabId},world:'MAIN',func:()=>{try{return window.__doniciaSge.snapshot()}catch(e){return {readError:e.message}}}});
+ if(result[0]?.result?.readError)throw Error(result[0].result.readError);
  if(!result[0]?.result)throw Error('Não foi possível ler a página do SGE. Verifique se a sessão está autenticada.');
  return result[0].result;
 }
