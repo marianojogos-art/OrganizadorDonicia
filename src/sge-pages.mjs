@@ -1,6 +1,6 @@
 import {allowedSgeUrl} from './sge-origin.mjs';
 export const sgeBase='https://www.sgebr.net.br/sge8105/';
-const value=(node,name)=>node.querySelector('input[name="'+name+'"]')?.getAttribute('value')?.trim()||'';
+const value=(node,name)=>{const field=node.querySelector('input[name="'+name+'"]');return (field?.value??field?.getAttribute('value')??'').trim()};
 const rowValue=(row,name)=>[...row.querySelectorAll('input[name]')].find(x=>new RegExp('^'+name+'_\\d{4}$').test(x.name))?.getAttribute('value')?.trim()||'';
 const clean=node=>node?.textContent.replace(/\s+/g,' ').trim()||'';
 const contextKeys=['UECOD','CURANO','GRACOD','TRNCOD','SECNUM','TURNUM'];
