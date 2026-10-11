@@ -2,48 +2,43 @@
 
 Projeto escolar independente para a EBM Donícia Maria da Costa, publicado em [Organizador Donícia](https://organizadordonicia.carijo.workers.dev/) e protegido por Cloudflare Access. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. Não utiliza recursos operacionais da Lepidus.
 
-## Estado verificado após o PR8 — 10/10/2026
+## Componentes e estado de referência — 11/10/2026
 
-A base desta revisão é o commit de produção [`bcebc67`](https://github.com/marianojogos-art/OrganizadorDonicia/commit/bcebc67d1c3a75e59b9f53ad740ff0b425bed8ce). O deploy do PR8 foi confirmado como **Ready**, com **100% do tráfego**, versão Cloudflare com prefixo `bceb7364`. Os registros abaixo são uma fotografia dessa publicação, não uma consulta de status em tempo real.
+Esta documentação parte da `main` no commit [`32b11d8`](https://github.com/marianojogos-art/OrganizadorDonicia/commit/32b11d8), que integrou o [PR11](https://github.com/marianojogos-art/OrganizadorDonicia/pull/11). Os números abaixo identificam componentes diferentes; não são uma release conjunta.
 
-| Componente | Versão / referência | Observação |
+| Componente | Versão na base | Distribuição e limites |
 | --- | --- | --- |
-| Site | `package.json`: `2.0.0`; publicação identificada pelo commit | O número do pacote não muda a cada PR; o commit e o deployment identificam o código publicado. |
-| Conector Chrome/Edge | `1.2.3` em `sge-connector/manifest.json` | Distribuição em `/sge-connector.zip`, após login. Arquivos instalados neste PC e ZIP foram conferidos na publicação do PR6. |
-| Aplicativo nativo | `mobile-sge/package.json`: `1.0.0` | Projeto separado; veja os limites de instalação e atualização em [mobile-sge/README.md](mobile-sge/README.md). Os PRs7/8 não geraram outro APK/IPA. |
-| Banco de produção | `donicia-school` | Binding `DB`; cinco migrações versionadas. |
-| Banco de prévia | `donicia-school-preview` | Isolado da produção; URLs públicas de prévia desativadas. |
+| Web / API Workers | `package.json`: `2.0.0` | O commit e o deployment identificam cada publicação; o número do pacote não muda a cada PR. |
+| Extensão Chrome/Edge | `sge-connector/manifest.json`: `1.3.0` | O build gera o ZIP e a pasta descompactada. Reinstalar/recarregar a extensão para atualizar a versão instalada. |
+| Aplicativo Expo | `mobile-sge/package.json` e `app.json`: `1.0.0` na base | A conciliação Android `1.0.1` do PR10 é trabalho separado; código, exportação e APK instalado têm evidências diferentes. |
+| Banco | `migrations/`: cinco migrações na base | Produção `donicia-school`; prévia isolada `donicia-school-preview`. |
 
-### Mudanças publicadas
+O PR11 registra publicação Cloudflare `d777092a-f6b0-4564-bac5-8b940b03d10d`, em 11/10/2026 às 04:42:58 UTC. Esse registro histórico não comprova o status atual do Worker, a atualização de uma extensão instalada ou uma nova consulta autenticada. A `main` contém conector `1.3.0`, consulta por trimestre, nomes de turmas padronizados e espera pelo carregamento real do SGE. A referência anterior `1.2.3` pertence ao PR6. O [changelog](CHANGELOG.md) registra a sequência sem inventar tags ou releases.
 
-- [PR1](https://github.com/marianojogos-art/OrganizadorDonicia/pull/1), [PR2](https://github.com/marianojogos-art/OrganizadorDonicia/pull/2) e [PR3](https://github.com/marianojogos-art/OrganizadorDonicia/pull/3): resultados por professor, relatório de ocorrências, diagnóstico de falhas, subseções e reinício da Supervisão.
-- [PR4](https://github.com/marianojogos-art/OrganizadorDonicia/pull/4), [PR5](https://github.com/marianojogos-art/OrganizadorDonicia/pull/5) e [PR6](https://github.com/marianojogos-art/OrganizadorDonicia/pull/6): conexão com os domínios do SGE, navegação inicial e leitura de listas vazias, incluindo paginação zero e grade oculta. Conector final `1.2.3`.
-- [PR7](https://github.com/marianojogos-art/OrganizadorDonicia/pull/7): navegação e leiaute adaptados ao smartphone, tabelas por registro, campos maiores e formulários ajustados à altura da tela.
-- [PR8](https://github.com/marianojogos-art/OrganizadorDonicia/pull/8): agenda mensal por espaço, seleção do dia, contagem de agendamentos e reserva com data/espaço preenchidos.
+A branch `app-android-1-0-1` deve ser preservada. Integrar sua compatibilidade com a web atual exige revisar os conflitos e validar o conjunto; isso não equivale a compilar, assinar, instalar ou testar um APK `1.0.1`.
 
-### Validação e limites atuais
+## Começar e encontrar a documentação
 
-- **94 testes da raiz aprovados** e `npm run build` concluído na versão do PR8. A suíte cobre API, autenticação, persistência, SGE, navegação móvel e agenda mensal, incluindo ano bissexto e virada de ano.
-- As oito seções foram verificadas no navegador em 320, 390, 768 e 1366 px no PR7; a agenda mensal foi verificada nas mesmas larguras no PR8, sem rolagem horizontal da página. A verificação móvel usa emulação de viewport no Chromium, não um aparelho físico.
-- Em produção, a visão mensal mostrou a reserva existente; alternância semana/mês, navegação entre meses e preenchimento da nova reserva foram conferidos sem criar dados de teste no banco de produção.
-- A leitura real do SGE com o conector `1.2.3` foi concluída e os resultados salvos permaneceram após recarregar o site. Links diretos podem continuar indisponíveis conforme o comportamento do SGE; nesse caso, a interface oferece o acesso pela lista do professor.
-- A suíte de `mobile-sge` e a geração dos runtimes foram executadas nesta revisão documental. Isso não equivale a gerar, instalar ou validar outro APK/IPA. Recuperação de backup D1, geração Drizzle e validação física completa do aplicativo nativo continuam sem nova evidência nesta revisão.
+Requer Node.js 24, npm e dependências fixadas nos dois lockfiles:
 
-Orientações para contribuições e autorizações estão em [AGENTS.md](AGENTS.md). Alterações na `main` disparam publicação; registrar um PR não autoriza seu merge/deploy.
+```sh
+npm ci
+npm --prefix mobile-sge ci
+npm run validate
+npm run dev
+```
 
-## Atualização nativa Android 1.0.1
+O servidor de demonstração abre `http://127.0.0.1:8787`, usa identidade fictícia e SQLite local em `.local/`. Não inserir dados reais. O Worker de produção verifica identidade e permissões; a identidade de demonstração existe somente em `scripts/dev.mjs`.
 
-A atualização do aplicativo prepara `versionCode` 2 e empacota o leitor SGE do conector 1.2.3, com suporte aos dois domínios e correções de listas vazias. O WebView utiliza o site publicado com o leiaute móvel e a agenda mensal. Os 14 testes móveis e a exportação Android Hermes passaram; a instalação e a consulta real no aparelho ainda precisam ser verificadas. Instruções de build e assinatura estão em [mobile-sge/README.md](mobile-sge/README.md). A tabela acima preserva o estado histórico da publicação do PR8.
+- [Desenvolvimento e validação](docs/desenvolvimento.md): mapa de pastas, scripts, testes, arquivos gerados e limitações.
+- [Governança e limpeza segura](docs/governanca.md): inventário de branches e proteção proposta, pendentes de aprovação.
+- [Verificação desta revisão](docs/verificacao.md): resultados, SHAs e limites de execução.
+- [Contribuição](CONTRIBUTING.md): revisão, commits, PRs e cuidado com dados/credenciais.
+- [Deploy e plano de versões](docs/deploy.md): prévia, autorização, migrações, publicação e validação posterior.
+- [Extensão SGE](sge-connector/README.md) e [aplicativo móvel](mobile-sge/README.md): instalação, diferenças e verificação manual.
+- [Orientações do projeto](AGENTS.md) e [revisão inicial](REVIEW.md): regras e contexto histórico.
 
-## Executar localmente
-
-Requer Node.js 24 (SQLite nativo). Execute `npm ci` para instalar as versões fixadas, incluindo Wrangler:
-
-- `npm run build`: gera `dist/index.html` e `dist/app.js` a partir de `src/index.html`
-- `npm test`: testes de API com SQLite real local, JWT RSA no Node e no runtime Workers (Miniflare instalado com Wrangler), e contratos de renderização
-- `npm run dev`: demonstração em `http://127.0.0.1:8787`, somente loopback, com direção fictícia e SQLite em `.local/demo-v3.sqlite`
-
-A identidade fixa do servidor de demonstração está exclusivamente em `scripts/dev.mjs`. O Worker de produção não tem bypass nem modo demo. Reiniciar o servidor preserva o SQLite local. Não inserir dados reais de estudantes ou funcionários na demonstração.
+A CI valida raiz e aplicativo móvel sem publicar produção. Testes automatizados não substituem login institucional, SGE autenticado, aparelho físico nem ensaio de recuperação D1. Evidências históricas do PR8 incluem 94 testes da raiz, build e emulação de viewport; use a execução do commit revisado para conhecer os resultados atuais.
 
 ## O que funciona
 
@@ -117,42 +112,12 @@ No navegador do celular, é possível usar a gestão e consultar os resultados s
 6. Confirmar política escolar de 32 aulas por semana (configurável na tabela settings por migração administrativa), duração das aulas e cadastro de ocupação fixa
 7. Para estudantes: definir finalidade, acesso, retenção, base de autorização e integração antes de ativar qualquer armazenamento
 
-## Conectar GitHub e Cloudflare
+## Cloudflare e histórico
 
-A conexão já existe entre o Worker `organizadordonicia` e `marianojogos-art/OrganizadorDonicia`. Para conferir, abra **Workers & Pages → organizadordonicia → Settings → Builds**. A configuração validada é:
+A integração GitHub/Cloudflare registrada usa a branch `main`, Worker `organizadordonicia` e banco D1 separado de prévia. Fazer merge pode disparar publicação. Consulte [o procedimento de deploy](docs/deploy.md) antes de alterar a integração ou executar comandos remotos. Commit, push e PR não autorizam merge, migração remota ou publicação.
 
-- Branch de produção: `main`
-- Diretório raiz: `/`
-- Versão de Node.js: `24` (variável de build `NODE_VERSION=24`)
-- Comando de build: `npm run build`
-- Comando de deploy: `npm run deploy:cloudflare`
-- O token do build precisa de permissão para editar Workers e o banco D1 configurado, pois o deploy aplica migrações pendentes.
+As primeiras versões de persistência, Cloudflare Access e Supervisão são documentadas em 06/10/2026. Totais antigos de testes são fotografias das respectivas revisões. O [CHANGELOG.md](CHANGELOG.md) e os PRs vinculados identificam as mudanças; resultados atuais devem apontar para o commit e a execução de CI correspondentes.
 
-O nome do Worker no painel deve coincidir com `name` em `wrangler.jsonc`. O deploy usa Wrangler fixado no lockfile, gera os assets e aplica as migrações antes de publicar. Se o banco já foi inicializado manualmente por SQL, confira o esquema e o histórico `d1_migrations` antes de executar a migração inicial novamente; não apague tabelas para resolver um erro de tabela existente.
+## Android conciliado nesta branch
 
-As variáveis de runtime foram configuradas em **Settings → Variables & Secrets**. Se a aplicação Access for recriada, atualize:
-
-- `ACCESS_ISSUER`: URL do time Zero Trust, por exemplo `https://seu-time.cloudflareaccess.com`, sem barra final.
-- `ACCESS_AUD`: Application Audience (AUD) da aplicação Access que protege este Worker.
-
-`keep_vars: true` preserva essas variáveis do painel em novos deploys. Elas não recebem valores vazios do repositório. Variáveis de build não substituem variáveis de runtime. Sem configuração válida do Access e usuário nominal ativo no D1, o Worker recusa o acesso.
-
-`workers.dev` está habilitado no arquivo Wrangler. As URLs públicas de prévia continuam desativadas (`preview_urls: false`); builds de prévia usam o D1 isolado definido no bloco `previews`. A organização Zero Trust `Organizador Donícia` e a aplicação Access foram criadas, com proteção apenas deste Worker. `ACCESS_ISSUER` e `ACCESS_AUD` foram confirmados no runtime, preservando `DB` e `ASSETS`. As contas nominais de direção são provisionadas administrativamente, fora do repositório público. O cadastro nominal continua obrigatório para qualquer usuário adicional, assim como a inclusão na política Access. Google institucional pode ser configurado posteriormente como outro provedor de identidade; o código não contém credenciais Google.
-
-Para publicar pelo terminal após autenticar a conta:
-
-```sh
-npx wrangler login --browser=false --callback-host=127.0.0.1
-npm test
-npm run check:cloudflare
-npx wrangler d1 migrations list donicia-school --remote
-npm run deploy:cloudflare
-```
-
-Referências: [Git integration](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/), [Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/) e [Wrangler configuration](https://developers.cloudflare.com/workers/wrangler/configuration/).
-
-## Histórico anterior
-
-A persistência, autenticação por Cloudflare Access e primeiras versões da Supervisão foram publicadas em 06/10/2026. A migração `0005_supervision.sql` passou a guardar a última consulta por turma e uma revisão global para impedir sobrescritas concorrentes. Falhas preservam registros anteriores; atualizações por Situação mantêm as datas dos registros não relidos.
-
-Os antigos totais de 47, 56, 62 e 74 testes descreviam etapas anteriores. Para a versão atualmente documentada, use as evidências de 94 testes e os PRs listados no início deste arquivo. A origem do projeto e as pendências estão em [REVIEW.md](REVIEW.md).
+Código nativo 1.0.1/versionCode 2 com ponte SGE 1.3.0, dois domínios e controles nativos preservados. Incorpora main e a organização por merges sem reescrever a branch original do PR10. Testes e exportação Hermes aprovados; não foi gerado APK/IPA novo nem feita validação física ou SGE autenticada. Veja [retomada](mobile-sge/RETOMADA.md).

@@ -4,13 +4,13 @@ A versão 1.0.1 abre o próprio site publicado em um WebView para Android e iPho
 
 ## Estado da versão e limites de atualização
 
-O pacote nativo está em `1.0.1`, com `versionCode` Android `2`. O site, o conector de navegador (`1.3.0`) e o aplicativo nativo têm ciclos de versão diferentes. O WebView carrega o site publicado, incluindo o leiaute móvel do PR7 e a agenda mensal do PR8. O runtime SGE é empacotado no aplicativo: as correções do leitor precisam de um novo APK para chegar às instalações existentes.
+O pacote nativo nesta branch está em `1.0.1`, com `versionCode` Android `2`. Web, conector (`1.3.0`) e aplicativo têm ciclos próprios. O WebView carrega o site publicado, mas o runtime SGE é empacotado: correções precisam de novo instalador para chegar a instalações existentes.
 
-A 1.0.1 regenera o leitor compartilhado com as correções do conector 1.3.0: domínios `.net.br` e `.com.br`, campos dinâmicos e listas vazias com paginação zero ou grade oculta. A ponte informa a versão do aplicativo e do conector, conserva o domínio atual no botão **Lista de turmas** e apresenta o motivo original quando uma leitura falha. Os controles nativos têm área de toque de pelo menos 48 px.
+A conciliação preserva os 17 commits originais do [PR10](https://github.com/marianojogos-art/OrganizadorDonicia/pull/10), incorpora a main `32b11d8` e a organização por merges, sem reescrever a branch original. Mantém os dois domínios SGE, campos dinâmicos, listas vazias, domínio atual na Lista de turmas, motivos de erro e controles de toque de pelo menos 48 px. A ponte informa aplicativo `1.0.1` e conector/protocolo `1.3.0`.
 
-Em 10/10/2026, os **14 testes móveis passaram** e o bundle Android Hermes foi exportado (601 módulos). Os testes executam os runtimes empacotados e a consulta integrada com o JavaScript real do site e uma API/banco fictícios. Essa validação não substitui o teste físico do APK, incluindo login, conexão SGE e leitura integrada à Supervisão. Não há emulador Android ou simulador iOS neste PC Linux.
+Os 14 testes móveis e 100 testes raiz passaram na conciliação de 11/10/2026; exportação Hermes não equivale a APK compilado/assinado/testado. Não foi gerado APK novo, nem executado login/SGE autenticado em aparelho. Consulte [verificação](../docs/verificacao.md) e [retomada](RETOMADA.md).
 
-As instruções e os artefatos de Windows abaixo registram o ambiente usado em 06/10/2026; não afirmam que aquelas ferramentas ou credenciais estejam instaladas no PC Linux atual.
+As ferramentas Windows e o APK abaixo registram 06/10/2026, não ferramentas no executor cloud nem acesso ao computador pessoal. O histórico de APK `1.0.0` permanece separado da preparação `1.0.1`.
 
 ## Uso
 
