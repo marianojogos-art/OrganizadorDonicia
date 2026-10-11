@@ -8,6 +8,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $taskApp = $AppDirectory
 $taskRepo = Split-Path $taskApp -Parent
+$taskVersion = (Get-Content -LiteralPath (Join-Path $taskApp 'package.json') -Raw | ConvertFrom-Json).version
+$taskApkName = "organizador-donicia-$taskVersion-android.apk"
 $taskTools = if ($ToolsDirectory) { $ToolsDirectory } else { Join-Path $taskRepo '.tools/android-local' }
 # Native tools cannot consistently handle long Windows paths and mixed subst roots.
 # Build in an ASCII staging path; it is a disposable copy, with no credentials copied.
@@ -23,11 +25,11 @@ if (!$PSBoundParameters.ContainsKey('AppDirectory')) {
         & robocopy $taskApp $taskStageApp /E /MT:8 /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /XD $taskExcludes /XF credentials.json
         if ($LASTEXITCODE -ge 8) { throw 'Falha ao preparar a pasta temporária.' }
         New-Item -ItemType Directory -Force -Path (Join-Path $taskStage 'src') | Out-Null
-        Copy-Item -LiteralPath (Join-Path $taskRepo 'src/sge-reader.mjs'),(Join-Path $taskRepo 'src/sge-pages.mjs') -Destination (Join-Path $taskStage 'src')
+        Copy-Item -LiteralPath (Join-Path $taskRepo 'src/sge-reader.mjs'),(Join-Path $taskRepo 'src/sge-pages.mjs'),(Join-Path $taskRepo 'src/sge-origin.mjs') -Destination (Join-Path $taskStage 'src')
         $taskCredentials = if ($CredentialsPath) { $CredentialsPath } else { Join-Path $taskApp 'credentials.json' }
         & $PSCommandPath -AppDirectory $taskStageApp -ToolsDirectory $taskTools -CredentialsPath $taskCredentials -SkipRuntime -Architectures $Architectures
         New-Item -ItemType Directory -Force -Path (Join-Path $taskApp 'artifacts') | Out-Null
-        Copy-Item -LiteralPath (Join-Path $taskStageApp 'artifacts/organizador-donicia-1.0.0-android.apk') -Destination (Join-Path $taskApp 'artifacts/organizador-donicia-1.0.0-android.apk')
+        Copy-Item -LiteralPath (Join-Path $taskStageApp "artifacts/$taskApkName") -Destination (Join-Path $taskApp "artifacts/$taskApkName")
     } finally { Pop-Location }
     return
 }
@@ -78,7 +80,7 @@ android.buildTypes.release.signingConfig = android.signingConfigs.organizadorRel
         if ($LASTEXITCODE) { throw 'Falha na compilação Android.' }
     } finally { Pop-Location }
     New-Item -ItemType Directory -Force -Path 'artifacts' | Out-Null
-    $taskApk = Join-Path $taskApp 'artifacts/organizador-donicia-1.0.0-android.apk'
+    $taskApk = Join-Path $taskApp "artifacts/$taskApkName"
     Copy-Item -LiteralPath 'android/app/build/outputs/apk/release/app-release.apk' -Destination $taskApk
     & "$env:ANDROID_HOME/build-tools/36.0.0/apksigner.bat" verify --verbose --print-certs $taskApk
     if ($LASTEXITCODE) { throw 'Assinatura do APK inválida.' }
