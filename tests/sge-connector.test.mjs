@@ -6,11 +6,14 @@ import {build} from 'esbuild';
 import {fileURLToPath} from 'node:url';
 const script=(await build({entryPoints:[fileURLToPath(new URL('../sge-connector/background.mjs',import.meta.url))],bundle:true,write:false,platform:'browser',format:'iife'})).outputFiles[0].text;
 const base='https://www.sgebr.net.br/sge8105/',sourceUrl=base+'hselgerenciamentoplanoaula.aspx?catalog',key='106801:2026:9135:1:1:11';
-function browser({blankRace=false,redirectOutside=false,neverReady=false}={}){
+function browser(options={},initialBlankComplete=false){
+ const origin=typeof options==='string'?options:'https://www.sgebr.net.br';
+ const {blankRace=initialBlankComplete,redirectOutside=false,neverReady=false}=typeof options==='string'?{}:options;
+ const base=origin+'/sge8105/',sourceUrl=base+'hselgerenciamentoplanoaula.aspx?catalog';
  const pages={first:{type:'classes',classes:[{id:key,name:'Turma 11',url:sourceUrl}],sourceUrl,pagination:{current:1,last:2},total:2},second:{type:'classes',classes:[{id:key.replace(/11$/,'12'),name:'Turma 12',url:sourceUrl}],sourceUrl,pagination:{current:2,last:2},total:2},teachers:{type:'teachers',classNumber:'11',grade:'9135',stage:'1',complete:true,sourceUrl:base+'hplanejamentodisciplinasger.aspx?teacher',teachers:[{id:'mat-1',assignmentId:'202:1',name:'Ágata',subject:'Português'}]},plans:{type:'plans',teacherName:'Ágata Fictícia',complete:true,sourceUrl:base+'hplanejamentoaulager.aspx?plans',plans:[{id:'7',classId:key,subjectCode:'202',title:'Outubro',situation:'Planejamento finalizado',trimester:null,url:null}]},detail:{type:'detail',sourceUrl:base+'hplanejamentoaulaconsulta.aspx?direct'}};
  let state='first',onMessage,tabUrl='about:blank',tabStatus='complete',pendingUrl;const listeners=new Set(),actions=[],removed=[],messages=[];
  const finish=()=>{if(neverReady)return;(blankRace?fn=>setTimeout(fn,0):queueMicrotask)(()=>{tabUrl=redirectOutside?'https://login.example/':pages[state].sourceUrl;tabStatus='complete';pendingUrl=undefined;for(const listener of [...listeners])listener(10,{status:'complete'})})};
- const chrome={tabs:{onUpdated:{addListener:l=>listeners.add(l),removeListener:l=>listeners.delete(l)},async query(){return [{id:1,url:sourceUrl}]},async create(){tabUrl='about:blank';tabStatus='complete';pendingUrl=undefined;return {id:10}},async get(){return {id:10,url:tabUrl,status:tabStatus,pendingUrl}},async sendMessage(id,message){messages.push(message)},async remove(id){removed.push(id)},async update(id,{url}){if(blankRace&&tabUrl==='about:blank'){for(const listener of [...listeners])listener(10,{status:'complete'});await Promise.resolve()}tabStatus='loading';pendingUrl=url;state=url.includes('hselgerenciamentoplanoaula')?'first':url.includes('hplanejamentodisciplinasger')?'teachers':url.includes('hplanejamentoaulager')?'plans':'detail';finish()}},runtime:{onMessage:{addListener:l=>onMessage=l}},scripting:{async executeScript(opts){if(opts.files){assert.notEqual(tabUrl,'about:blank','never inject into blank tab');assert.equal(tabStatus,'complete');assert.ok(tabUrl.startsWith(base),'never inject outside SGE');return [];}context.window.__doniciaSge={snapshot:()=>structuredClone(pages[state]),open(action){actions.push(action);if(action.kind==='next')state='second';else if(action.kind==='first')state='first';else if(action.kind==='class')state='teachers';else if(action.kind==='teacher')state='plans';else if(action.kind==='plan')state='detail';else throw Error('Unknown action');finish();return true}};const result=vm.runInContext('('+opts.func.toString()+')',context)(...(opts.args||[]));return [{result}]}}};
+ const chrome={tabs:{onUpdated:{addListener:l=>listeners.add(l),removeListener:l=>listeners.delete(l)},async query(){return [{id:1,url:sourceUrl}]},async create(){tabUrl='about:blank';tabStatus='complete';pendingUrl=undefined;return {id:10}},async get(){return {id:10,url:tabUrl,status:tabStatus,pendingUrl}},async sendMessage(id,message){messages.push(message)},async remove(id){removed.push(id)},async update(id,{url}){if(blankRace&&tabUrl==='about:blank'){for(const listener of [...listeners])listener(10,{status:'complete'});await Promise.resolve()}tabStatus='loading';pendingUrl=url;state=url.includes('hselgerenciamentoplanoaula')?'first':url.includes('hplanejamentodisciplinasger')?'teachers':url.includes('hplanejamentoaulager')?'plans':'detail';finish()}},runtime:{onMessage:{addListener:l=>onMessage=l}},scripting:{async executeScript(opts){if(opts.files){assert.notEqual(tabUrl,'about:blank','never inject into blank tab');assert.equal(tabStatus,'complete');assert.ok(tabUrl.startsWith(base),'never inject outside SGE');return [];}context.window.__doniciaSge={snapshot:()=>{if(pages[state].readError)throw Error(pages[state].readError);return structuredClone(pages[state])},open(action){actions.push(action);if(action.kind==='next')state='second';else if(action.kind==='first')state='first';else if(action.kind==='class')state='teachers';else if(action.kind==='teacher')state='plans';else if(action.kind==='plan')state='detail';else throw Error('Unknown action');finish();return true}};const result=vm.runInContext('('+opts.func.toString()+')',context)(...(opts.args||[]));return [{result}]}}};
  const context=vm.createContext({chrome,window:{},URL,Promise,setTimeout:neverReady?(fn,ms)=>setTimeout(fn,Math.min(ms,20)):setTimeout,clearTimeout});vm.runInContext(script,context);
  const send=(command,input,url='https://organizadordonicia.carijo.workers.dev/')=>new Promise(resolve=>{if(!onMessage({id:'request-'+command,command,input},{url,tab:{id:50}},resolve))resolve({ignored:true})});
  return {send,actions,removed,messages,pages};
@@ -60,7 +63,7 @@ test('connector stops outside SGE and releases its temporary tab before another 
 test('connector times out a tab that never reaches SGE and keeps permissions restricted',async()=>{
  const b=browser({neverReady:true});const response=await b.send('directory');assert.match(response.error,/demorou a abrir/);assert.deepEqual(b.removed,[10]);
  const manifest=JSON.parse(await readFile(new URL('../sge-connector/manifest.json',import.meta.url),'utf8'));
- assert.equal((await b.send('ping')).data.version,manifest.version);assert.deepEqual(manifest.host_permissions,['https://www.sgebr.net.br/sge8105/*']);
+ assert.equal((await b.send('ping')).data.version,manifest.version);assert.deepEqual(manifest.host_permissions,['https://www.sgebr.net.br/sge8105/*','https://www.sgebr.com.br/sge8105/*']);
 });
 
  test('trimester query opens only matching dates and leaves cross-period plans unclassified',async()=>{
@@ -69,3 +72,23 @@ test('connector times out a tab that never reaches SGE and keeps permissions res
  assert.ok(result.data,result.error);assert.deepEqual(result.data.plans.map(p=>p.id),['june']);assert.equal(result.data.plans[0].trimester,2);assert.deepEqual(b.actions.filter(a=>a.kind==='plan').map(a=>a.id),['june']);
  const empty=await b.send('planning',{classId:key,assignmentId:'202:1',sourceUrl:base+'hplanejamentodisciplinasger.aspx?teacher',trimester:1,query:'Outro'});assert.equal(empty.data.plans.length,0);
  });
+
+test('connector discovers the com.br session and reads classes and planning on its original domain',async()=>{
+ const b=browser('https://www.sgebr.com.br'),directory=await b.send('directory');
+ assert.equal(directory.data.classes.length,2);
+ const teachers=await b.send('teachers',{classId:key,sourceUrl:directory.data.sourceUrl});
+ assert.equal(teachers.data.teachers.length,1);
+ const plans=await b.send('planning',{classId:key,assignmentId:'202:1',sourceUrl:teachers.data.sourceUrl});
+ assert.equal(plans.data.plans[0].url,'https://www.sgebr.com.br/sge8105/hplanejamentoaulaconsulta.aspx?direct');
+});
+
+test('connector ignores the temporary blank page completing before SGE navigation',async()=>{
+ const b=browser('https://www.sgebr.com.br',true),result=await b.send('directory');
+ assert.equal(result.error,undefined);assert.equal(result.data.classes.length,2);assert.deepEqual(b.removed,[10]);
+});
+
+test('connector preserves parser failures thrown inside the SGE page',async()=>{
+ const b=browser();b.pages.plans.readError='Nome do professor não reconhecido na página de planejamentos.';
+ const result=await b.send('planning',{classId:key,assignmentId:'202:1',sourceUrl:base+'hplanejamentodisciplinasger.aspx?teacher'});
+ assert.equal(result.error,b.pages.plans.readError);assert.deepEqual(b.removed,[10]);
+});

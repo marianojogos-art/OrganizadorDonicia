@@ -24,14 +24,17 @@ Uma página HTML com CSS e JavaScript inline; oito módulos; listas fictícias e
 - Cada registro de substituição representa uma aula. Limite de 32 vem do protótipo e não é uma norma validada; semana começa segunda-feira, horário local America/Sao_Paulo
 - Nenhum tratamento oficial de frequência e nenhuma importação automática
 
-## Lacunas deliberadas e próximas etapas
+## Situação atual e próximas etapas
 
-- Identificação da conta/projeto/domínio; Google/Cloudflare Access real e lista nominal
-- Seleção de outra semana na visão de carga das auxiliares (a carga exibida é a semana atual); ocupação fixa, edição e duplicidade de turma já implementadas
-- Política de retenção da auditoria, recuperação D1/backup, paginação e limites operacionais antes de uso real em volume; auditoria mínima transacional implementada
-- Perfil de supervisão específico, autorização granular e observabilidade sem dados pessoais
-- Proposta de alunos só sintética; sem saúde/justificativas livres ou nomes até aprovação
-- Wrangler dry-run, D1 real, tipos Drizzle e visual desktop/mobile real pendentes
+Esta revisão arquitetural começou com a fonte original. A situação de publicação atual é registrada no [README](README.md). Após os PRs1–8, autenticação Access, D1 remoto, seleção de semana das auxiliares, Supervisão compartilhada, leiaute para smartphone e agenda mensal estão implementados e publicados. O PR8 é a base de código desta revisão documental; 94 testes da raiz passaram.
+
+Pendências que permanecem:
+
+- Política de retenção da auditoria, ensaio de recuperação D1/backup, paginação e limites operacionais para maior volume.
+- Perfil de supervisão específico, autorização granular e observabilidade sem dados pessoais.
+- Proposta de estudantes somente sintética; sem ativação de tratamento de dados pessoais.
+- Geração Drizzle e validação física completa do aplicativo nativo. O leiaute do site foi verificado por emulação no Chromium em quatro larguras, além dos fluxos conferidos em produção; isso não comprova instalação/uso do APK ou comportamento no Safari de um iPhone físico.
+- Novos usuários continuam exigindo provisionamento nominal e política Access; Google institucional não foi habilitado como provedor adicional nesta revisão.
 
 ## Revisão independente
 

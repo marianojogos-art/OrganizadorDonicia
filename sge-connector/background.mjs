@@ -1,9 +1,8 @@
 import {createSgeReader} from '../src/sge-reader.mjs';
 const organizerOrigins=new Set(['https://organizadordonicia.carijo.workers.dev','http://127.0.0.1:8787']);
-const sgeOrigin='https://www.sgebr.net.br';
+import {sgeOrigins,allowedSgeUrl as allowed} from '../src/sge-origin.mjs';
 let running=false;
 const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-function allowed(url){const u=new URL(url);if(u.origin!==sgeOrigin||!u.pathname.startsWith('/sge8105/')||u.username||u.password)throw Error('Link fora do SGE.');return u.href}
 function completed(tabId){
  let timer,listener;
  const promise=new Promise((resolve,reject)=>{
@@ -30,7 +29,8 @@ async function snapshot(tabId){
  if(tab.status!=='complete'||tab.pendingUrl||!tab.url||tab.url==='about:blank')throw Error('A aba temporária ainda não terminou de abrir o SGE. Tente novamente.');
  try{allowed(tab.url)}catch{throw Error('A aba de consulta saiu do SGE. Entre novamente no SGE e tente outra vez.')}
  await chrome.scripting.executeScript({target:{tabId},world:'MAIN',files:['page-runtime.js']});
- const result=await chrome.scripting.executeScript({target:{tabId},world:'MAIN',func:()=>window.__doniciaSge.snapshot()});
+ const result=await chrome.scripting.executeScript({target:{tabId},world:'MAIN',func:()=>{try{return window.__doniciaSge.snapshot()}catch(e){return {readError:e.message}}}});
+ if(result[0]?.result?.readError)throw Error(result[0].result.readError);
  if(!result[0]?.result)throw Error('Não foi possível ler a página do SGE. Verifique se a sessão está autenticada.');
  return result[0].result;
 }
@@ -52,7 +52,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
  (async()=>{
   let tabId;
   try{
-   const tabs=await chrome.tabs.query({url:sgeOrigin+'/sge8105/*'});
+   const tabs=await chrome.tabs.query({url:sgeOrigins.map(origin=>origin+'/sge8105/*')});
    const source=tabs.find(t=>new URL(t.url).pathname.toLowerCase().endsWith('/hselgerenciamentoplanoaula.aspx'));
    if(!source)throw Error('Entre no SGE e deixe aberta a página 1, com a lista de turmas dos planejamentos.');
    const tab=await chrome.tabs.create({url:'about:blank',active:false});tabId=tab.id;

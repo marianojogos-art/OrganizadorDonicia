@@ -1,12 +1,35 @@
 # Organizador Donícia — Cloudflare Workers
 
-## Supervisão por professor — 10/10/2026
+Projeto escolar independente para a EBM Donícia Maria da Costa, publicado em [Organizador Donícia](https://organizadordonicia.carijo.workers.dev/) e protegido por Cloudflare Access. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. Não utiliza recursos operacionais da Lepidus.
 
-Os resultados da Supervisão apresentam uma lista para selecionar o professor, indicadores individuais e planejamentos por trimestre. O relatório de ocorrências considera todos os registros do professor, inclusive os ocultos pelos filtros, e oferece download em texto. Consultas interrompidas ou com falhas também geram relatório. O botão “Aprovar no SGE” abre o registro em análise ou a lista do professor para concluir a aprovação no próprio SGE; uma nova consulta confirma a Situação.
+## Estado verificado após o PR8 — 10/10/2026
 
-As mudanças foram registradas para revisão no GitHub sem publicação inicial. Em seguida, o usuário autorizou explicitamente a publicação em 10/10/2026; o resultado da publicação é registrado no [PR #1](https://github.com/marianojogos-art/OrganizadorDonicia/pull/1). O código anterior do conector, persistência e aplicativo móvel também é versionado para manter o histórico completo do projeto. Em 10/10/2026 passaram os 91 testes do site, conector e aplicativo móvel; os builds do site e runtimes móveis foram concluídos. A verificação visual no navegador permaneceu indisponível por restrição de acesso à ferramenta. A orientação permanente de registrar mudanças no GitHub está em `AGENTS.md`.
+A base desta revisão é o commit de produção [`bcebc67`](https://github.com/marianojogos-art/OrganizadorDonicia/commit/bcebc67d1c3a75e59b9f53ad740ff0b425bed8ce). O deploy do PR8 foi confirmado como **Ready**, com **100% do tráfego**, versão Cloudflare com prefixo `bceb7364`. Os registros abaixo são uma fotografia dessa publicação, não uma consulta de status em tempo real.
 
-Projeto escolar independente para a EBM Donícia Maria da Costa. Não usa recursos, conta ou ferramentas operacionais da Lepidus. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. O banco D1 remoto foi inicializado. O endereço é https://organizadordonicia.carijo.workers.dev, protegido por Cloudflare Access.
+| Componente | Versão / referência | Observação |
+| --- | --- | --- |
+| Site | `package.json`: `2.0.0`; publicação identificada pelo commit | O número do pacote não muda a cada PR; o commit e o deployment identificam o código publicado. |
+| Conector Chrome/Edge | `1.2.3` em `sge-connector/manifest.json` | Distribuição em `/sge-connector.zip`, após login. Arquivos instalados neste PC e ZIP foram conferidos na publicação do PR6. |
+| Aplicativo nativo | `mobile-sge/package.json`: `1.0.0` | Projeto separado; veja os limites de instalação e atualização em [mobile-sge/README.md](mobile-sge/README.md). Os PRs7/8 não geraram outro APK/IPA. |
+| Banco de produção | `donicia-school` | Binding `DB`; cinco migrações versionadas. |
+| Banco de prévia | `donicia-school-preview` | Isolado da produção; URLs públicas de prévia desativadas. |
+
+### Mudanças publicadas
+
+- [PR1](https://github.com/marianojogos-art/OrganizadorDonicia/pull/1), [PR2](https://github.com/marianojogos-art/OrganizadorDonicia/pull/2) e [PR3](https://github.com/marianojogos-art/OrganizadorDonicia/pull/3): resultados por professor, relatório de ocorrências, diagnóstico de falhas, subseções e reinício da Supervisão.
+- [PR4](https://github.com/marianojogos-art/OrganizadorDonicia/pull/4), [PR5](https://github.com/marianojogos-art/OrganizadorDonicia/pull/5) e [PR6](https://github.com/marianojogos-art/OrganizadorDonicia/pull/6): conexão com os domínios do SGE, navegação inicial e leitura de listas vazias, incluindo paginação zero e grade oculta. Conector final `1.2.3`.
+- [PR7](https://github.com/marianojogos-art/OrganizadorDonicia/pull/7): navegação e leiaute adaptados ao smartphone, tabelas por registro, campos maiores e formulários ajustados à altura da tela.
+- [PR8](https://github.com/marianojogos-art/OrganizadorDonicia/pull/8): agenda mensal por espaço, seleção do dia, contagem de agendamentos e reserva com data/espaço preenchidos.
+
+### Validação e limites atuais
+
+- **94 testes da raiz aprovados** e `npm run build` concluído na versão do PR8. A suíte cobre API, autenticação, persistência, SGE, navegação móvel e agenda mensal, incluindo ano bissexto e virada de ano.
+- As oito seções foram verificadas no navegador em 320, 390, 768 e 1366 px no PR7; a agenda mensal foi verificada nas mesmas larguras no PR8, sem rolagem horizontal da página. A verificação móvel usa emulação de viewport no Chromium, não um aparelho físico.
+- Em produção, a visão mensal mostrou a reserva existente; alternância semana/mês, navegação entre meses e preenchimento da nova reserva foram conferidos sem criar dados de teste no banco de produção.
+- A leitura real do SGE com o conector `1.2.3` foi concluída e os resultados salvos permaneceram após recarregar o site. Links diretos podem continuar indisponíveis conforme o comportamento do SGE; nesse caso, a interface oferece o acesso pela lista do professor.
+- A suíte de `mobile-sge` e a geração dos runtimes foram executadas nesta revisão documental. Isso não equivale a gerar, instalar ou validar outro APK/IPA. Recuperação de backup D1, geração Drizzle e validação física completa do aplicativo nativo continuam sem nova evidência nesta revisão.
+
+Orientações para contribuições e autorizações estão em [AGENTS.md](AGENTS.md). Alterações na `main` disparam publicação; registrar um PR não autoriza seu merge/deploy.
 
 ## Executar localmente
 
@@ -20,8 +43,8 @@ A identidade fixa do servidor de demonstração está exclusivamente em `scripts
 
 ## O que funciona
 
-- Supervisão (publicada em 06/10/2026): seleção de turmas do SGE, consulta após confirmação, agrupamento por matrícula do professor, trimestres recolhíveis e síntese de Situação. O conector de navegador requer instalação e validação em uma sessão real; veja `sge-connector/README.md`.
-- Reservas: agenda semanal por espaço, com navegação entre semanas, reservas e ocupações fixas no mesmo dia, e reserva direta da data escolhida; responsável nominal obrigatório, preenchido inicialmente com o usuário atual; criar, editar e cancelar pelo criador ou direção; impedir sobreposição no banco de forma atômica; ocupação semanal fixa com período de validade
+- Supervisão: consulta de turmas pelo conector, resultados compartilhados salvos no D1, seleção por professor, filtros por Situação, trimestres, relatório de ocorrências e reinício da tela sem excluir os dados salvos. Veja [sge-connector/README.md](sge-connector/README.md).
+- Reservas: agenda semanal e mensal por espaço, com navegação entre períodos, reservas e ocupações fixas no mesmo dia, e reserva direta da data escolhida; responsável nominal obrigatório, preenchido inicialmente com o usuário atual; criar, editar e cancelar pelo criador ou direção; impedir sobreposição no banco de forma atômica; ocupação semanal fixa com período de validade
 - Tarefas: criar/editar/remover, prazo, responsável nominal, estados; somente direção delega ou restringe; restritas são filtradas no servidor
 - Substituições: professores e aulas do WebHorário, busca por nome, dia atual e quantidade de dias corridos; prévia por turma/horário, auxiliar padrão para todas as aulas e divisão por aula; troca direta no quadro semanal, confirmação de realização e relatório com limite semanal; conflitos de turma e auxiliar bloqueados; desativação preserva aulas realizadas e libera as futuras ainda agendadas
 - Xerox: solicitar, aprovar/devolver/recusar, produzir/concluir, ajustar e reenviar pedido devolvido; transições concorrentes usam compare-and-swap
@@ -49,9 +72,16 @@ Os arquivos em `migrations/` são a fonte executável do esquema SQLite/D1 e dos
 
 ## Usar reservas de espaços
 
-Em **Reserva de espaços**, clique em **Ver agenda** no espaço desejado. A agenda mostra de segunda a domingo as reservas e os horários fixos válidos, ordenados pelo horário, com atividade e responsável. Use **Anterior**, **Próxima**, **Esta semana** ou o campo de data para consultar outro período. **Reservar neste dia** abre a nova reserva com o espaço e a data selecionados.
+Em **Espaços**, clique em **Ver agenda** no ambiente desejado ou escolha o local no campo **Espaço** da agenda.
 
-O campo **Responsável** é obrigatório e pode ser alterado na criação ou edição. O nome indicado aparece na agenda, nas próximas reservas e no resumo do dia. A conta que criou a reserva permanece registrada e controla as permissões de edição e cancelamento junto com a direção. A migração `0004_reservation_responsible.sql` preenche reservas antigas com o nome do criador e preserva os demais dados. A publicação deve aplicar essa migração antes de servir a nova versão.
+- **Semana**: mostra de segunda a domingo as reservas e os horários fixos válidos. Use **Anterior**, **Próxima**, **Esta semana** ou o campo **Semana de**.
+- **Mês**: mostra o calendário mensal, iniciado na segunda-feira. Use **Anterior**, **Próximo**, **Este mês** ou o campo **Mês**. Cada dia informa a quantidade de reservas e horários fixos; essa quantidade não significa que o dia inteiro está ocupado.
+- Selecione um dia no mês para consultar horários, atividades e responsáveis abaixo do calendário. A seleção permanece ao alternar as visões; a semana exibida acompanha o dia escolhido.
+- **Reservar neste dia** abre o formulário com o espaço e a data selecionados. Informe início, término, responsável e atividade. O servidor continua bloqueando horários conflitantes.
+
+Os horários fixos só aparecem no dia da semana correspondente e dentro do período de validade. O calendário mensal inclui fins de semana e anos bissextos.
+
+O campo **Responsável** é obrigatório e pode ser alterado na criação ou edição. O nome indicado aparece na agenda, nas próximas reservas e no resumo do dia. A conta que criou a reserva permanece registrada e controla as permissões de edição e cancelamento junto com a direção. A migração `0004_reservation_responsible.sql` preenche reservas antigas com o nome do criador e preserva os demais dados. Essa migração já faz parte do conjunto aplicado; o deploy aplica apenas migrações pendentes.
 
 ## Usar substituições
 
@@ -65,7 +95,13 @@ A grade é lida da [página pública da escola no WebHorário](https://www.webho
 
 O seletor de semana e os botões anterior/atual/próxima mostram as aulas e a carga de cada auxiliar. O seletor de auxiliar em cada linha troca a responsável por aquela aula, com verificação de versão, limite semanal e horários sobrepostos. **Marcar realizada** confirma uma aula de hoje ou de um dia anterior. O relatório distingue realizadas e agendadas, mostra total/limite e aulas disponíveis, e permite abrir o detalhamento de cada auxiliar. O limite considera ambas as categorias. Aulas realizadas mantêm o histórico mesmo após desativar a auxiliar; para trocar ou retirar sua responsável, desmarque a realização primeiro.
 
-Não há exportação de dados, uploads, anexos ou notificações externas. A Supervisão consulta o SGE com um conector de navegador, mantendo os resultados temporários na tela.
+A Supervisão permite baixar o relatório de ocorrências em texto e mantém consultas compartilhadas no D1 pela migração `0005_supervision.sql`. A prévia e os filtros também possuem estado local na tela. Não há envio de notificações externas nem fluxo de uploads/anexos.
+
+## Usar no smartphone
+
+O botão **Menu** abre todas as seções. Tabelas se reorganizam por registro em telas pequenas, com rótulos de coluna, controles de toque maiores e campos de 16 px. Formulários respeitam a altura disponível e mantêm as ações acessíveis. A navegação oferece foco por teclado, fechamento do menu por Escape e preferência de movimento reduzido.
+
+No navegador do celular, é possível usar a gestão e consultar os resultados salvos da Supervisão. Novas leituras do SGE pelo conector Chrome/Edge exigem o computador com a extensão instalada e uma sessão autenticada. O aplicativo nativo possui sua própria ponte SGE e suas validações são descritas separadamente no README móvel.
 
 ## Antes de ampliar o uso escolar
 
@@ -73,7 +109,7 @@ Não há exportação de dados, uploads, anexos ou notificações externas. A Su
 2. Confirmar pessoas/perfis, política de tarefas restritas e responsáveis por aprovação de xerox
 3. Revisar novas políticas Access ou provedores de identidade antes de alterar a configuração inicial
 4. Provisionar os novos usuários nominais e validar login institucional real; a migração inicial e o cadastro de direção já foram aplicados
-5. Validar visual e fluxos em navegador desktop/mobile, CSP e recuperação do banco
+5. Ampliar a validação para aparelhos físicos e ensaiar recuperação do banco; a emulação desktop/mobile e os fluxos listados acima já foram verificados
 6. Confirmar política escolar de 32 aulas por semana (configurável na tabela settings por migração administrativa), duração das aulas e cadastro de ocupação fixa
 7. Para estudantes: definir finalidade, acesso, retenção, base de autorização e integração antes de ativar qualquer armazenamento
 
@@ -97,7 +133,7 @@ As variáveis de runtime foram configuradas em **Settings → Variables & Secret
 
 `keep_vars: true` preserva essas variáveis do painel em novos deploys. Elas não recebem valores vazios do repositório. Variáveis de build não substituem variáveis de runtime. Sem configuração válida do Access e usuário nominal ativo no D1, o Worker recusa o acesso.
 
-`workers.dev` está habilitado também no arquivo Wrangler; previews continuam desativados. A organização Zero Trust `Organizador Donícia` e a aplicação Access foram criadas, com proteção apenas deste Worker. `ACCESS_ISSUER` e `ACCESS_AUD` foram confirmados no runtime, preservando `DB` e `ASSETS`. Três contas nominais de direção estão ativas no D1 remoto: Mariano Melgarejo, Michele Rocha e Michel Caurio. O cadastro nominal continua obrigatório para qualquer usuário adicional, assim como a inclusão na política Access. Google institucional pode ser configurado posteriormente como outro provedor de identidade; o código não contém credenciais Google.
+`workers.dev` está habilitado no arquivo Wrangler. As URLs públicas de prévia continuam desativadas (`preview_urls: false`); builds de prévia usam o D1 isolado definido no bloco `previews`. A organização Zero Trust `Organizador Donícia` e a aplicação Access foram criadas, com proteção apenas deste Worker. `ACCESS_ISSUER` e `ACCESS_AUD` foram confirmados no runtime, preservando `DB` e `ASSETS`. As contas nominais de direção são provisionadas administrativamente, fora do repositório público. O cadastro nominal continua obrigatório para qualquer usuário adicional, assim como a inclusão na política Access. Google institucional pode ser configurado posteriormente como outro provedor de identidade; o código não contém credenciais Google.
 
 Para publicar pelo terminal após autenticar a conta:
 
@@ -111,26 +147,8 @@ npm run deploy:cloudflare
 
 Referências: [Git integration](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/), [Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/) e [Wrangler configuration](https://developers.cloudflare.com/workers/wrangler/configuration/).
 
-## Evidência e limites
+## Histórico anterior
 
-Em 06/10/2026, os 47 testes locais passaram no Windows com Node.js 24, incluindo autenticação e leitura da lista no runtime Workers, interações DOM do formulário, grade e horários do WebHorário, dias corridos, divisão por aula entre auxiliares, lotes de ausência atômicos, carga semanal, fluxos HTTP e persistência após reinício. O build separa JS para CSP. `wrangler deploy --dry-run` validou o pacote Worker, os dois assets e os bindings `DB`/`ASSETS` com Wrangler 4.147.0. A migração D1 foi aplicada remotamente e o Worker está publicado em `https://organizadordonicia.carijo.workers.dev/`, protegido pelo Access. Requisições anônimas são redirecionadas ao login institucional. Após publicar a correção da consulta de chaves, o usuário confirmou a abertura do sistema com seu login institucional; o diagnóstico temporário foi desativado. Os testes de UI verificam renderização e contratos, não um navegador real. Verificação visual desktop/mobile e Drizzle generate ainda não foram verificados.
+A persistência, autenticação por Cloudflare Access e primeiras versões da Supervisão foram publicadas em 06/10/2026. A migração `0005_supervision.sql` passou a guardar a última consulta por turma e uma revisão global para impedir sobrescritas concorrentes. Falhas preservam registros anteriores; atualizações por Situação mantêm as datas dos registros não relidos.
 
-## Publicação da Supervisão
-
-Em 06/10/2026, a versão `cb53d961-10d4-4ec9-9b27-9e836caa3cb2` foi publicada no Worker `organizadordonicia`, incluindo a seção Supervisão e o conector de navegador disponível em `/sge-connector.zip`. Os 56 testes passaram antes da publicação. O deploy preservou os bindings D1 e Assets e as variáveis configuradas. Requisições anônimas ao aplicativo e ao ZIP retornaram o redirecionamento de login do Cloudflare Access. A navegação autenticada no SGE e a captura de links diretos ainda precisam de validação real.
-
-### Correção de vínculos repetidos no SGE
-
-Em 06/10/2026, foi publicada a versão `2dda17ae-b43e-4c34-8517-feb985619135`, corrigindo o erro “Página duplicada ou inválida na consulta”. O HTML da página 2 contém 72 posições de professores, mas 69 vínculos únicos: três pares de matrícula/disciplina aparecem repetidos. A leitura e a interface consultam cada vínculo uma vez; a API também aceita as repetições enviadas pelo conector anterior sem contar planejamentos duas vezes, preservando a validação contra identidades incompatíveis. Os 58 testes passaram, incluindo a regressão de consulta de duas turmas com vínculos repetidos. A correção funciona com o conector já instalado após recarregar o Organizador.
-
-### Publicação de prévia, progresso e filtros de Situação
-
-Em 06/10/2026, foi publicada a versão `d4783e1f-b86a-415c-8694-2fe628a11a74`, incluindo seleção das turmas de todas as páginas, progresso detalhado, prévia incremental e filtros por Situação gerais e por professor. Os 62 testes passaram. O conector 1.1.0 está disponível em `/sge-connector.zip`; para receber atualizações de cada planejamento, substituir os arquivos da extensão instalada e recarregá-la no navegador, depois recarregar o Organizador. A versão anterior continua funcionando com prévia ao concluir cada vínculo. O app e o ZIP continuam redirecionando requisições anônimas ao login institucional.
-
-### Contas de direção autorizadas
-
-Os cadastros nominais de direção e as políticas do Cloudflare Access foram verificados por leitura após a atualização administrativa. Os scripts locais de provisionamento com dados pessoais ficam fora do GitHub público e das migrações da demonstração.
-
-Supervisão compartilhada: a migração 0005 armazena a última consulta por turma no D1 e controla uma revisão global para impedir sobrescritas concorrentes. A direção abre os resultados salvos sem SGE; consultas realizadas pelo conector atualizam o registro com data e responsável. Falhas preservam os registros anteriores. Atualizar por Situação usa a Situação salva e as turmas/professor selecionados, inclui novos registros e preserva datas dos demais. Registros não encontrados são mantidos com aviso. A síntese por professor apresenta contagens factuais para análise da supervisora. O conector 1.2.0 evita abrir os detalhes dos registros preservados; versões anteriores continuam compatíveis.
-Publicada em 06/10/2026 a versão 9dbdd9ee-c69d-4f44-b7e7-7d3d61b08d36, com migração 0005 aplicada e 74 testes aprovados. Verificados o runtime D1 local e o redirecionamento institucional do site, da API de consultas salvas e do ZIP. O teste com a sessão real do SGE deve ser feito pela equipe ao iniciar a primeira consulta compartilhada.
-Aplicativo móvel 1.0.0 em mobile-sge: abre o próprio site publicado e autentica pelo mesmo Cloudflare Access. A conexão nativa SGE usa o protocolo existente do site e o leitor compartilhado src/sge-reader.mjs; não existe banco móvel nem uma segunda implementação dos módulos. Os 86 testes do site/conector/app passaram e os bundles Android/iOS foram exportados. O link remoto do Expo entrega a versão 1.0.0. Os instaladores dependem da autenticação e assinatura na conta Expo/Apple.
+Os antigos totais de 47, 56, 62 e 74 testes descreviam etapas anteriores. Para a versão atualmente documentada, use as evidências de 94 testes e os PRs listados no início deste arquivo. A origem do projeto e as pendências estão em [REVIEW.md](REVIEW.md).
