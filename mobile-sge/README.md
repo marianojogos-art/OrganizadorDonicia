@@ -4,9 +4,9 @@ A versão 1.0.1 abre o próprio site publicado em um WebView para Android e iPho
 
 ## Estado da versão e limites de atualização
 
-O pacote nativo está em `1.0.1`, com `versionCode` Android `2`. O site, o conector de navegador (`1.2.3`) e o aplicativo nativo têm ciclos de versão diferentes. O WebView carrega o site publicado, incluindo o leiaute móvel do PR7 e a agenda mensal do PR8. O runtime SGE é empacotado no aplicativo: as correções do leitor precisam de um novo APK para chegar às instalações existentes.
+O pacote nativo está em `1.0.1`, com `versionCode` Android `2`. O site, o conector de navegador (`1.3.0`) e o aplicativo nativo têm ciclos de versão diferentes. O WebView carrega o site publicado, incluindo o leiaute móvel do PR7 e a agenda mensal do PR8. O runtime SGE é empacotado no aplicativo: as correções do leitor precisam de um novo APK para chegar às instalações existentes.
 
-A 1.0.1 regenera o leitor compartilhado com as correções do conector 1.2.3: domínios `.net.br` e `.com.br`, campos dinâmicos e listas vazias com paginação zero ou grade oculta. A ponte informa a versão do aplicativo e do conector, conserva o domínio atual no botão **Lista de turmas** e apresenta o motivo original quando uma leitura falha. Os controles nativos têm área de toque de pelo menos 48 px.
+A 1.0.1 regenera o leitor compartilhado com as correções do conector 1.3.0: domínios `.net.br` e `.com.br`, campos dinâmicos e listas vazias com paginação zero ou grade oculta. A ponte informa a versão do aplicativo e do conector, conserva o domínio atual no botão **Lista de turmas** e apresenta o motivo original quando uma leitura falha. Os controles nativos têm área de toque de pelo menos 48 px.
 
 Em 10/10/2026, os **14 testes móveis passaram** e o bundle Android Hermes foi exportado (601 módulos). Os testes executam os runtimes empacotados e a consulta integrada com o JavaScript real do site e uma API/banco fictícios. Essa validação não substitui o teste físico do APK, incluindo login, conexão SGE e leitura integrada à Supervisão. Não há emulador Android ou simulador iOS neste PC Linux.
 

@@ -18,7 +18,7 @@ const message=(id,command,input)=>({channel:'donicia-native-organizer',id,comman
 test('mobile uses only the website and its Access login; untrusted pages cannot call native SGE',async()=>{
  assert.equal(organizerNavigation(ORGANIZER),true);assert.equal(organizerNavigation(ACCESS+'/cdn-cgi/access/login'),true);for(const url of ['https://evil.example','http://organizadordonicia.carijo.workers.dev','https://u:p@organizadordonicia.carijo.workers.dev'])assert.equal(organizerNavigation(url),false);
  assert.equal(organizerSender(ACCESS),false);const replies=[],bridge=new MobileBridge(transport(),{reply:r=>replies.push(r)});
- await bridge.handle(message('1','ping'),'https://evil.example');assert.equal(replies.length,0);await bridge.handle(message('1','ping'),ORGANIZER);assert.equal(replies[0].data.native,true);assert.equal(replies[0].data.progress,true);assert.equal(replies[0].data.version,'mobile-1.0.1');assert.equal(replies[0].data.connectorVersion,'1.2.3');
+ await bridge.handle(message('1','ping'),'https://evil.example');assert.equal(replies.length,0);await bridge.handle(message('1','ping'),ORGANIZER);assert.equal(replies[0].data.native,true);assert.equal(replies[0].data.progress,true);assert.equal(replies[0].data.version,'mobile-1.0.1');assert.equal(replies[0].data.connectorVersion,'1.3.0');
 });
 test('native bridge exposes the same connector commands, stream and direct links',async()=>{
  const replies=[],bridge=new MobileBridge(transport(),{reply:r=>replies.push(r)});
