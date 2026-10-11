@@ -33,6 +33,7 @@ O servidor de demonstração abre `http://127.0.0.1:8787`, usa identidade fictí
 - [Desenvolvimento e validação](docs/desenvolvimento.md): mapa de pastas, scripts, testes, arquivos gerados e limitações.
 - [Governança e limpeza segura](docs/governanca.md): inventário de branches e proteção proposta, pendentes de aprovação.
 - [Verificação desta revisão](docs/verificacao.md): resultados, SHAs e limites de execução.
+- [Habilidade de sincronização](.agents/skills/sincronizar-projetos-github/SKILL.md): cópia exportável do fluxo cloud/GitHub/Cloudflare de Mariano.
 - [Contribuição](CONTRIBUTING.md): revisão, commits, PRs e cuidado com dados/credenciais.
 - [Deploy e plano de versões](docs/deploy.md): prévia, autorização, migrações, publicação e validação posterior.
 - [Extensão SGE](sge-connector/README.md) e [aplicativo móvel](mobile-sge/README.md): instalação, diferenças e verificação manual.
@@ -114,7 +115,7 @@ No navegador do celular, é possível usar a gestão e consultar os resultados s
 
 ## Cloudflare e histórico
 
-A integração GitHub/Cloudflare registrada usa a branch `main`, Worker `organizadordonicia` e banco D1 separado de prévia. Fazer merge pode disparar publicação. Consulte [o procedimento de deploy](docs/deploy.md) antes de alterar a integração ou executar comandos remotos. Commit, push e PR não autorizam merge, migração remota ou publicação.
+A integração GitHub/Cloudflare registrada usa a branch `main`, Worker `organizadordonicia` e banco D1 separado de prévia. Fazer merge pode disparar publicação. Consulte [o procedimento de deploy](docs/deploy.md) antes de alterar a integração ou executar comandos remotos. A autorização vigente de 11/10/2026 permite integrar e publicar etapas concluídas/verificadas no destino existente, conforme [AGENTS.md](AGENTS.md). Alterações de segurança, dados ou destino exigem revisão própria.
 
 As primeiras versões de persistência, Cloudflare Access e Supervisão são documentadas em 06/10/2026. Totais antigos de testes são fotografias das respectivas revisões. O [CHANGELOG.md](CHANGELOG.md) e os PRs vinculados identificam as mudanças; resultados atuais devem apontar para o commit e a execução de CI correspondentes.
 

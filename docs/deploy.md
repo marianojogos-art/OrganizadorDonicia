@@ -1,6 +1,6 @@
 # Deploy, validação e versões
 
-A integração registrada conecta `marianojogos-art/OrganizadorDonicia` à branch de produção `main` do Worker `organizadordonicia`. O PR11 registra publicação; isso não é consulta atual ao painel. Fazer merge pode disparar deploy. Nesta etapa, PRs permanecem draft: merge, migração remota, produção, regras de proteção, limpeza remota e releases publicadas aguardam confirmação específica.
+A integração registrada conecta `marianojogos-art/OrganizadorDonicia` à branch de produção `main` do Worker `organizadordonicia`. O PR11 registra publicação; isso não é consulta atual ao painel. Fazer merge pode disparar deploy. A autorização vigente de 11/10/2026 permite integrar etapas concluídas/verificadas e publicar no Worker existente. PRs começam draft como controle interno de revisão. Regras de proteção, limpeza remota, releases publicadas, novos destinos e alterações destrutivas de dados continuam fora dessa autorização.
 
 ## Configuração e preparação
 
@@ -10,13 +10,13 @@ Confira no painel **Workers & Pages → organizadordonicia → Settings → Buil
 
 `ACCESS_ISSUER` e `ACCESS_AUD` são variáveis de runtime do painel; `keep_vars` as preserva. Variáveis de build não as substituem. Cloudflare Access e usuário nominal ativo no D1 são necessários. Nunca copie credenciais, JWT, cookies ou lista nominal para documentação pública. Use somente a autenticação já autorizada; não criar tokens durante esta organização.
 
-Antes de autorizar uma publicação:
+Antes de publicar uma etapa autorizada:
 
 1. Identifique o PR e SHA exatos, confira origin e alterações de migrações/versões.
 2. Exija CI aprovada: validação conjunta e exportação móvel. Execute `npm run check:cloudflare` para conferir empacotamento Workers.
 3. Revise as migrações pendentes e o plano de backup/recuperação. `migrations/` é a fonte SQL; geração Drizzle não substitui triggers revisados.
 4. Planeje validação institucional/SGE e aparelho físico, com critérios de aceitação e responsável. Marque como não executado o que depende de acesso/dispositivo indisponível.
-5. Obtenha autorização para merge/deploy e, se necessário, migrações remotas e distribuição nativa.
+5. Confira o escopo autorizado em AGENTS.md; não pedir novamente aprovação de merge/deploy para a mesma etapa validada. Distribuição nativa, alterações destrutivas ou destinos novos exigem autorização própria.
 
 ## Publicação após autorização
 

@@ -66,4 +66,4 @@ Antes de ampliar o uso ou distribuir uma versão, registre o commit, plataforma,
 - iOS: exportação não comprova distribuição ou funcionamento físico; registrar assinatura e dispositivo quando disponíveis.
 - D1: ensaio de backup/restauração em ambiente isolado; testes SQLite locais não comprovam recuperação de produção.
 
-Evite escrever dados de teste em produção. Use prévia isolada para experimentos autorizados. Uma execução aprovada não autoriza merge, deploy, alteração Access ou migração remota; veja [deploy](deploy.md).
+Evite escrever dados de teste em produção. Use prévia isolada para experimentos autorizados. Siga a autorização vigente: etapas verificadas podem ser integradas/publicadas no Worker existente; testes não autorizam alterar Access ou destruir dados; veja [deploy](deploy.md).
