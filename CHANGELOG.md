@@ -2,6 +2,12 @@
 
 Este arquivo registra mudanças verificáveis no Git. Datas são de integração/documentação; não significam release, APK novo ou publicação atual. Não havia tags ou releases publicadas na referência auditada `main` `32b11d8` em 11/10/2026. Versões web, extensão e aplicativo são independentes.
 
+## 11/10/2026 — conector1.3.1 preparado para loja
+
+- Ícones PNG, Chrome mínimo120, retirada da permissão redundante tabs e ZIP somente produção, mantendo variante de desenvolvimento.
+- Informação visível de dados/transmissão/salvamento na Supervisão, política técnica pública e materiais PT-BR com imagens fictícias identificadas.
+- Não registra submissão, aprovação da loja ou novo APK. Campos do titular e método de revisão autenticada ainda precisam confirmação.
+
 ## 11/10/2026 — organização e conciliação integradas
 
 - [PR12](https://github.com/marianojogos-art/OrganizadorDonicia/pull/12), merge `a2f66db`: documentação web `2.0.0`/conector `1.3.0`, CI e habilidade exportável de sincronização.

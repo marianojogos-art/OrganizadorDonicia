@@ -9,7 +9,7 @@ A auditoria partiu da `main` [`32b11d8`](https://github.com/marianojogos-art/Org
 | Componente | Versão no código integrado | Distribuição e limites |
 | --- | --- | --- |
 | Web / API Workers | `package.json`: `2.0.0` | O commit e o deployment identificam cada publicação; o número do pacote não muda a cada PR. |
-| Extensão Chrome/Edge | `sge-connector/manifest.json`: `1.3.0` | O build gera o ZIP e a pasta descompactada. Reinstalar/recarregar a extensão para atualizar a versão instalada. |
+| Extensão Chrome/Edge | `sge-connector/manifest.json`: `1.3.1` | O build gera o ZIP e a pasta descompactada. Reinstalar/recarregar a extensão para atualizar a versão instalada. |
 | Aplicativo Expo | `mobile-sge/package.json` e `app.json`: `1.0.1`, Android `versionCode` 2 | Código conciliado pelo PR13; exportação aprovada. Nenhum novo APK assinado/instalado foi produzido nesta tarefa. |
 | Banco | `migrations/`: cinco migrações na base | Produção `donicia-school`; prévia isolada `donicia-school-preview`. |
 
@@ -33,6 +33,7 @@ O servidor de demonstração abre `http://127.0.0.1:8787`, usa identidade fictí
 - [Desenvolvimento e validação](docs/desenvolvimento.md): mapa de pastas, scripts, testes, arquivos gerados e limitações.
 - [Governança e limpeza segura](docs/governanca.md): inventário de branches e proteção proposta, pendentes de aprovação.
 - [Verificação desta revisão](docs/verificacao.md): resultados, SHAs e limites de execução.
+- [Preparação Chrome Web Store](docs/chrome-web-store/README.md): pacote, imagens, privacidade e requisitos para submissão.
 - [Habilidade de sincronização](.agents/skills/sincronizar-projetos-github/SKILL.md): cópia exportável do fluxo cloud/GitHub/Cloudflare de Mariano.
 - [Contribuição](CONTRIBUTING.md): revisão, commits, PRs e cuidado com dados/credenciais.
 - [Deploy e plano de versões](docs/deploy.md): prévia, autorização, migrações, publicação e validação posterior.

@@ -1,6 +1,5 @@
 import {createSgeReader} from '../src/sge-reader.mjs';
-const storeBuild=typeof DONICIA_STORE_BUILD!=='undefined'&&DONICIA_STORE_BUILD;
-const organizerOrigins=new Set(storeBuild?['https://organizadordonicia.carijo.workers.dev']:['https://organizadordonicia.carijo.workers.dev','http://127.0.0.1:8787']);
+const organizerOrigins=new Set((typeof DONICIA_STORE_BUILD!=='undefined'&&DONICIA_STORE_BUILD)?['https://organizadordonicia.carijo.workers.dev']:['https://organizadordonicia.carijo.workers.dev','http://127.0.0.1:8787']);
 import {sgeOrigins,allowedSgeUrl as allowed} from '../src/sge-origin.mjs';
 let running=false;
 const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();

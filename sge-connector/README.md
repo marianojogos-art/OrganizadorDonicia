@@ -67,3 +67,7 @@ Execute `npm run validate` na raiz para a validação conjunta. A suíte cobre p
 Na conferência manual, instale o ZIP do commit revisado, confirme a versão detectada, faça login no SGE, consulte uma turma e confira filtro de trimestre, lista vazia, relatório de falhas e persistência após recarregar. Use dados autorizados e não publique capturas, relatórios ou HTML de produção no repositório.
 
 O [guia de deploy](../docs/deploy.md) descreve prévia isolada e verificação do commit/ZIP após publicação. Um build local ou registro histórico não comprova o estado atual de produção.
+
+## Preparação Chrome Web Store 1.3.1
+
+O código atual prepara ícones e permissões mínimas para a loja, mantendo as consultas da1.3.0. A fonte/ping e a versão disponível na web estão em1.3.1. `npm run build` gera ZIP somente produção e pasta descompactada de desenvolvimento separada. Loja, cadastro, revisão e instalação não são comprovados pelo build. Veja [materiais de submissão](../docs/chrome-web-store/README.md) e [privacidade](PRIVACY.md).
