@@ -6,7 +6,13 @@ const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase
 function completed(tabId){
  let timer,listener;
  const promise=new Promise((resolve,reject)=>{
-  listener=(id,change)=>{if(id===tabId&&change.status==='complete'){cleanup();resolve()}};
+  listener=(id,change,tab)=>{
+   if(id!==tabId||change.status!=='complete')return;
+   // A new temporary tab can finish about:blank after navigation starts.
+   // Only a completed SGE page is ready for the read-only script.
+   try{allowed(tab?.url)}catch{return}
+   cleanup();resolve();
+  };
   timer=setTimeout(()=>{cleanup();reject(Error('A página do SGE demorou a abrir. Verifique sua sessão e tente novamente.'))},25000);
   chrome.tabs.onUpdated.addListener(listener);
  });
