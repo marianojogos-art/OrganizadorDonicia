@@ -33,6 +33,7 @@ O servidor de demonstração abre `http://127.0.0.1:8787`, usa identidade fictí
 - [Desenvolvimento e validação](docs/desenvolvimento.md): mapa de pastas, scripts, testes, arquivos gerados e limitações.
 - [Governança e limpeza segura](docs/governanca.md): inventário de branches e proteção proposta, pendentes de aprovação.
 - [Verificação desta revisão](docs/verificacao.md): resultados, SHAs e limites de execução.
+- [Habilidade de sincronização](.agents/skills/sincronizar-projetos-github/SKILL.md): cópia exportável do fluxo cloud/GitHub/Cloudflare de Mariano.
 - [Contribuição](CONTRIBUTING.md): revisão, commits, PRs e cuidado com dados/credenciais.
 - [Deploy e plano de versões](docs/deploy.md): prévia, autorização, migrações, publicação e validação posterior.
 - [Extensão SGE](sge-connector/README.md) e [aplicativo móvel](mobile-sge/README.md): instalação, diferenças e verificação manual.

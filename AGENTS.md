@@ -14,3 +14,5 @@
 - O usuário autorizou integrar etapas concluídas e verificadas na main e publicar no Worker Cloudflare existente para acompanhar a versão atual. Branches/PRs são ferramentas internas; não exigir que ele os gerencie nem teste localmente.
 - Conferir CI, preservar checkpoint conhecido bom, verificar deployment/saúde e reverter com commit normal se houver regressão; nunca force-push na main.
 - Essa autorização não inclui destruir dados, excluir branches remotas, contornar proteções, criar credenciais, custos ou destinos novos. Proteção/rulesets, limpeza e releases publicadas continuam propostas separadas. Código Android sem APK assinado/físico deve ser reportado como preparação.
+
+- Fluxo detalhado e cópia exportável: [.agents/skills/sincronizar-projetos-github/SKILL.md](.agents/skills/sincronizar-projetos-github/SKILL.md). Esta é a única habilidade pessoal exportada neste projeto.
