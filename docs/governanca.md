@@ -15,7 +15,7 @@ Proposta de 11/10/2026; nenhuma proteção, exclusão, tag ou release foi aplica
 | `codex/supervisao-professores-ocorrencias` | `dc5c6fce852e0742773193391a96d7237e4f1482` | [#1](https://github.com/marianojogos-art/OrganizadorDonicia/pull/1) | Sim |
 | `codex/supervisao-subsecoes-reiniciar` | `dc6695205a2e5002a511527a57dba90582c5fc49` | [#3](https://github.com/marianojogos-art/OrganizadorDonicia/pull/3) | Sim |
 
-Preservar `codex/app-android-1-0-1` (`94039192cd47ad0e358107813a604c616fcf475f`), PR10, e as branches de revisão desta organização. A branch Android original contém trabalho exclusivo e não é candidata à exclusão.
+Preservar `codex/app-android-1-0-1` (`94039192cd47ad0e358107813a604c616fcf475f`), PR10, e as branches de revisão desta organização. Na auditoria a branch Android continha trabalho exclusivo; seus commits foram incorporados pelo PR13 sem reescrita. Continua preservada por orientação do usuário e não é candidata à exclusão nesta tarefa.
 
 Após aprovação específica para limpeza: executar `git fetch --prune origin`, confirmar origin e ponta atual de main; para cada candidata, confirmar novamente seu SHA, PR integrado e `git merge-base --is-ancestor <SHA> origin/main`. Se a ponta mudou ou não for ancestral, interromper para revisão. Criar `git bundle create ../OrganizadorDonicia-before-cleanup.bundle --all` e validar com `git bundle verify` antes da exclusão; bundle apenas em local cloud privado, sem publicação. Excluir individualmente com `git push origin --delete <branch>` só após aprovação; nunca usar lista cega ou remover Android. Conferir lista remota depois.
 

@@ -2,14 +2,15 @@
 
 Este arquivo registra mudanças verificáveis no Git. Datas são de integração/documentação; não significam release, APK novo ou publicação atual. Não havia tags ou releases publicadas na referência auditada `main` `32b11d8` em 11/10/2026. Versões web, extensão e aplicativo são independentes.
 
-## Em revisão — organização e validação
+## 11/10/2026 — organização e conciliação integradas
 
-- Documentação alinhada à base web `2.0.0`, conector `1.3.0` e aplicativo `1.0.0`; Android `1.0.1` tratado como integração separada.
+- [PR12](https://github.com/marianojogos-art/OrganizadorDonicia/pull/12), merge `a2f66db`: documentação web `2.0.0`/conector `1.3.0`, CI e habilidade exportável de sincronização.
+- [PR13](https://github.com/marianojogos-art/OrganizadorDonicia/pull/13), merge `25a92ef`: Android `1.0.1`/versionCode 2 conciliado com main, preservando os 17 commits originais do PR10. Ponte SGE `1.3.0`; runtime regenerado; nenhum novo APK assinado ou teste físico.
 - Guias de contribuição, desenvolvimento, testes, deploy e evidências de distribuição.
 - CI e validação conjunta adicionadas para lint, typecheck raiz, testes raiz/móvel, build, runtimes consistentes e exportação Expo; não publica produção.
 - Inventário de branches e recomendação de proteção preparados para revisão, sem remoção remota ou aplicação de regras.
 
-Esta seção descreve o trabalho do PR em revisão. Seu resultado depende do SHA final e das verificações anexadas; não anuncia implantação.
+Integrações autorizadas por Mariano após a auditoria. CI e publicação são verificadas separadamente em [verificação](docs/verificacao.md); não foram criadas tags ou releases.
 
 ## 11/10/2026 — base main `32b11d8`
 

@@ -4,13 +4,13 @@ Projeto escolar independente para a EBM Donícia Maria da Costa, publicado em [O
 
 ## Componentes e estado de referência — 11/10/2026
 
-Esta documentação parte da `main` no commit [`32b11d8`](https://github.com/marianojogos-art/OrganizadorDonicia/commit/32b11d8), que integrou o [PR11](https://github.com/marianojogos-art/OrganizadorDonicia/pull/11). Os números abaixo identificam componentes diferentes; não são uma release conjunta.
+A auditoria partiu da `main` [`32b11d8`](https://github.com/marianojogos-art/OrganizadorDonicia/commit/32b11d8), que integrou o PR11. A organização ([PR12](https://github.com/marianojogos-art/OrganizadorDonicia/pull/12)) e a conciliação Android ([PR13](https://github.com/marianojogos-art/OrganizadorDonicia/pull/13)) foram integradas depois, preservando os históricos. Os números abaixo identificam componentes diferentes; não são uma release conjunta.
 
-| Componente | Versão na base | Distribuição e limites |
+| Componente | Versão no código integrado | Distribuição e limites |
 | --- | --- | --- |
 | Web / API Workers | `package.json`: `2.0.0` | O commit e o deployment identificam cada publicação; o número do pacote não muda a cada PR. |
 | Extensão Chrome/Edge | `sge-connector/manifest.json`: `1.3.0` | O build gera o ZIP e a pasta descompactada. Reinstalar/recarregar a extensão para atualizar a versão instalada. |
-| Aplicativo Expo | `mobile-sge/package.json` e `app.json`: `1.0.0` na base | A conciliação Android `1.0.1` do PR10 é trabalho separado; código, exportação e APK instalado têm evidências diferentes. |
+| Aplicativo Expo | `mobile-sge/package.json` e `app.json`: `1.0.1`, Android `versionCode` 2 | Código conciliado pelo PR13; exportação aprovada. Nenhum novo APK assinado/instalado foi produzido nesta tarefa. |
 | Banco | `migrations/`: cinco migrações na base | Produção `donicia-school`; prévia isolada `donicia-school-preview`. |
 
 O PR11 registra publicação Cloudflare `d777092a-f6b0-4564-bac5-8b940b03d10d`, em 11/10/2026 às 04:42:58 UTC. Esse registro histórico não comprova o status atual do Worker, a atualização de uma extensão instalada ou uma nova consulta autenticada. A `main` contém conector `1.3.0`, consulta por trimestre, nomes de turmas padronizados e espera pelo carregamento real do SGE. A referência anterior `1.2.3` pertence ao PR6. O [changelog](CHANGELOG.md) registra a sequência sem inventar tags ou releases.
