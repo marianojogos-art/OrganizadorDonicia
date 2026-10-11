@@ -15,7 +15,7 @@ Esta documentação parte da `main` no commit [`32b11d8`](https://github.com/mar
 
 O PR11 registra publicação Cloudflare `d777092a-f6b0-4564-bac5-8b940b03d10d`, em 11/10/2026 às 04:42:58 UTC. Esse registro histórico não comprova o status atual do Worker, a atualização de uma extensão instalada ou uma nova consulta autenticada. A `main` contém conector `1.3.0`, consulta por trimestre, nomes de turmas padronizados e espera pelo carregamento real do SGE. A referência anterior `1.2.3` pertence ao PR6. O [changelog](CHANGELOG.md) registra a sequência sem inventar tags ou releases.
 
-A branch `app-android-1-0-1` deve ser preservada. Integrar sua compatibilidade com a web atual exige revisar os conflitos e validar o conjunto; isso não equivale a compilar, assinar, instalar ou testar um APK `1.0.1`.
+A branch `app-android-1-0-1` deve ser preservada. Sua compatibilidade com a web atual foi conciliada nesta branch por merges e regeneração dos runtimes; isso não equivale a compilar, assinar, instalar ou testar um APK `1.0.1`.
 
 ## Começar e encontrar a documentação
 
@@ -118,3 +118,7 @@ No navegador do celular, é possível usar a gestão e consultar os resultados s
 A integração GitHub/Cloudflare registrada usa a branch `main`, Worker `organizadordonicia` e banco D1 separado de prévia. Fazer merge pode disparar publicação. Consulte [o procedimento de deploy](docs/deploy.md) antes de alterar a integração ou executar comandos remotos. A autorização vigente de 11/10/2026 permite integrar e publicar etapas concluídas/verificadas no destino existente, conforme [AGENTS.md](AGENTS.md). Alterações de segurança, dados ou destino exigem revisão própria.
 
 As primeiras versões de persistência, Cloudflare Access e Supervisão são documentadas em 06/10/2026. Totais antigos de testes são fotografias das respectivas revisões. O [CHANGELOG.md](CHANGELOG.md) e os PRs vinculados identificam as mudanças; resultados atuais devem apontar para o commit e a execução de CI correspondentes.
+
+## Android conciliado nesta branch
+
+Código nativo 1.0.1/versionCode 2 com ponte SGE 1.3.0, dois domínios e controles nativos preservados. Incorpora main e a organização por merges sem reescrever a branch original do PR10. Testes e exportação Hermes aprovados; não foi gerado APK/IPA novo nem feita validação física ou SGE autenticada. Veja [retomada](mobile-sge/RETOMADA.md).

@@ -1,6 +1,6 @@
 {
   "name": "organizador-donicia-mobile",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "main": "index.js",
@@ -8,7 +8,8 @@
     "start": "node scripts/build-runtime.mjs && expo start --lan",
     "build:runtime": "node scripts/build-runtime.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check:bundle": "expo export --platform all --output-dir .export"
+    "check:bundle": "expo export --platform all --output-dir .export",
+    "eas-build-post-install": "npm --prefix .. ci --no-audit --no-fund && node scripts/build-runtime.mjs"
   },
   "dependencies": {
     "expo": "57.0.27",

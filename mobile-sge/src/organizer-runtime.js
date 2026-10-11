@@ -1,3 +1,4 @@
+import {sgeOrigins} from '../../src/sge-origin.mjs';
 const origin='https://organizadordonicia.carijo.workers.dev';
 if(location.origin===origin&&!window.__doniciaNativeInstalled){
  window.__doniciaNativeInstalled=true;
@@ -16,7 +17,7 @@ if(location.origin===origin&&!window.__doniciaNativeInstalled){
  document.addEventListener('click',event=>{
   if(event.target.closest('[data-native-sge-open]')){event.preventDefault();send({command:'open-sge'});return}
   const link=event.target.closest('a[href]');if(!link)return;
-  try{const u=new URL(link.href,origin);if(u.protocol==='https:'&&['www.sgebr.net.br','sgebr.net.br'].includes(u.hostname)){event.preventDefault();send({command:'open-sge',url:u.href})}}catch{}
+  try{const u=new URL(link.href,origin);if(u.protocol==='https:'&&sgeOrigins.includes(u.origin)){event.preventDefault();send({command:'open-sge',url:u.href})}}catch{}
  });
  function watch(){
   if(!document.documentElement){document.addEventListener('DOMContentLoaded',watch,{once:true});return}
