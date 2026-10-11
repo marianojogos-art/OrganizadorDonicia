@@ -1,5 +1,13 @@
 # Conector SGE para Supervisão
 
+## Conector 1.2.1 — espera pela página do SGE
+
+Corrige a leitura antecipada da aba temporária: um evento atrasado de conclusão de `about:blank` podia liberar a injeção antes de o SGE carregar. O conector agora verifica o estado atual da aba por `chrome.tabs.get`, ignora conclusões com página em branco ou navegação pendente e só lê uma página concluída da origem/caminho permitidos. A leitura confere novamente essas condições antes de injetar o script. Saídas do SGE e estouros de tempo têm mensagens próprias e encerram a aba temporária.
+
+As permissões continuam restritas a `https://www.sgebr.net.br/sge8105/*`. A correção exige atualizar os arquivos da extensão para 1.2.1, recarregá-la no Chrome/Edge e recarregar o Organizador. A área de conexão informa a versão disponível e a detectada após a verificação do conector.
+
+Referência: [API Tabs do Chrome](https://developer.chrome.com/docs/extensions/reference/api/tabs). Testes simulam conclusão antecipada de `about:blank`, carregamento posterior do SGE, redirecionamento externo, timeout, liberação da aba e versão/permissões do manifesto. A confirmação em uma sessão real do SGE depende de nova consulta com a extensão atualizada.
+
 ## Subseções e reinício da Supervisão
 
 “Consultar turmas” reúne seleção de turmas, configuração do conector, progresso e atualização por Situação. “Trabalhar por professor” reúne seleção do professor, filtros, resultados, acesso à aprovação no SGE e relatório de ocorrências. Concluir uma consulta ou carregar resultados salvos abre automaticamente o trabalho por professor. Alternar as subseções preserva a consulta e a seleção.

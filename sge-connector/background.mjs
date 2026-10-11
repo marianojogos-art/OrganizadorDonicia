@@ -7,14 +7,28 @@ function allowed(url){const u=new URL(url);if(u.origin!==sgeOrigin||!u.pathname.
 function completed(tabId){
  let timer,listener;
  const promise=new Promise((resolve,reject)=>{
-  listener=(id,change)=>{if(id===tabId&&change.status==='complete'){cleanup();resolve()}};
+  listener=async(id,change)=>{
+   if(id!==tabId||change.status!=='complete')return;
+   try{
+    // A queued completion from creating about:blank can arrive after update().
+    // Read the current tab, rather than treating every completion as SGE ready.
+    const tab=await chrome.tabs.get(tabId);
+    if(tab.status!=='complete'||tab.pendingUrl||!tab.url||tab.url==='about:blank')return;
+    try{allowed(tab.url)}catch{throw Error('A aba de consulta saiu do SGE. Entre novamente no SGE e tente outra vez.')}
+    cleanup();resolve();
+   }catch(e){cleanup();reject(e)}
+  };
   timer=setTimeout(()=>{cleanup();reject(Error('A página do SGE demorou a abrir. Verifique sua sessão e tente novamente.'))},25000);
   chrome.tabs.onUpdated.addListener(listener);
  });
  const cleanup=()=>{clearTimeout(timer);chrome.tabs.onUpdated.removeListener(listener)};
+ promise.catch(()=>{});
  return {promise,cancel(){cleanup();}};
 }
 async function snapshot(tabId){
+ const tab=await chrome.tabs.get(tabId);
+ if(tab.status!=='complete'||tab.pendingUrl||!tab.url||tab.url==='about:blank')throw Error('A aba temporária ainda não terminou de abrir o SGE. Tente novamente.');
+ try{allowed(tab.url)}catch{throw Error('A aba de consulta saiu do SGE. Entre novamente no SGE e tente outra vez.')}
  await chrome.scripting.executeScript({target:{tabId},world:'MAIN',files:['page-runtime.js']});
  const result=await chrome.scripting.executeScript({target:{tabId},world:'MAIN',func:()=>window.__doniciaSge.snapshot()});
  if(!result[0]?.result)throw Error('Não foi possível ler a página do SGE. Verifique se a sessão está autenticada.');
@@ -31,7 +45,7 @@ async function navigate(tabId,url){
 chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
  let origin;try{origin=new URL(sender.url).origin}catch{return false}
  if(!organizerOrigins.has(origin))return false;
- if(message.command==='ping'){sendResponse({ok:true,data:{version:'1.2.0',progress:true,selective:true}});return false}
+ if(message.command==='ping'){sendResponse({ok:true,data:{version:'1.2.1',progress:true,selective:true}});return false}
  if(!['directory','teachers','planning'].includes(message.command))return false;
  if(running){sendResponse({error:'Já há uma consulta ao SGE em andamento. Aguarde.'});return false}
  running=true;

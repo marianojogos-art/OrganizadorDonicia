@@ -6,12 +6,12 @@ import {build} from 'esbuild';
 import {fileURLToPath} from 'node:url';
 const script=(await build({entryPoints:[fileURLToPath(new URL('../sge-connector/background.mjs',import.meta.url))],bundle:true,write:false,platform:'browser',format:'iife'})).outputFiles[0].text;
 const base='https://www.sgebr.net.br/sge8105/',sourceUrl=base+'hselgerenciamentoplanoaula.aspx?catalog',key='106801:2026:9135:1:1:11';
-function browser(){
+function browser({blankRace=false,redirectOutside=false,neverReady=false}={}){
  const pages={first:{type:'classes',classes:[{id:key,name:'Turma 11',url:sourceUrl}],sourceUrl,pagination:{current:1,last:2},total:2},second:{type:'classes',classes:[{id:key.replace(/11$/,'12'),name:'Turma 12',url:sourceUrl}],sourceUrl,pagination:{current:2,last:2},total:2},teachers:{type:'teachers',classNumber:'11',grade:'9135',stage:'1',complete:true,sourceUrl:base+'hplanejamentodisciplinasger.aspx?teacher',teachers:[{id:'mat-1',assignmentId:'202:1',name:'Ágata',subject:'Português'}]},plans:{type:'plans',teacherName:'Ágata Fictícia',complete:true,sourceUrl:base+'hplanejamentoaulager.aspx?plans',plans:[{id:'7',classId:key,subjectCode:'202',title:'Outubro',situation:'Planejamento finalizado',trimester:null,url:null}]},detail:{type:'detail',sourceUrl:base+'hplanejamentoaulaconsulta.aspx?direct'}};
- let state='first',onMessage;const listeners=new Set(),actions=[],removed=[],messages=[];
- const finish=()=>queueMicrotask(()=>{for(const listener of [...listeners])listener(10,{status:'complete'})});
- const chrome={tabs:{onUpdated:{addListener:l=>listeners.add(l),removeListener:l=>listeners.delete(l)},async query(){return [{id:1,url:sourceUrl}]},async create(){return {id:10}},async sendMessage(id,message){messages.push(message)},async remove(id){removed.push(id)},async update(id,{url}){state=url.includes('hselgerenciamentoplanoaula')?'first':url.includes('hplanejamentodisciplinasger')?'teachers':url.includes('hplanejamentoaulager')?'plans':'detail';finish()}},runtime:{onMessage:{addListener:l=>onMessage=l}},scripting:{async executeScript(opts){if(opts.files)return [];context.window.__doniciaSge={snapshot:()=>structuredClone(pages[state]),open(action){actions.push(action);if(action.kind==='next')state='second';else if(action.kind==='first')state='first';else if(action.kind==='class')state='teachers';else if(action.kind==='teacher')state='plans';else if(action.kind==='plan')state='detail';else throw Error('Unknown action');finish();return true}};const result=vm.runInContext('('+opts.func.toString()+')',context)(...(opts.args||[]));return [{result}]}}};
- const context=vm.createContext({chrome,window:{},URL,Promise,setTimeout,clearTimeout});vm.runInContext(script,context);
+ let state='first',onMessage,tabUrl='about:blank',tabStatus='complete',pendingUrl;const listeners=new Set(),actions=[],removed=[],messages=[];
+ const finish=()=>{if(neverReady)return;(blankRace?fn=>setTimeout(fn,0):queueMicrotask)(()=>{tabUrl=redirectOutside?'https://login.example/':pages[state].sourceUrl;tabStatus='complete';pendingUrl=undefined;for(const listener of [...listeners])listener(10,{status:'complete'})})};
+ const chrome={tabs:{onUpdated:{addListener:l=>listeners.add(l),removeListener:l=>listeners.delete(l)},async query(){return [{id:1,url:sourceUrl}]},async create(){tabUrl='about:blank';tabStatus='complete';pendingUrl=undefined;return {id:10}},async get(){return {id:10,url:tabUrl,status:tabStatus,pendingUrl}},async sendMessage(id,message){messages.push(message)},async remove(id){removed.push(id)},async update(id,{url}){if(blankRace&&tabUrl==='about:blank'){for(const listener of [...listeners])listener(10,{status:'complete'});await Promise.resolve()}tabStatus='loading';pendingUrl=url;state=url.includes('hselgerenciamentoplanoaula')?'first':url.includes('hplanejamentodisciplinasger')?'teachers':url.includes('hplanejamentoaulager')?'plans':'detail';finish()}},runtime:{onMessage:{addListener:l=>onMessage=l}},scripting:{async executeScript(opts){if(opts.files){assert.notEqual(tabUrl,'about:blank','never inject into blank tab');assert.equal(tabStatus,'complete');assert.ok(tabUrl.startsWith(base),'never inject outside SGE');return [];}context.window.__doniciaSge={snapshot:()=>structuredClone(pages[state]),open(action){actions.push(action);if(action.kind==='next')state='second';else if(action.kind==='first')state='first';else if(action.kind==='class')state='teachers';else if(action.kind==='teacher')state='plans';else if(action.kind==='plan')state='detail';else throw Error('Unknown action');finish();return true}};const result=vm.runInContext('('+opts.func.toString()+')',context)(...(opts.args||[]));return [{result}]}}};
+ const context=vm.createContext({chrome,window:{},URL,Promise,setTimeout:neverReady?(fn,ms)=>setTimeout(fn,Math.min(ms,20)):setTimeout,clearTimeout});vm.runInContext(script,context);
  const send=(command,input,url='https://organizadordonicia.carijo.workers.dev/')=>new Promise(resolve=>{if(!onMessage({id:'request-'+command,command,input},{url,tab:{id:50}},resolve))resolve({ignored:true})});
  return {send,actions,removed,messages,pages};
 }
@@ -41,4 +41,24 @@ test('selective connector opens changed and new plans while skipping preserved r
  const b=browser();b.pages.plans.plans.push({...b.pages.plans.plans[0],id:'8',title:'Novo planejamento'});
  const result=await b.send('planning',{classId:key,assignmentId:'202:1',sourceUrl:base+'hplanejamentodisciplinasger.aspx?teacher',preservePlanIds:['7']});
  assert.equal(result.data.plans.length,2);assert.deepEqual(b.actions.filter(a=>a.kind==='plan').map(a=>a.id),['8']);assert.deepEqual(b.messages.filter(m=>m.progress.stage==='plan-read').map(m=>m.progress.plan.id),['8']);
+});
+
+test('connector ignores about:blank completion until the actual SGE navigation finishes',async()=>{
+ const b=browser({blankRace:true});
+ const directory=await b.send('directory');assert.equal(directory.data.classes.length,2);
+ const teachers=await b.send('teachers',{classId:key,sourceUrl});assert.equal(teachers.data.teachers.length,1);
+ const plans=await b.send('planning',{classId:key,assignmentId:'202:1',sourceUrl:teachers.data.sourceUrl});
+ assert.equal(plans.data.plans[0].url,base+'hplanejamentoaulaconsulta.aspx?direct');assert.equal(b.removed.length,3);
+});
+
+test('connector stops outside SGE and releases its temporary tab before another request',async()=>{
+ const b=browser({redirectOutside:true});
+ const first=await b.send('directory');assert.match(first.error,/saiu do SGE/);assert.deepEqual(b.removed,[10]);
+ const second=await b.send('directory');assert.match(second.error,/saiu do SGE/);assert.equal(b.removed.length,2);
+});
+
+test('connector times out a tab that never reaches SGE and keeps permissions restricted',async()=>{
+ const b=browser({neverReady:true});const response=await b.send('directory');assert.match(response.error,/demorou a abrir/);assert.deepEqual(b.removed,[10]);
+ const manifest=JSON.parse(await readFile(new URL('../sge-connector/manifest.json',import.meta.url),'utf8'));
+ assert.equal((await b.send('ping')).data.version,manifest.version);assert.deepEqual(manifest.host_permissions,['https://www.sgebr.net.br/sge8105/*']);
 });
