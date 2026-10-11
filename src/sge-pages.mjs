@@ -1,3 +1,4 @@
+import {allowedSgeUrl} from './sge-origin.mjs';
 export const sgeBase='https://www.sgebr.net.br/sge8105/';
 const value=(node,name)=>node.querySelector('input[name="'+name+'"]')?.getAttribute('value')?.trim()||'';
 const rowValue=(row,name)=>[...row.querySelectorAll('input[name]')].find(x=>new RegExp('^'+name+'_\\d{4}$').test(x.name))?.getAttribute('value')?.trim()||'';
@@ -8,7 +9,7 @@ function pageUrl(document,url){
  const form=document.querySelector('#MAINFORM');if(!form)throw Error('Página do SGE não reconhecida. Faça login e abra os planejamentos de turmas.');
  const action=form.getAttribute('action')||form.getAttribute('ACTION');
  const parsed=new URL(action||url,url||sgeBase);
- if(parsed.origin!==new URL(sgeBase).origin||!parsed.pathname.startsWith('/sge8105/'))throw Error('Origem do SGE não reconhecida.');
+ try{allowedSgeUrl(parsed.href);if(url&&parsed.origin!==new URL(url).origin)throw Error()}catch{throw Error('Origem do SGE não reconhecida.')}
  return parsed.href;
 }
 function navigation(document){

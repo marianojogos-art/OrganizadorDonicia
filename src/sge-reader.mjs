@@ -1,7 +1,6 @@
 // Shared read-only SGE traversal for the desktop connector and mobile app.
-const sgeOrigin='https://www.sgebr.net.br';
+import {allowedSgeUrl as allowed} from './sge-origin.mjs';
 const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-function allowed(url){const u=new URL(url);if(u.origin!==sgeOrigin||!u.pathname.startsWith('/sge8105/')||u.username||u.password)throw Error('Link fora do SGE.');return u.href}
 
 export function createSgeReader(transport){
 async function directory(progress=()=>{}){
