@@ -15,7 +15,7 @@ Esta documentação parte da `main` no commit [`32b11d8`](https://github.com/mar
 
 O PR11 registra publicação Cloudflare `d777092a-f6b0-4564-bac5-8b940b03d10d`, em 11/10/2026 às 04:42:58 UTC. Esse registro histórico não comprova o status atual do Worker, a atualização de uma extensão instalada ou uma nova consulta autenticada. A `main` contém conector `1.3.0`, consulta por trimestre, nomes de turmas padronizados e espera pelo carregamento real do SGE. A referência anterior `1.2.3` pertence ao PR6. O [changelog](CHANGELOG.md) registra a sequência sem inventar tags ou releases.
 
-A branch `app-android-1-0-1` deve ser preservada. Integrar sua compatibilidade com a web atual exige revisar os conflitos e validar o conjunto; isso não equivale a compilar, assinar, instalar ou testar um APK `1.0.1`.
+A branch `app-android-1-0-1` deve ser preservada. Sua compatibilidade com a web atual foi conciliada nesta branch por merges e regeneração dos runtimes; isso não equivale a compilar, assinar, instalar ou testar um APK `1.0.1`.
 
 ## Começar e encontrar a documentação
 

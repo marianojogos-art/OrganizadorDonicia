@@ -5,14 +5,14 @@ Execução somente no executor cloud, checkout separado, origin `https://github.
 | Verificação | Organização web | Android conciliado |
 | --- | --- | --- |
 | `npm ci` raiz e mobile (lockfiles) | Aprovado | Dependências fixadas compartilhadas no executor |
-| `npm run lint` | Aprovado; sintaxe JS/MJS/CJS e JSX | Executado após integrar organização |
+| `npm run lint` | Aprovado; sintaxe JS/MJS/CJS e JSX | Aprovado após integrar organização |
 | `npm run typecheck` | Aprovado, esquema/configuração TypeScript | Mesmo escopo; aplicativo JS não tem typecheck configurado |
 | `npm test` | 100 aprovados | 100 aprovados |
 | `npm run test:mobile` | 12 aprovados | 14 aprovados |
 | `npm run build` | Aprovado, web e ZIP conector | Aprovado |
 | `npm run runtime:check` | Aprovado após regeneração | Aprovado após conciliação |
-| `npm --prefix mobile-sge run check:bundle` | Android e iOS Hermes aprovados | Reexecutado após integração |
-| `npm run check:cloudflare` | Dry-run aprovado | Reexecutado após integração |
+| `npm --prefix mobile-sge run check:bundle` | Android e iOS Hermes aprovados | Aprovado após integração |
+| `npm run check:cloudflare` | Dry-run aprovado | Aprovado após integração |
 | CI GitHub no SHA enviado | Consultar PR e Actions; local não substitui CI | Consultar PR e Actions |
 | APK/AAB/IPA assinado deste código | Não executado | Não executado; export Hermes não é APK |
 | Android/iOS físico; SGE autenticado 1.3.0 | Não executado | Depende de conta/sessão/dispositivo autorizados |
@@ -23,3 +23,5 @@ A primeira verificação dos runtimes detectou arquivos gerados divergentes; amb
 A conciliação Android preserva a branch original e incorpora ambos os históricos via merge, sem force-push. Único conflito inicial: `injected-runtime.js`, resolvido regenerando as fontes. A ponte informa protocolo/conector 1.3.0; suporte aos dois domínios, controles nativos e funcionalidades da main foram preservados. O relatório de APK 1.0.0 no README móvel é histórico, não evidência de compilação 1.0.1.
 
 Não houve merge main, deploy de produção, migração remota, aplicação de rulesets, exclusão de branches ou publicação de releases. A conexão Cloudflare existente pode executar prévia ao abrir PR; ela usa banco isolado e não equivale a publicação em main. Antes do merge, exigir CI aprovada e autorização explícita de produção, conforme [deploy](deploy.md).
+
+Após integrar a organização na branch Android, `npm run validate` (100+14 testes), exportação Android/iOS Hermes (604 módulos iOS) e Wrangler dry-run passaram em 11/10/2026. Nenhum novo APK foi criado.
