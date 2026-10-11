@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {parseHTML} from 'linkedom';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
-import {parseSgeClasses,parseSgeTeachers,parseSgePlans} from '../src/sge-pages.mjs';
+import {parseSgeClasses,parseSgeTeachers,parseSgePlans,parseSgePage} from '../src/sge-pages.mjs';
 import {collectSupervision,snapshotAdapter,planningTrimester,situationReview} from '../src/supervision.mjs';
 import {handle} from '../src/worker.mjs';
 import {sqlite} from '../scripts/sqlite-adapter.mjs';
@@ -246,4 +246,16 @@ test('SGE class parser accepts both official hosts and rejects unrelated or cros
  }
  assert.throws(()=>parseSgeClasses(doc(body),'https://evil.example/sge8105/'),/Origem/);
  assert.throws(()=>parseSgeClasses(doc(body,'https://www.sgebr.net.br/sge8105/hselgerenciamentoplanoaula.aspx'),'https://www.sgebr.com.br/sge8105/'),/Origem/);
+});
+
+
+test('SGE explicitly empty planning pages are complete empty lists, not session failures',()=>{
+ const body=fields({DISCODNOM:'301-MATEMATICA'})+'<span id="TITULO">Planejamento de 301-MATEMATICA - ANA FICTÍCIA</span><span>Professor(a) não criou Planejamentos de Aula até o momento</span>';
+ for(const origin of ['https://www.sgebr.com.br','https://www.sgebr.net.br']){
+  const result=parseSgePage(doc(body),origin+'/sge8105/hplanejamentoaulager.aspx');
+  assert.equal(result.type,'plans');assert.equal(result.teacherName,'ANA FICTÍCIA');assert.equal(result.complete,true);assert.deepEqual(result.plans,[]);
+ }
+ assert.throws(()=>parseSgePlans(doc(body.replace('Professor(a) não criou Planejamentos de Aula até o momento','Sessão encerrada')),base),/não encontrados/);
+ assert.throws(()=>parseSgePage(doc(body,'login.aspx'),base),/não encontrados/);
+ assert.throws(()=>parseSgePage(doc(body.replace('id="TITULO"','id="OUTRO"')),base),/Nome do professor/);
 });

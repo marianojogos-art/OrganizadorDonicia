@@ -1,7 +1,7 @@
 {
  "manifest_version":3,
  "name":"Organizador Donícia — Supervisão SGE",
- "version":"1.2.1",
+ "version":"1.2.2",
  "description":"Consulta turmas e planejamentos usando a sessão do SGE no navegador.",
  "permissions":["scripting","tabs"],
  "host_permissions":["https://www.sgebr.net.br/sge8105/*","https://www.sgebr.com.br/sge8105/*"],

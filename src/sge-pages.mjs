@@ -47,12 +47,14 @@ export function parseSgeTeachers(document,url){
  return {type:'teachers',className,classNumber:value(document,'TURNUM'),grade:value(document,'GRACOD'),stage:value(document,'SECNUM'),teachers,sourceUrl,pagination,complete:pagination.last===1};
 }
 function brDate(text){const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);if(!m)return null;const iso=m[3]+'-'+m[2]+'-'+m[1];return !Number.isNaN(Date.parse(iso))&&new Date(iso).toISOString().slice(0,10)===iso?iso:null}
+const emptyPlans=document=>[...document.querySelectorAll('span')].some(node=>clean(node)==='Professor(a) não criou Planejamentos de Aula até o momento');
 export function parseSgePlans(document,url){
- const sourceUrl=pageUrl(document,url),grid=document.querySelector('#GRIDPLANEJADO');if(!grid)throw Error('Planejamentos do professor não encontrados.');
+ const sourceUrl=pageUrl(document,url),grid=document.querySelector('#GRIDPLANEJADO');
+ if(!grid&&(!emptyPlans(document)||!new URL(sourceUrl).pathname.toLowerCase().endsWith('/hplanejamentoaulager.aspx')))throw Error('Planejamentos do professor não encontrados.');
  const subject=value(document,'DISCODNOM'),title=clean(document.querySelector('#TITULO'));
  const prefix='Planejamento de '+subject+' - ',teacherName=title.startsWith(prefix)?title.slice(prefix.length):'';
  if(!teacherName)throw Error('Nome do professor não reconhecido na página de planejamentos.');
- const plans=[...grid.querySelectorAll('tr')].filter(r=>r.querySelector('input[name^="PLAULASEQ_"]')).map(row=>{
+ const plans=[...(grid?.querySelectorAll('tr')||[])].filter(r=>r.querySelector('input[name^="PLAULASEQ_"]')).map(row=>{
   const slot=row.querySelector('input[name^="PLAULASEQ_"]').name.match(/_(\d{4})$/)[1];
   const start=brDate(rowValue(row,'PLAULADTINICIO')),end=brDate(rowValue(row,'PLAULADTFIM'));
   if(!start||!end||start>end)throw Error('Período do planejamento não reconhecido.');
@@ -64,6 +66,6 @@ export function parseSgePlans(document,url){
 export function parseSgePage(document,url){
  if(document.querySelector('#GRIDTURMA'))return parseSgeClasses(document,url);
  if(document.querySelector('#GRIDDISCIPLINA'))return parseSgeTeachers(document,url);
- if(document.querySelector('#GRIDPLANEJADO'))return parseSgePlans(document,url);
+ if(document.querySelector('#GRIDPLANEJADO')||emptyPlans(document))return parseSgePlans(document,url);
  return {type:'detail',sourceUrl:pageUrl(document,url)};
 }
