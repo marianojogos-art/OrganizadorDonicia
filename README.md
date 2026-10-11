@@ -31,6 +31,10 @@ A base desta revisão é o commit de produção [`bcebc67`](https://github.com/m
 
 Orientações para contribuições e autorizações estão em [AGENTS.md](AGENTS.md). Alterações na `main` disparam publicação; registrar um PR não autoriza seu merge/deploy.
 
+## Atualização nativa Android 1.0.1
+
+A atualização do aplicativo prepara `versionCode` 2 e empacota o leitor SGE do conector 1.2.3, com suporte aos dois domínios e correções de listas vazias. O WebView utiliza o site publicado com o leiaute móvel e a agenda mensal. Os 14 testes móveis e a exportação Android Hermes passaram; a instalação e a consulta real no aparelho ainda precisam ser verificadas. Instruções de build e assinatura estão em [mobile-sge/README.md](mobile-sge/README.md). A tabela acima preserva o estado histórico da publicação do PR8.
+
 ## Executar localmente
 
 Requer Node.js 24 (SQLite nativo). Execute `npm ci` para instalar as versões fixadas, incluindo Wrangler:
