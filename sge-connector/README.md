@@ -1,14 +1,14 @@
 # Conector SGE para Supervisão
 
-## Versão no repositório: 1.3.0
+## Versão no repositório: 1.3.1
 
-O manifesto, a interface web e o ping do conector usam `1.3.0` na base `main` `32b11d8`. O [PR11](https://github.com/marianojogos-art/OrganizadorDonicia/pull/11) integra a espera pelo carregamento real do SGE e registra publicação Cloudflare. O código também inclui consulta por trimestre e apresentação padronizada das turmas. A versão `1.2.3` e a leitura autenticada conferida no PR6 são referências históricas, não a versão atual do manifesto.
+O manifesto, a interface web e o ping atuais usam `1.3.1`, preparada para a Chrome Web Store com ícones e permissões mínimas. A base anterior `main` `32b11d8` usava `1.3.0`. O [PR11](https://github.com/marianojogos-art/OrganizadorDonicia/pull/11) integra a espera pelo carregamento real do SGE e registra publicação Cloudflare. O código também inclui consulta por trimestre e apresentação padronizada das turmas. A versão `1.2.3` e a leitura autenticada conferida no PR6 são referências históricas, não a versão atual do manifesto.
 
 A espera confere a aba antes de injetar os scripts, evita o `about:blank` temporário e identifica redirecionamentos fora do SGE. A interface informa versão disponível e versão detectada. Suporta sessões em `www.sgebr.com.br` e `www.sgebr.net.br` e páginas explicitamente vazias, incluindo paginação zero ou grade oculta.
 
-Para atualizar, baixe o ZIP na Supervisão após login, extraia em uma pasta própria, substitua os arquivos da extensão instalada, abra `chrome://extensions` (ou a página de extensões do Edge) e recarregue **Organizador Donícia — Supervisão SGE**. Recarregue o Organizador e confira `1.3.0` nos detalhes da extensão e na interface. Mantenha SGE e Organizador no mesmo perfil. Para desenvolvimento, `npm run build` na raiz gera `dist/sge-connector.zip` e `dist/sge-connector/`.
+Para atualizar, baixe o ZIP na Supervisão após login, extraia em uma pasta própria, substitua os arquivos da extensão instalada, abra `chrome://extensions` (ou a página de extensões do Edge) e recarregue **Organizador Donícia — Supervisão SGE**. Recarregue o Organizador e confira `1.3.1` nos detalhes da extensão e na interface. Mantenha SGE e Organizador no mesmo perfil. Para desenvolvimento, `npm run build` na raiz gera `dist/sge-connector.zip` e `dist/sge-connector/`.
 
-O ZIP recém-gerado deve ter o mesmo manifesto da fonte. Publicação do ZIP não atualiza automaticamente a extensão já instalada. Os testes simulados e o registro do PR11 não comprovam nova leitura em uma sessão autenticada; essa verificação permanece manual.
+O ZIP recém-gerado mantém versão, ícones e permissões da fonte, mas limita o content script e o background à origem Organizador de produção. A pasta descompactada de desenvolvimento conserva suporte à demonstração loopback. Publicação do ZIP não atualiza automaticamente a extensão já instalada. Os testes simulados e o registro do PR11 não comprovam nova leitura em uma sessão autenticada; essa verificação permanece manual.
 
 ## Subseções e reinício da Supervisão
 
