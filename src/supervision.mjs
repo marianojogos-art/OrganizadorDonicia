@@ -42,6 +42,7 @@ export function situationReview(value){
 }
 export async function collectSupervision(env,input){
  if(!input||!Array.isArray(input.classIds)||!input.classIds.length||input.classIds.length>250||input.classIds.some(x=>!id(x))||new Set(input.classIds).size!==input.classIds.length||!['classes','school'].includes(input.scope)||typeof input.teacher!=='string'||input.teacher.length>150)throw new SupervisionError('Confirme as turmas e informe uma busca válida.',400);
+ if(![undefined,'',1,2,3].includes(input.trimester))throw new SupervisionError('Escolha um trimestre válido.',400);
  const query=normalized(input.teacher);
  if(input.scope==='school'&&query.length<2)throw new SupervisionError('Informe pelo menos duas letras do professor para buscar em toda a escola.',400);
  const directory=await readSupervisionClasses(env),origin=new URL(directory.sourceUrl).origin;
@@ -73,7 +74,7 @@ export async function collectSupervision(env,input){
      return {id:p.id,title:p.title,trimester,...situationReview(p.situation),url:p.url===null?null:sourceUrl(p.url,origin),classId:c.id,className:c.name,assignmentId:t.assignmentId,subject:t.subject};
     });
     if(label(data.name,150))teacher.name=data.name;
-    teacher.plans.push(...plans);
+    teacher.plans.push(...plans.filter(p=>!input.trimester||p.trimester===input.trimester));
    }catch(e){assignment.ok=false;assignment.error=e.message;result.ok=false;result.errors.push(t.name+' · '+t.subject+': '+e.message)}
   }
  }
@@ -82,7 +83,7 @@ export async function collectSupervision(env,input){
   t.summary={classes:[...new Set(t.assignments.map(a=>a.className))],total:t.plans.length,situations,attention:t.plans.filter(p=>p.review==='attention'||p.review==='missing').length,inAnalysis:t.plans.filter(p=>p.review==='analysis').length,unclassified:t.plans.filter(p=>p.review==='check').length,missingLinks:t.plans.filter(p=>!p.url).length,failedAssignments:t.assignments.filter(a=>!a.ok).length};
   const rank={missing:0,attention:1,analysis:2,check:3,approved:4};t.plans.sort((a,b)=>rank[a.review]-rank[b.review]||a.className.localeCompare(b.className,'pt-BR'));
  }
- return {scope:input.scope,query:input.teacher,classes,coverage,complete:coverage.every(c=>c.ok),teachers:[...teachers.values()].filter(t=>!query||normalized(t.name).includes(query)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')),updatedAt:new Date().toISOString(),sourceUrl:directory.sourceUrl};
+ return {scope:input.scope,query:input.teacher,trimester:input.trimester||'',classes,coverage,complete:coverage.every(c=>c.ok),teachers:[...teachers.values()].filter(t=>!query||normalized(t.name).includes(query)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')),updatedAt:new Date().toISOString(),sourceUrl:directory.sourceUrl};
 }
 export function planningTrimester(start,end){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(start)||!/^\d{4}-\d{2}-\d{2}$/.test(end)||start>end||Number.isNaN(Date.parse(start))||Number.isNaN(Date.parse(end))||new Date(start).toISOString().slice(0,10)!==start||new Date(end).toISOString().slice(0,10)!==end)throw new SupervisionError('Datas do planejamento inválidas.');

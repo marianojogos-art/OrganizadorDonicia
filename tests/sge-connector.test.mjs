@@ -62,3 +62,10 @@ test('connector times out a tab that never reaches SGE and keeps permissions res
  const manifest=JSON.parse(await readFile(new URL('../sge-connector/manifest.json',import.meta.url),'utf8'));
  assert.equal((await b.send('ping')).data.version,manifest.version);assert.deepEqual(manifest.host_permissions,['https://www.sgebr.net.br/sge8105/*']);
 });
+
+ test('trimester query opens only matching dates and leaves cross-period plans unclassified',async()=>{
+ const b=browser(),original=b.pages.plans.plans[0];b.pages.plans.plans=[{...original,id:'march',start:'2026-03-01',end:'2026-05-31'},{...original,id:'june',start:'2026-06-01',end:'2026-09-30'},{...original,id:'oct',start:'2026-10-01',end:'2026-12-31'},{...original,id:'cross',start:'2026-05-31',end:'2026-06-01'}];
+ const result=await b.send('planning',{classId:key,assignmentId:'202:1',sourceUrl:base+'hplanejamentodisciplinasger.aspx?teacher',trimester:2});
+ assert.ok(result.data,result.error);assert.deepEqual(result.data.plans.map(p=>p.id),['june']);assert.equal(result.data.plans[0].trimester,2);assert.deepEqual(b.actions.filter(a=>a.kind==='plan').map(a=>a.id),['june']);
+ const empty=await b.send('planning',{classId:key,assignmentId:'202:1',sourceUrl:base+'hplanejamentodisciplinasger.aspx?teacher',trimester:1,query:'Outro'});assert.equal(empty.data.plans.length,0);
+ });
