@@ -12,8 +12,9 @@ function pageUrl(document,url){
  try{allowedSgeUrl(parsed.href);if(url&&parsed.origin!==new URL(url).origin)throw Error()}catch{throw Error('Origem do SGE não reconhecida.')}
  return parsed.href;
 }
-function navigation(document){
+function navigation(document,empty=false){
  const current=Number(value(document,'_ATUAL')||1),last=Number(value(document,'_FINAL')||1);
+ if(empty&&last===0&&(current===0||current===1))return {current:1,last:1};
  if(!Number.isInteger(current)||!Number.isInteger(last)||current<1||last<current||last>50)throw Error('Paginação do SGE não reconhecida.');
  return {current,last};
 }
@@ -60,7 +61,7 @@ export function parseSgePlans(document,url){
   if(!start||!end||start>end)throw Error('Período do planejamento não reconhecido.');
   return {id:rowValue(row,'PLAULASEQ'),title:rowValue(row,'_PERIODOPLANO'),start,end,lessons:Number(rowValue(row,'PLAULANUMAULAS')),includedAt:rowValue(row,'PLAULADATHORINC'),situation:row.querySelector('img[id^="_SITUACAO_"]')?.getAttribute('title')?.trim()||null,situationCode:rowValue(row,'PLAULASITUACAO'),trimester:null,row:slot,classId:classKey(row),subjectCode:rowValue(row,'DISCOD'),url:null};
  });
- const pagination=navigation(document);
+ const pagination=navigation(document,!grid&&emptyPlans(document));
  return {type:'plans',teacherName,subject,plans,sourceUrl,pagination,complete:pagination.last===1};
 }
 export function parseSgePage(document,url){
