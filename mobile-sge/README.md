@@ -2,6 +2,12 @@
 
 A versão 1.0.0 abre o próprio site publicado em um WebView para Android e iPhone. Telas, contas, permissões, validações, relatórios e dados são os mesmos do site. O aplicativo não cria banco local nem reimplementa módulos escolares.
 
+## Estado da versão e limites de atualização
+
+O pacote nativo permanece em `1.0.0`. O site, o conector de navegador (`1.2.3`) e o aplicativo nativo têm ciclos de versão diferentes. A publicação dos PRs7/8 atualizou o site carregado pelo WebView, incluindo o leiaute móvel e a agenda mensal, mas **não gerou nem distribuiu um novo APK/IPA**. O runtime SGE injetado é empacotado no aplicativo: correções no leitor compartilhado precisam ser regeneradas e incluídas em outro build nativo para chegar a uma instalação existente.
+
+Na revisão documental após o PR8, `npm test` nesta pasta e `npm run build:runtime` concluíram com sucesso. O runtime gerado para conferência não foi incluído nesta alteração documental. Não foi realizada nova instalação ou validação física do aplicativo. As instruções e os artefatos de Windows abaixo registram o ambiente usado em 06/10/2026; não afirmam que aquelas ferramentas ou credenciais estejam instaladas no PC Linux atual.
+
 ## Uso
 
 1. Abra o aplicativo e faça o login institucional do Organizador.
@@ -14,7 +20,7 @@ A área do SGE apenas conecta o navegador ao protocolo usado pelo site. A navega
 
 ## Abrir no Expo Go
 
-Neste computador as dependências estão instaladas:
+Após instalar as dependências, gere o runtime e inicie o servidor:
 
 ```powershell
 node scripts/build-runtime.mjs
@@ -43,15 +49,15 @@ npx eas build --platform android --profile preview
 npx eas build --platform ios --profile production
 ```
 
-No ambiente Windows desta sessão, a renomeação atômica em AppData falha. O auxiliar ignorado `../.tools/eas-local.cjs` usa `.expo` para as configurações e a sessão do EAS. Não publicar essas pastas ou compartilhar os arquivos de autenticação.
+No ambiente Windows usado em 06/10/2026, a renomeação atômica em AppData falha. O auxiliar ignorado `../.tools/eas-local.cjs` usa `.expo` para as configurações e a sessão do EAS. Não publicar essas pastas ou compartilhar os arquivos de autenticação.
 
-### Compilação Android neste computador
+### Histórico de compilação Android no Windows
 
 JDK 17 e Android SDK foram instalados de forma portátil em `../.tools/android-local`. O SDK contém plataforma 36, Build Tools 35.0.0 e 36.0.0, NDK 27.1.12297006 e CMake 3.22.1. Não é necessário instalar o Android Studio para executar o build.
 
 O script `scripts/build-android-local.ps1` gera os runtimes, prepara o projeto Android quando necessário, compila a versão release e verifica a assinatura. Usa a mesma chave Android do EAS, em `credentials.json` e `credentials/android/keystore.jks`, ambos ignorados pelo Git. Nunca compartilhar esses arquivos.
 
-Nesta sessão, `Q:` aponta temporariamente para a raiz do repositório via `subst`, para encurtar os caminhos das ferramentas. O script compila automaticamente em `%TEMP%/dnc/a`, uma cópia temporária sem credenciais, para evitar acentos, caminhos longos e mistura de raízes do Windows. Copia o leitor compartilhado para a pasta temporária e devolve o APK ao projeto original; não cria outra implementação do aplicativo. Java usa UTF-8. Executar no PowerShell:
+Naquela sessão, `Q:` apontava temporariamente para a raiz do repositório via `subst`, para encurtar os caminhos das ferramentas. O script compila automaticamente em `%TEMP%/dnc/a`, uma cópia temporária sem credenciais, para evitar acentos, caminhos longos e mistura de raízes do Windows. Copia o leitor compartilhado para a pasta temporária e devolve o APK ao projeto original; não cria outra implementação do aplicativo. Java usa UTF-8. Executar no PowerShell:
 
 ```powershell
 Set-Location Q:\mobile-sge
