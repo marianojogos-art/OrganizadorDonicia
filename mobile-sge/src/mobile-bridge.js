@@ -1,3 +1,4 @@
+import {APP_VERSION,CONNECTOR_VERSION} from './version.js';
 import {createSgeReader} from '../../src/sge-reader.mjs';
 export const ORGANIZER='https://organizadordonicia.carijo.workers.dev';
 export const ACCESS='https://tiny-dew-2c0d.cloudflareaccess.com';
@@ -10,7 +11,7 @@ export class MobileBridge{
   if(message.command==='open-sge'){if(this.running){this.status('Aguarde a consulta atual antes de abrir outro planejamento.');return}await this.openSge(message.url);return}
   if(typeof message.id!=='string'||message.id.length>150)return;
   const response=data=>this.reply({channel:'donicia-sge-response',id:message.id,...data});
-  if(message.command==='ping'){response({data:{version:'mobile-1.0.0',progress:true,selective:true,native:true}});return}
+  if(message.command==='ping'){response({data:{version:'mobile-'+APP_VERSION,connectorVersion:CONNECTOR_VERSION,progress:true,selective:true,native:true}});return}
   if(!['directory','teachers','planning'].includes(message.command))return;
   if(this.running){response({error:'Já há uma consulta ao SGE em andamento. Aguarde.'});return}
   this.running=true;this.status('Consultando o SGE…');
