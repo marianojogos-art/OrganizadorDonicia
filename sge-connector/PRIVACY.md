@@ -1,6 +1,6 @@
 # Privacidade — Conector SGE do Organizador Donícia
 
-Atualização técnica: 11/10/2026. Código preparado para loja: 1.3.1. Esta política descreve o tratamento implementado; antes da submissão, o titular deve confirmar os responsáveis, contato e práticas administrativas indicados ao final.
+Atualização técnica: 11/10/2026. Código preparado para loja: 1.3.1. Esta política descreve o tratamento implementado; antes da submissão, o titular deve confirmar os responsáveis e práticas administrativas indicados ao final.
 
 ## Finalidade e uso
 
@@ -31,8 +31,8 @@ Cloudflare fornece a infraestrutura do site/API/banco e Cloudflare Access contro
 
 A extensão não mantém banco próprio nem usa `chrome.storage`, localStorage ou IndexedDB. Isso não elimina a persistência no D1. Reiniciar a tela, recarregar ou desinstalar a extensão não apaga os relatórios escolares. Não existe prazo automático de expiração ou rota específica de exclusão da Supervisão implementada nesta versão. Retenção, revisão de acesso e exclusão administrativa devem ser definidas e atendidas pelo responsável institucional; não se promete exclusão automática.
 
-O código e a descrição técnica são públicos em [marianojogos-art/OrganizadorDonicia](https://github.com/marianojogos-art/OrganizadorDonicia). [Issues](https://github.com/marianojogos-art/OrganizadorDonicia/issues) recebem dúvidas técnicas sem dados pessoais; não publique relatórios reais, nomes/matrículas, links de sessão ou credenciais nesse canal. Solicitações sobre dados institucionais devem utilizar o contato de privacidade confirmado pelo titular.
+O código e a descrição técnica são públicos em [marianojogos-art/OrganizadorDonicia](https://github.com/marianojogos-art/OrganizadorDonicia). [Issues](https://github.com/marianojogos-art/OrganizadorDonicia/issues) recebem dúvidas técnicas sem dados pessoais; não publique relatórios reais, nomes/matrículas, links de sessão ou credenciais nesse canal. Solicitações sobre privacidade e suporte podem ser encaminhadas a [assistentesge@gmail.com](mailto:assistentesge@gmail.com), contato público autorizado pelo titular em 11/10/2026. Descreva a solicitação com o mínimo de informação necessário; não envie senhas, cookies, links de sessão ou relatórios reais como parte de um chamado técnico.
 
 ## Confirmação necessária antes da submissão
 
-O titular ainda deve informar identidade do publicador/responsável, contato de privacidade e suporte, vínculo/autorização institucional e regras administrativas de retenção/exclusão. Esses campos não foram inventados. A publicação desta descrição técnica no GitHub não representa certificação jurídica, aceite de termos ou confirmação dessas práticas.
+O titular ainda deve informar identidade do publicador/responsável, vínculo/autorização institucional e regras administrativas de retenção/exclusão. Esses campos não foram inventados. A publicação desta descrição técnica no GitHub não representa certificação jurídica, aceite de termos ou confirmação dessas práticas.

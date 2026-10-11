@@ -24,6 +24,7 @@ As imagens demonstram a interface real com dados fictícios; não representam co
 
 - Site: https://organizadordonicia.carijo.workers.dev/ (login Cloudflare Access necessário).
 - Privacidade técnica pública: https://github.com/marianojogos-art/OrganizadorDonicia/blob/main/sge-connector/PRIVACY.md
+- Contato público de privacidade e suporte: assistentesge@gmail.com (autorizado pelo titular em 11/10/2026).
 - Código e suporte técnico público sem dados pessoais: https://github.com/marianojogos-art/OrganizadorDonicia/issues
 
-A política deve receber a confirmação dos campos do titular antes das certificações. Não inserir contato inventado. A distribuição recomendada para revisão inicial é não listada se o titular concordar; o executor do dashboard deve confirmar visibilidade, países e status comercial, sem supor escolhas.
+A política deve receber a confirmação dos campos do titular antes das certificações. O contato público acima foi informado e autorizado; os demais campos não devem ser presumidos. A distribuição recomendada para revisão inicial é não listada se o titular concordar; o executor do dashboard deve confirmar visibilidade, países e status comercial, sem supor escolhas.

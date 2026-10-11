@@ -6,7 +6,7 @@ Pacote destinado a **novo item Organizador Donícia — Supervisão SGE**. Não 
 
 - `listing.pt-BR.md`: descrição e URLs.
 - `dashboard-privacy.md`: propósito, permissões/dados e pendências do titular.
-- [Política técnica pública](../../sge-connector/PRIVACY.md): precisa confirmar identidade/contacto e práticas administrativas antes de certificar.
+- [Política técnica pública](../../sge-connector/PRIVACY.md): contato público assistentesge@gmail.com confirmado; precisa confirmar identidade e práticas administrativas antes de certificar.
 - `assets/supervisao-demonstracao-1280x800.png` e `supervisao-consulta-1280x800.png`: capturas da interface real no Chromium154, estado e turmas sintéticos; aviso explícito de demonstração, sem consulta real SGE.
 - `assets/promocional-440x280.png`: composição gráfica original do documento/consulta, sem marcas oficiais. Ícone128 e tamanhos menores em `sge-connector/icons/`, incluídos no pacote.
 
@@ -35,4 +35,8 @@ Não há declaração de teste físico/SGE autenticado. O Chromium do executor b
 
 ## Pendências para submissão real
 
-Confirmar identidade e contato de privacidade/suporte do titular, autoridade institucional, retenção/exclusão e certificações sobre práticas externas. Confirmar distribuição/status comercial/países quando solicitados. Acesso para revisores precisa método privado autorizado; não fornecer credenciais/contas reais em repositório público nem alterar Access para facilitar revisão. Cadastro e envio na loja são coordenados por outro executor; não duplicar essa ação.
+Contato público de privacidade/suporte confirmado: **assistentesge@gmail.com**. Ainda confirmar identidade do titular e autoridade institucional, retenção/exclusão e certificações sobre práticas externas. Confirmar distribuição/status comercial/países quando solicitados. Acesso para revisores precisa método privado autorizado; não fornecer credenciais/contas reais em repositório público nem alterar Access para facilitar revisão. Cadastro e envio na loja são coordenados por outro executor; não duplicar essa ação.
+
+## Transferência de artefatos
+
+O executor de upload informou falha Library `403 scope_violation` nos ZIPs existentes. Não baixar os mesmos IDs por outra rota nem criar novos IDs para contornar essa negativa. Não houve reenvio dos artefatos por este executor nesta retomada. Os documentos e imagens originais permanecem no GitHub autorizado; o usuário pode reanexar o pacote no contexto de upload quando desejar. A versão do código continua 1.3.1, e a atualização de contato não altera os bytes da extensão nem exige recriar imagens.

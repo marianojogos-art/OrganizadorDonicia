@@ -31,9 +31,13 @@ Resposta técnica proposta: **Não usa código remoto.** Leitor, seletores e con
 
 O tratamento não termina na extensão: mensagens → Organizador → HTTPS API → Cloudflare D1 ao salvar, acesso da direção autorizada, relatórios para download. Extensão sem armazenamento próprio não significa ausência de dados persistidos. Reiniciar/desinstalar não apaga o D1. Não há expiração automática nem endpoint de exclusão específico; informar a prática real administrativa.
 
+## Contato público confirmado
+
+Privacidade e suporte: **assistentesge@gmail.com**, informado e autorizado pelo titular em 11/10/2026. Usar este endereço nos campos correspondentes da loja; não trocar pelo e-mail de login da conta. Não enviar credenciais ou relatórios reais em chamados técnicos.
+
 ## Certificações que exigem confirmação do titular
 
-Não assinalar automaticamente os compromissos legais com base apenas na auditoria. O código não implementa venda/ads/analytics ou uso para crédito, mas o titular deve confirmar práticas externas, compartilhamento, uso limitado, autoridade institucional, contato e retenção/exclusão. Também confirmar identidade do publicador, países/status comercial e finalidade de distribuição.
+Não assinalar automaticamente os compromissos legais com base apenas na auditoria. O código não implementa venda/ads/analytics ou uso para crédito, mas o titular deve confirmar práticas externas, compartilhamento, uso limitado, autoridade institucional e retenção/exclusão. Também confirmar identidade do publicador, países/status comercial e finalidade de distribuição.
 
 ## Teste para revisores
 
