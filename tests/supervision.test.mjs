@@ -254,6 +254,19 @@ test('SGE explicitly empty planning pages are complete empty lists, not session 
  for(const origin of ['https://www.sgebr.com.br','https://www.sgebr.net.br']){
   const result=parseSgePage(doc(body),origin+'/sge8105/hplanejamentoaulager.aspx');
   assert.equal(result.type,'plans');assert.equal(result.teacherName,'ANA FICTÍCIA');assert.equal(result.complete,true);assert.deepEqual(result.plans,[]);
+  const dynamic=doc(body);
+  for(const [name,live] of Object.entries({DISCODNOM:'301-MATEMATICA',_ATUAL:'1',_FINAL:'2'})){
+   let field=dynamic.querySelector('input[name="'+name+'"]');
+   if(!field){field=dynamic.createElement('input');field.name=name;dynamic.querySelector('#MAINFORM').append(field)}
+   field.removeAttribute('value');Object.defineProperty(field,'value',{value:live});
+  }
+  const populated=parseSgePage(dynamic,origin+'/sge8105/hplanejamentoaulager.aspx');
+  assert.equal(populated.teacherName,'ANA FICTÍCIA');assert.equal(populated.subject,'301-MATEMATICA');assert.equal(populated.pagination.last,1);assert.equal(populated.complete,true);
+  for(const current of [0,1,-1]){
+   const empty=parseSgePage(doc(body+'<table id="GRIDPLANEJADO" style="display:none"><tr><th>Período</th></tr></table>'+fields({_ATUAL:current,_FINAL:0})),origin+'/sge8105/hplanejamentoaulager.aspx');
+   assert.equal(empty.complete,true);assert.deepEqual(empty.pagination,{current:1,last:1});assert.deepEqual(empty.plans,[]);
+  }
+  assert.throws(()=>parseSgePage(doc(body.replace('Professor(a) não criou Planejamentos de Aula até o momento','Sessão encerrada')+'<table id="GRIDPLANEJADO"></table>'+fields({_ATUAL:1,_FINAL:-1})),origin+'/sge8105/hplanejamentoaulager.aspx'),/Paginação/);
  }
  assert.throws(()=>parseSgePlans(doc(body.replace('Professor(a) não criou Planejamentos de Aula até o momento','Sessão encerrada')),base),/não encontrados/);
  assert.throws(()=>parseSgePage(doc(body,'login.aspx'),base),/não encontrados/);

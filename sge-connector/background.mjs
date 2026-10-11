@@ -21,7 +21,8 @@ function completed(tabId){
 }
 async function snapshot(tabId){
  await chrome.scripting.executeScript({target:{tabId},world:'MAIN',files:['page-runtime.js']});
- const result=await chrome.scripting.executeScript({target:{tabId},world:'MAIN',func:()=>window.__doniciaSge.snapshot()});
+ const result=await chrome.scripting.executeScript({target:{tabId},world:'MAIN',func:()=>{try{return window.__doniciaSge.snapshot()}catch(e){return {readError:e.message}}}});
+ if(result[0]?.result?.readError)throw Error(result[0].result.readError);
  if(!result[0]?.result)throw Error('Não foi possível ler a página do SGE. Verifique se a sessão está autenticada.');
  return result[0].result;
 }
@@ -36,7 +37,7 @@ async function navigate(tabId,url){
 chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
  let origin;try{origin=new URL(sender.url).origin}catch{return false}
  if(!organizerOrigins.has(origin))return false;
- if(message.command==='ping'){sendResponse({ok:true,data:{version:'1.2.2',progress:true,selective:true}});return false}
+ if(message.command==='ping'){sendResponse({ok:true,data:{version:'1.2.3',progress:true,selective:true}});return false}
  if(!['directory','teachers','planning'].includes(message.command))return false;
  if(running){sendResponse({error:'Já há uma consulta ao SGE em andamento. Aguarde.'});return false}
  running=true;

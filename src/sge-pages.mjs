@@ -1,6 +1,6 @@
 import {allowedSgeUrl} from './sge-origin.mjs';
 export const sgeBase='https://www.sgebr.net.br/sge8105/';
-const value=(node,name)=>node.querySelector('input[name="'+name+'"]')?.getAttribute('value')?.trim()||'';
+const value=(node,name)=>{const field=node.querySelector('input[name="'+name+'"]');return (field?.value??field?.getAttribute('value')??'').trim()};
 const rowValue=(row,name)=>[...row.querySelectorAll('input[name]')].find(x=>new RegExp('^'+name+'_\\d{4}$').test(x.name))?.getAttribute('value')?.trim()||'';
 const clean=node=>node?.textContent.replace(/\s+/g,' ').trim()||'';
 const contextKeys=['UECOD','CURANO','GRACOD','TRNCOD','SECNUM','TURNUM'];
@@ -60,7 +60,8 @@ export function parseSgePlans(document,url){
   if(!start||!end||start>end)throw Error('Período do planejamento não reconhecido.');
   return {id:rowValue(row,'PLAULASEQ'),title:rowValue(row,'_PERIODOPLANO'),start,end,lessons:Number(rowValue(row,'PLAULANUMAULAS')),includedAt:rowValue(row,'PLAULADATHORINC'),situation:row.querySelector('img[id^="_SITUACAO_"]')?.getAttribute('title')?.trim()||null,situationCode:rowValue(row,'PLAULASITUACAO'),trimester:null,row:slot,classId:classKey(row),subjectCode:rowValue(row,'DISCOD'),url:null};
  });
- const pagination=navigation(document);
+ // SGE retains a hidden header-only grid on empty pages with invalid legacy pagination.
+ const pagination=emptyPlans(document)&&plans.length===0?{current:1,last:1}:navigation(document);
  return {type:'plans',teacherName,subject,plans,sourceUrl,pagination,complete:pagination.last===1};
 }
 export function parseSgePage(document,url){
