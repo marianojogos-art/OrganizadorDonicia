@@ -18,7 +18,7 @@ const message=(id,command,input)=>({channel:'donicia-native-organizer',id,comman
 test('mobile uses only the website and its Access login; untrusted pages cannot call native SGE',async()=>{
  assert.equal(organizerNavigation(ORGANIZER),true);assert.equal(organizerNavigation(ACCESS+'/cdn-cgi/access/login'),true);for(const url of ['https://evil.example','http://organizadordonicia.carijo.workers.dev','https://u:p@organizadordonicia.carijo.workers.dev'])assert.equal(organizerNavigation(url),false);
  assert.equal(organizerSender(ACCESS),false);const replies=[],bridge=new MobileBridge(transport(),{reply:r=>replies.push(r)});
- await bridge.handle(message('1','ping'),'https://evil.example');assert.equal(replies.length,0);await bridge.handle(message('1','ping'),ORGANIZER);assert.equal(replies[0].data.native,true);assert.equal(replies[0].data.progress,true);
+ await bridge.handle(message('1','ping'),'https://evil.example');assert.equal(replies.length,0);await bridge.handle(message('1','ping'),ORGANIZER);assert.equal(replies[0].data.native,true);assert.equal(replies[0].data.progress,true);assert.equal(replies[0].data.version,'mobile-1.0.1');assert.equal(replies[0].data.connectorVersion,'1.2.3');
 });
 test('native bridge exposes the same connector commands, stream and direct links',async()=>{
  const replies=[],bridge=new MobileBridge(transport(),{reply:r=>replies.push(r)});
@@ -41,8 +41,8 @@ test('unauthenticated SGE asks for login without collecting credentials and reje
  bridge.running=true;await bridge.handle(message('t','teachers',{}),ORGANIZER);assert.match(replies.at(-1).error,/andamento/);
 });
 test('organizer runtime installs once, forwards only allowed requests and adapts connector instructions',async()=>{
- const runtime=await readFile(new URL('../src/organizer-runtime.js',import.meta.url),'utf8'),{document}=parseHTML('<html><body><details class="supervision-setup">Extension</details></body></html>'),window={},sent=[],listeners=[];
+ const generated=await readFile(new URL('../src/injected-organizer.js',import.meta.url),'utf8'),runtime=JSON.parse(generated.match(/export default ([\s\S]*);\s*$/)[1]),{document}=parseHTML('<html><body><details class="supervision-setup">Extension</details><a href="https://www.sgebr.com.br/sge8105/hplanejamentoaulager.aspx">Planejamento</a></body></html>'),window={},sent=[],listeners=[];
  window.ReactNativeWebView={postMessage:raw=>sent.push(JSON.parse(raw))};window.addEventListener=(event,handler)=>{if(event==='message')listeners.push(handler)};window.postMessage=()=>{};
  const context=vm.createContext({window,document,location:{origin:ORGANIZER},URL,MutationObserver:class {observe(){}}});vm.runInContext('(()=>{'+runtime+'})()',context);vm.runInContext('(()=>{'+runtime+'})()',context);assert.equal(listeners.length,1);assert.ok(document.querySelector('[data-native-sge-open]'));assert.equal(document.querySelector('[download]'),null);
- listeners[0]({source:window,origin:ORGANIZER,data:{channel:'donicia-sge-request',id:'1',command:'planning',input:{classId}}});assert.equal(sent[0].command,'planning');listeners[0]({source:window,origin:'https://evil.example',data:{channel:'donicia-sge-request',id:'2',command:'planning'}});assert.equal(sent.length,1);
+ listeners[0]({source:window,origin:ORGANIZER,data:{channel:'donicia-sge-request',id:'1',command:'planning',input:{classId}}});assert.equal(sent[0].command,'planning');listeners[0]({source:window,origin:'https://evil.example',data:{channel:'donicia-sge-request',id:'2',command:'planning'}});assert.equal(sent.length,1);const click=new document.defaultView.Event('click',{bubbles:true,cancelable:true});document.querySelector('a').dispatchEvent(click);assert.equal(click.defaultPrevented,true);assert.equal(sent.at(-1).command,'open-sge');assert.match(sent.at(-1).url,/www\.sgebr\.com\.br/);
 });
