@@ -40,3 +40,8 @@ Publicador independente **AssistenteSGE** e contato público de privacidade/supo
 ## Transferência de artefatos
 
 O executor de upload informou falha Library `403 scope_violation` nos ZIPs existentes. Não baixar os mesmos IDs por outra rota nem criar novos IDs para contornar essa negativa. Não houve reenvio dos artefatos por este executor nesta retomada. Os documentos e imagens originais permanecem no GitHub autorizado; o usuário pode reanexar o pacote no contexto de upload quando desejar. A versão do código continua 1.3.1, e a atualização de contato não altera os bytes da extensão nem exige recriar imagens.
+
+
+## Obtenção atual pelo GitHub
+
+A pedido do usuário em 11/10/2026 (“Pegue o último do Github”), o pacote foi reconstruído diretamente das fontes atuais e registrado em [distributions/sge-connector](../../distributions/sge-connector/README.md), com checksum e reprodução conferida pelo CI. Abra o ZIP no GitHub e use **Download raw file** para obtê-lo no navegador cloud. Não houve acesso à Library ou tentativa de recuperar seus arquivos negados; esta distribuição usa o repositório público como fonte explicitamente solicitada. Não é uma release publicada nem envio à loja.
