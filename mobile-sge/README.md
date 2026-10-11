@@ -4,9 +4,11 @@ A versão 1.0.0 abre o próprio site publicado em um WebView para Android e iPho
 
 ## Estado da versão e limites de atualização
 
-O pacote nativo permanece em `1.0.0`. O site, o conector de navegador (`1.2.3`) e o aplicativo nativo têm ciclos de versão diferentes. A publicação dos PRs7/8 atualizou o site carregado pelo WebView, incluindo o leiaute móvel e a agenda mensal, mas **não gerou nem distribuiu um novo APK/IPA**. O runtime SGE injetado é empacotado no aplicativo: correções no leitor compartilhado precisam ser regeneradas e incluídas em outro build nativo para chegar a uma instalação existente.
+O pacote nativo permanece em `1.0.0`. O site, o conector de navegador (`1.3.0` na base atual) e o aplicativo nativo têm ciclos de versão diferentes. A publicação dos PRs7/8 atualizou o site carregado pelo WebView, incluindo o leiaute móvel e a agenda mensal, mas **não gerou nem distribuiu um novo APK/IPA**. O runtime SGE injetado é empacotado no aplicativo: correções no leitor compartilhado precisam ser regeneradas e incluídas em outro build nativo para chegar a uma instalação existente.
 
-Na revisão documental após o PR8, `npm test` nesta pasta e `npm run build:runtime` concluíram com sucesso. O runtime gerado para conferência não foi incluído nesta alteração documental. Não foi realizada nova instalação ou validação física do aplicativo. As instruções e os artefatos de Windows abaixo registram o ambiente usado em 06/10/2026; não afirmam que aquelas ferramentas ou credenciais estejam instaladas no PC Linux atual.
+A base `main` `32b11d8` contém versão nativa `1.0.0`. O [PR10](https://github.com/marianojogos-art/OrganizadorDonicia/pull/10) propõe compatibilidade Android `1.0.1`; a branch original deve ser preservada durante a conciliação com a web/conector atuais. Consulte `package.json` e `app.json` do commit revisado para identificar a versão efetiva. Não existe evidência de novo APK `1.0.1` compilado, assinado e testado apenas porque essa versão aparece no código.
+
+Os comandos de validação atuais estão em [desenvolvimento](../docs/desenvolvimento.md). Testes, typecheck, runtime e exportação Expo são verificações de código/bundle; não substituem instalação física. As ferramentas de Windows e o APK citados abaixo são registros de 06/10/2026, não ferramentas presentes no executor cloud nem uma solicitação de acesso ao computador do usuário.
 
 ## Uso
 

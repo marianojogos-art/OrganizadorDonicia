@@ -10,15 +10,22 @@
     "dev": "node scripts/dev.mjs",
     "check:cloudflare": "wrangler deploy --dry-run",
     "db:migrate:cloudflare": "wrangler d1 migrations apply donicia-school --remote",
-    "deploy:cloudflare": "node scripts/build.mjs && wrangler d1 migrations apply donicia-school --remote && wrangler deploy"
+    "deploy:cloudflare": "npm run validate && wrangler d1 migrations apply donicia-school --remote && wrangler deploy",
+    "lint": "node scripts/lint.mjs",
+    "typecheck": "tsc --noEmit",
+    "test:mobile": "npm --prefix mobile-sge test",
+    "runtime:check": "node scripts/check-runtime.mjs",
+    "validate": "npm run lint && npm run typecheck && npm test && npm run test:mobile && npm run build && npm run runtime:check"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
     "linkedom": "0.18.12"
   },
   "devDependencies": {
+    "@types/node": "24.10.1",
     "drizzle-kit": "0.31.10",
     "esbuild": "0.25.12",
+    "typescript": "5.9.3",
     "wrangler": "4.147.0"
   },
   "engines": {
