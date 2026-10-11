@@ -1,6 +1,6 @@
 # Privacidade — Conector SGE do Organizador Donícia
 
-Atualização técnica: 11/10/2026. Código preparado para loja: 1.3.1. Esta política descreve o tratamento implementado; antes da submissão, o titular deve confirmar os responsáveis e práticas administrativas indicados ao final.
+Atualização: 11/10/2026. Versão do conector: 1.3.1. Publicador independente: **AssistenteSGE**. Contato de privacidade e suporte: [assistentesge@gmail.com](mailto:assistentesge@gmail.com). Esta política descreve o tratamento implementado no conector e no Organizador.
 
 ## Finalidade e uso
 
@@ -29,10 +29,10 @@ Cloudflare fornece a infraestrutura do site/API/banco e Cloudflare Access contro
 
 ## Retenção e solicitações
 
-A extensão não mantém banco próprio nem usa `chrome.storage`, localStorage ou IndexedDB. Isso não elimina a persistência no D1. Reiniciar a tela, recarregar ou desinstalar a extensão não apaga os relatórios escolares. Não existe prazo automático de expiração ou rota específica de exclusão da Supervisão implementada nesta versão. Retenção, revisão de acesso e exclusão administrativa devem ser definidas e atendidas pelo responsável institucional; não se promete exclusão automática.
+A extensão não mantém banco próprio nem usa `chrome.storage`, localStorage ou IndexedDB. Isso não elimina a persistência no D1. Reiniciar a tela, recarregar ou desinstalar a extensão não apaga os relatórios escolares. Não existe prazo automático de expiração ou rota específica de exclusão da Supervisão implementada nesta versão. Os relatórios persistem até uma intervenção administrativa no banco; o código auditado não define um prazo de retenção. Solicitações de revisão de acesso ou exclusão administrativa podem ser encaminhadas ao contato abaixo para avaliação com o responsável pelos dados. Não há função de exclusão automática nesta versão nem prazo de atendimento declarado.
 
 O código e a descrição técnica são públicos em [marianojogos-art/OrganizadorDonicia](https://github.com/marianojogos-art/OrganizadorDonicia). [Issues](https://github.com/marianojogos-art/OrganizadorDonicia/issues) recebem dúvidas técnicas sem dados pessoais; não publique relatórios reais, nomes/matrículas, links de sessão ou credenciais nesse canal. Solicitações sobre privacidade e suporte podem ser encaminhadas a [assistentesge@gmail.com](mailto:assistentesge@gmail.com), contato público autorizado pelo titular em 11/10/2026. Descreva a solicitação com o mínimo de informação necessário; não envie senhas, cookies, links de sessão ou relatórios reais como parte de um chamado técnico.
 
-## Confirmação necessária antes da submissão
+## Publicação independente e acesso autorizado
 
-O titular ainda deve informar identidade do publicador/responsável, vínculo/autorização institucional e regras administrativas de retenção/exclusão. Esses campos não foram inventados. A publicação desta descrição técnica no GitHub não representa certificação jurídica, aceite de termos ou confirmação dessas práticas.
+AssistenteSGE publica o conector como desenvolvedor independente. Não se declara vínculo, endosso ou representação de escola, Prefeitura, SGE ou Google. O usuário deve possuir autorização para acessar e tratar as informações da escola configurada; instalar o conector não concede essa autorização. Práticas administrativas externas ao código não são certificadas por esta descrição técnica.

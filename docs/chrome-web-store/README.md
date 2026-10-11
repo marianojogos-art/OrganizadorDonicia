@@ -6,7 +6,7 @@ Pacote destinado a **novo item Organizador Donícia — Supervisão SGE**. Não 
 
 - `listing.pt-BR.md`: descrição e URLs.
 - `dashboard-privacy.md`: propósito, permissões/dados e pendências do titular.
-- [Política técnica pública](../../sge-connector/PRIVACY.md): contato público assistentesge@gmail.com confirmado; precisa confirmar identidade e práticas administrativas antes de certificar.
+- [Política técnica pública](../../sge-connector/PRIVACY.md): publicador independente AssistenteSGE e contato público assistentesge@gmail.com definidos; descreve a retenção implementada, sem inventar prazos.
 - `assets/supervisao-demonstracao-1280x800.png` e `supervisao-consulta-1280x800.png`: capturas da interface real no Chromium154, estado e turmas sintéticos; aviso explícito de demonstração, sem consulta real SGE.
 - `assets/promocional-440x280.png`: composição gráfica original do documento/consulta, sem marcas oficiais. Ícone128 e tamanhos menores em `sge-connector/icons/`, incluídos no pacote.
 
@@ -35,7 +35,7 @@ Não há declaração de teste físico/SGE autenticado. O Chromium do executor b
 
 ## Pendências para submissão real
 
-Contato público de privacidade/suporte confirmado: **assistentesge@gmail.com**. Ainda confirmar identidade do titular e autoridade institucional, retenção/exclusão e certificações sobre práticas externas. Confirmar distribuição/status comercial/países quando solicitados. Acesso para revisores precisa método privado autorizado; não fornecer credenciais/contas reais em repositório público nem alterar Access para facilitar revisão. Cadastro e envio na loja são coordenados por outro executor; não duplicar essa ação.
+Publicador independente **AssistenteSGE** e contato público de privacidade/suporte **assistentesge@gmail.com** definidos. Não há alegação de endosso escolar; autorização para acesso aos dados cabe ao usuário. A política descreve ausência de expiração automática e solicitações administrativas pelo contato, sem prazo inventado. Certificações sobre práticas externas ainda exigem confirmação do titular. Confirmar distribuição/status comercial/países quando solicitados. Acesso para revisores precisa método privado autorizado; não fornecer credenciais/contas reais em repositório público nem alterar Access para facilitar revisão. Cadastro e envio na loja são coordenados por outro executor; não duplicar essa ação.
 
 ## Transferência de artefatos
 

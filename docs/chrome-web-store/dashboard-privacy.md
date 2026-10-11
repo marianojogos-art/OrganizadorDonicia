@@ -29,7 +29,7 @@ Resposta técnica proposta: **Não usa código remoto.** Leitor, seletores e con
 | Informações de autenticação | Não há leitura direta de senha/cookie | Sessão usada pelo Chrome. URLs SGE têm parâmetros opacos; não atestar que nunca contenham identificador sensível sem análise real. |
 | Financeiro, saúde, localização, comunicações pessoais | Sem funcionalidade de coleta desses tipos no leitor auditado | Campos livres da fonte podem conter informação inserida por terceiros; não emitir garantia absoluta sobre conteúdo externo. |
 
-O tratamento não termina na extensão: mensagens → Organizador → HTTPS API → Cloudflare D1 ao salvar, acesso da direção autorizada, relatórios para download. Extensão sem armazenamento próprio não significa ausência de dados persistidos. Reiniciar/desinstalar não apaga o D1. Não há expiração automática nem endpoint de exclusão específico; informar a prática real administrativa.
+O tratamento não termina na extensão: mensagens → Organizador → HTTPS API → Cloudflare D1 ao salvar, acesso da direção autorizada, relatórios para download. Extensão sem armazenamento próprio não significa ausência de dados persistidos. Reiniciar/desinstalar não apaga o D1. Não há expiração automática nem endpoint de exclusão específico. A política informa persistência até intervenção administrativa e permite solicitar avaliação pelo contato público, sem prometer prazo ou função inexistente.
 
 ## Contato público confirmado
 
@@ -37,7 +37,7 @@ Privacidade e suporte: **assistentesge@gmail.com**, informado e autorizado pelo 
 
 ## Certificações que exigem confirmação do titular
 
-Não assinalar automaticamente os compromissos legais com base apenas na auditoria. O código não implementa venda/ads/analytics ou uso para crédito, mas o titular deve confirmar práticas externas, compartilhamento, uso limitado, autoridade institucional e retenção/exclusão. Também confirmar identidade do publicador, países/status comercial e finalidade de distribuição.
+Não assinalar automaticamente os compromissos legais com base apenas na auditoria. O código não implementa venda/ads/analytics ou uso para crédito, mas o titular deve confirmar práticas externas, compartilhamento e uso limitado antes de certificar. Publicação como **AssistenteSGE**, desenvolvedor independente, sem alegar representação ou endosso escolar. A autorização para acesso institucional cabe ao usuário e não é conferida pela publicação na loja. Confirmar países/status comercial e finalidade de distribuição quando o dashboard solicitar. Não importar prazos de retenção de outros produtos AssistenteSGE.
 
 ## Teste para revisores
 

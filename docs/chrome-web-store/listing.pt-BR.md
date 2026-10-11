@@ -2,6 +2,8 @@
 
 Nome: **Organizador Donícia — Supervisão SGE**
 
+Publicador: **AssistenteSGE**, desenvolvedor independente. Não declarar vínculo ou endosso institucional.
+
 Resumo (manifesto, menos de 132 caracteres): **Consulta turmas e planejamentos usando a sessão do SGE no navegador.**
 
 Idioma: português (Brasil). Categoria sugerida: produtividade, confirmar a opção disponível no dashboard. Novo item independente; não atualizar outro Assistente SGE existente na conta.
@@ -27,4 +29,4 @@ As imagens demonstram a interface real com dados fictícios; não representam co
 - Contato público de privacidade e suporte: assistentesge@gmail.com (autorizado pelo titular em 11/10/2026).
 - Código e suporte técnico público sem dados pessoais: https://github.com/marianojogos-art/OrganizadorDonicia/issues
 
-A política deve receber a confirmação dos campos do titular antes das certificações. O contato público acima foi informado e autorizado; os demais campos não devem ser presumidos. A distribuição recomendada para revisão inicial é não listada se o titular concordar; o executor do dashboard deve confirmar visibilidade, países e status comercial, sem supor escolhas.
+A identidade de publicação independente e o contato público acima estão definidos. Não inferir endosso escolar nem certificar práticas administrativas externas ao código sem confirmação do titular. A distribuição recomendada para revisão inicial é não listada se o titular concordar; o executor do dashboard deve confirmar visibilidade, países e status comercial, sem supor escolhas.
