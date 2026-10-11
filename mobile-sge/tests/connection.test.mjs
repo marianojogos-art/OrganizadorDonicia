@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import {parseHTML} from 'linkedom';
 import {createSgeReader} from '../../src/sge-reader.mjs';
-import {SGE_HOME,allowedNavigation,validBridgeEvent,validBridgePage} from '../src/connection.js';
+import {SGE_HOME,sgeClassesUrl,allowedNavigation,validBridgeEvent,validBridgePage} from '../src/connection.js';
 const ids=['106801:2026:9135:1:1:11','106801:2026:9135:1:1:12'];
 function fixture(){
  let state='classes',current=1,active=0;const trace=[],updates=[],classes=ids.map((id,i)=>({id,name:'Turma '+(i+11),url:SGE_HOME+'classes.aspx'}));
@@ -47,4 +47,31 @@ test('WebView bridge emits no login fields and refuses non-read actions',async()
  window.ReactNativeWebView={postMessage:value=>messages.push(JSON.parse(value))};const context=vm.createContext({window,document,location:{origin:'https://www.sgebr.net.br',pathname:'/sge8105/login.aspx',href:SGE_HOME+'login.aspx'},URL});vm.runInContext(source,context);
  vm.runInContext("window.__doniciaMobile.request({id:'check',kind:'snapshot'});window.__doniciaMobile.request({id:'write',kind:'open',action:{kind:'save',id:'1'}})",context);
  assert.equal(messages.find(m=>m.id==='check').data.type,'detail');assert.equal(validBridgePage(messages.find(m=>m.id==='check').pageUrl),true);assert.ok(messages.find(m=>m.id==='write').error);assert.ok(!JSON.stringify(messages).includes('secret-password'));assert.ok(!JSON.stringify(messages).includes('private-cpf'));
+});
+
+test('mobile accepts both official SGE hosts and keeps the active domain for the classes button',()=>{
+ for(const origin of ['https://www.sgebr.net.br','https://www.sgebr.com.br']){
+  assert.equal(allowedNavigation(origin+'/sge8105/'),true);
+  assert.equal(validBridgeEvent({url:origin}),true);
+  assert.equal(validBridgePage(origin+'/sge8105/hplanejamentoaulager.aspx'),true);
+  assert.equal(sgeClassesUrl(origin+'/sge8105/hplanejamentoaulager.aspx'),origin+'/sge8105/hselgerenciamentoplanoaula.aspx');
+  for(const invalid of [origin.replace('https:','http:')+'/sge8105/',origin+'.evil.example/sge8105/',origin.replace('https://','https://u:p@')+'/sge8105/'])assert.equal(allowedNavigation(invalid),false);
+ }
+ assert.equal(sgeClassesUrl('about:blank'),SGE_HOME+'hselgerenciamentoplanoaula.aspx');
+ assert.equal(validBridgePage('https://www.sgebr.com.br/'),false);
+});
+test('the shipped WebView bundle reads empty pages with hidden grids and preserves parser errors on both domains',async()=>{
+ const generated=await readFile(new URL('../src/injected-runtime.js',import.meta.url),'utf8'),runtime=JSON.parse(generated.match(/export default ([\s\S]*);\s*$/)[1]);
+ for(const origin of ['https://www.sgebr.net.br','https://www.sgebr.com.br']){
+  const href=origin+'/sge8105/hplanejamentoaulager.aspx',messages=[];
+  const {document,window}=parseHTML('<form id="MAINFORM"><input name="DISCODNOM"><input name="_ATUAL"><input name="_FINAL"><span id="TITULO">Planejamento de 301-MATEMATICA - ANA FICTÍCIA</span><span id="empty">Professor(a) não criou Planejamentos de Aula até o momento</span><table id="GRIDPLANEJADO" style="display:none"><tr><th>Período</th></tr></table></form>');
+  for(const [name,value] of Object.entries({DISCODNOM:'301-MATEMATICA',_ATUAL:'0',_FINAL:'0'}))Object.defineProperty(document.querySelector('[name="'+name+'"]'),'value',{value,configurable:true});
+  window.ReactNativeWebView={postMessage:raw=>messages.push(JSON.parse(raw))};
+  const context=vm.createContext({window,document,location:{origin,pathname:'/sge8105/hplanejamentoaulager.aspx',href},URL});vm.runInContext(runtime,context);
+  vm.runInContext("window.__doniciaMobile.request({id:'empty',kind:'snapshot'})",context);
+  const result=messages.find(x=>x.id==='empty');assert.equal(result.data.type,'plans');assert.equal(result.data.complete,true);assert.deepEqual(result.data.pagination,{current:1,last:1});assert.deepEqual(result.data.plans,[]);assert.equal(result.data.subject,'301-MATEMATICA');
+  document.querySelector('#empty').textContent='Sessão encerrada';Object.defineProperty(document.querySelector('[name="_FINAL"]'),'value',{value:'-1',configurable:true});
+  vm.runInContext("window.__doniciaMobile.request({id:'failure',kind:'snapshot'})",context);
+  assert.match(messages.find(x=>x.id==='failure').error,/Paginação do SGE/);
+ }
 });
