@@ -261,12 +261,12 @@ test('SGE explicitly empty planning pages are complete empty lists, not session 
    field.removeAttribute('value');Object.defineProperty(field,'value',{value:live});
   }
   const populated=parseSgePage(dynamic,origin+'/sge8105/hplanejamentoaulager.aspx');
-  assert.equal(populated.teacherName,'ANA FICTÍCIA');assert.equal(populated.subject,'301-MATEMATICA');assert.equal(populated.pagination.last,2);assert.equal(populated.complete,false);
-  for(const current of [0,1]){
+  assert.equal(populated.teacherName,'ANA FICTÍCIA');assert.equal(populated.subject,'301-MATEMATICA');assert.equal(populated.pagination.last,1);assert.equal(populated.complete,true);
+  for(const current of [0,1,-1]){
    const empty=parseSgePage(doc(body+fields({_ATUAL:current,_FINAL:0})),origin+'/sge8105/hplanejamentoaulager.aspx');
    assert.equal(empty.complete,true);assert.deepEqual(empty.pagination,{current:1,last:1});assert.deepEqual(empty.plans,[]);
   }
-  assert.throws(()=>parseSgePage(doc(body+fields({_ATUAL:1,_FINAL:-1})),origin+'/sge8105/hplanejamentoaulager.aspx'),/Paginação/);
+  assert.throws(()=>parseSgePage(doc(body+'<table id="GRIDPLANEJADO"></table>'+fields({_ATUAL:1,_FINAL:-1})),origin+'/sge8105/hplanejamentoaulager.aspx'),/Paginação/);
  }
  assert.throws(()=>parseSgePlans(doc(body.replace('Professor(a) não criou Planejamentos de Aula até o momento','Sessão encerrada')),base),/não encontrados/);
  assert.throws(()=>parseSgePage(doc(body,'login.aspx'),base),/não encontrados/);
