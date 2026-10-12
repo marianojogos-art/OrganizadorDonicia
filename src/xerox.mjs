@@ -17,7 +17,7 @@ export function xeroxFields(data,user,previous={}){
   const type=types[attachment.type];
   if(!type||typeof attachment.name!=='string'||!attachment.name.trim()||attachment.name.length>160||/[\x00-\x1f\x7f/\\]/.test(attachment.name)||!type.extension.test(attachment.name))throw new XeroxInputError('Anexe somente PDF, PNG ou JPEG com nome válido');
   if(typeof attachment.base64!=='string'||attachment.base64.length>Math.ceil(MAX_ATTACHMENT_BYTES/3)*4)throw new XeroxInputError('Anexo maior que 256 KiB',413);
-  if(!/^[A-Za-z0-9+/]*={0,2}$/.test(attachment.base64))throw new XeroxInputError('Codificação do anexo inválida');
+  if(attachment.base64.length%4!==0||!/^[A-Za-z0-9+/]*={0,2}$/.test(attachment.base64))throw new XeroxInputError('Codificação do anexo inválida');
   const bytes=atob(attachment.base64);
   if(btoa(bytes)!==attachment.base64)throw new XeroxInputError('Codificação do anexo inválida');
   if(!bytes.length||bytes.length>MAX_ATTACHMENT_BYTES)throw new XeroxInputError('Anexo vazio ou maior que 256 KiB',413);

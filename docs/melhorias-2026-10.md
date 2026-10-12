@@ -15,3 +15,9 @@ Um arquivo PDF, PNG ou JPEG de até **256 KiB** pode acompanhar cada pedido. O b
 O anexo fica no **D1 existente**, protegido pela API e pelo login/Access, sem bucket, URL pública, novo binding ou credencial. O limite conservador mantém linhas abaixo do [limite D1 de 2 MB](https://developers.cloudflare.com/d1/platform/limits/) e o upload usa parâmetros preparados. Pedidos antigos permanecem sem anexo, com impressão padrão preto e branco e nome do solicitante. Editar sem novo arquivo preserva o anterior; substituir/remover é atômico com o pedido e controle de versão. Apagar um pedido também apaga seu anexo. Nenhum arquivo de produção é incluído no GitHub ou testes.
 
 Materiais maiores exigem uma decisão posterior de infraestrutura/limites; não há provisionamento automático de R2 nem armazenamento público como alternativa. O limite aparece no formulário. O D1 continua sujeito às cotas já existentes de uso e armazenamento; não se alega capacidade ilimitada.
+
+## Formação integrada ao calendário
+
+A área Formação mostra os mesmos registros do calendário, filtrados por tipo Formação. A direção cadastra título/data e pode acrescentar horário, local e informações de pauta; professores consultam. O filtro mensal e o filtro de formação não criam registros nem duplicam eventos. Sem cadastro, a área fica vazia. Horários são locais da escola. Edição e remoção usam controle de versão existente.
+
+A migração 0008 adiciona campos, preservando eventos, IDs e permissões anteriores. Internamente, a marca de formação é independente da restrição histórica do tipo SQL; a API apresenta o tipo Formação. Nada foi importado de calendários ou mensagens privadas.

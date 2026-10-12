@@ -5,7 +5,8 @@ const planningMigration=await readFile(new URL('../migrations/0002_substitution_
 const responsibleMigration=await readFile(new URL('../migrations/0004_reservation_responsible.sql',import.meta.url),'utf8');
 const contextMigration=await readFile(new URL('../migrations/0006_reservation_context.sql',import.meta.url),'utf8');
 const xeroxMigration=await readFile(new URL('../migrations/0007_xerox_attachments.sql',import.meta.url),'utf8');
-function setup(){const DB=sqlite();DB.exec(migration+planningMigration+gradeMigration+responsibleMigration+contextMigration+xeroxMigration);DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
+const formationMigration=await readFile(new URL('../migrations/0008_formation_calendar.sql',import.meta.url),'utf8');
+function setup(){const DB=sqlite();DB.exec(migration+planningMigration+gradeMigration+responsibleMigration+contextMigration+xeroxMigration+formationMigration);DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
 const send=async(env,path,method='GET',data,email='director@prof.pmf.sc.gov.br',origin='https://school.example')=>{if(['PATCH','DELETE'].includes(method)&&data&&data.version===undefined){const [kind,id]=path.split('/');const table=kind.replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?').bind(id).first();data={...data,version:row?.version||1}}const r=await handle(new Request('https://school.example/api/'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(data)}),env,async()=>email);return {status:r.status,body:await r.json()}};
 const reservation={space:'Biblioteca',date:'2026-10-05',start:'09:00',end:'10:00',purpose:'Leitura fictícia',responsible:'Responsável fictício'};
 const taskData={title:'Conferir calendário',due:'2026-10-05',owner:'one@prof.pmf.sc.gov.br',restricted:false};
@@ -111,4 +112,18 @@ test('private xerox attachments validate content and size, preserve ownership, r
  assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,attachment:undefined,remove_attachment:true,edit:true},owner)).status,200);assert.equal((await download(owner)).status,404);
  assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,edit:true,version:1},owner)).status,409);
  assert.equal((await send(e,'xerox/'+id,'DELETE',{},owner)).status,200);assert.equal((await download(owner)).status,404);
+});
+
+
+test('formation is a single calendar entry, with optional information and direction-only changes',async()=>{
+ const e=setup(),data={title:'Formação fictícia',date:'2026-10-15',type:'Formação',start:'14:00',end:'16:00',location:'Sala fictícia',details:'Pauta de formação fictícia'};
+ assert.equal((await send(e,'events','POST',data,'one@prof.pmf.sc.gov.br')).status,403);
+ const f=await send(e,'events','POST',data);assert.equal(f.status,201);
+ const rows=(await send(e,'events','GET',undefined,'one@prof.pmf.sc.gov.br')).body;assert.equal(rows.length,1);assert.equal(rows[0].type,'Formação');assert.equal(rows[0].details,data.details);
+ assert.equal((await send(e,'events','POST',{...data,start:'17:00',end:'16:00'})).status,400);
+ assert.equal((await send(e,'events','POST',{...data,start:'',end:'16:00'})).status,400);
+ assert.equal((await send(e,'events/'+f.body.id,'PATCH',{...data,type:'Reunião',edit:true})).status,200);
+ assert.equal((await send(e,'events')).body[0].formation,0);
+ assert.equal((await send(e,'events/'+f.body.id,'PATCH',{...data,edit:true,version:1})).status,409);
+ assert.equal((await send(e,'events/'+f.body.id,'DELETE',{})).status,200);
 });
