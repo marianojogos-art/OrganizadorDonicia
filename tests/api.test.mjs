@@ -4,7 +4,8 @@ const gradeMigration=await readFile(new URL('../migrations/0003_webhorario_lesso
 const planningMigration=await readFile(new URL('../migrations/0002_substitution_planning.sql',import.meta.url),'utf8');
 const responsibleMigration=await readFile(new URL('../migrations/0004_reservation_responsible.sql',import.meta.url),'utf8');
 const contextMigration=await readFile(new URL('../migrations/0006_reservation_context.sql',import.meta.url),'utf8');
-function setup(){const DB=sqlite();DB.exec(migration+planningMigration+gradeMigration+responsibleMigration+contextMigration);DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
+const xeroxMigration=await readFile(new URL('../migrations/0007_xerox_attachments.sql',import.meta.url),'utf8');
+function setup(){const DB=sqlite();DB.exec(migration+planningMigration+gradeMigration+responsibleMigration+contextMigration+xeroxMigration);DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
 const send=async(env,path,method='GET',data,email='director@prof.pmf.sc.gov.br',origin='https://school.example')=>{if(['PATCH','DELETE'].includes(method)&&data&&data.version===undefined){const [kind,id]=path.split('/');const table=kind.replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?').bind(id).first();data={...data,version:row?.version||1}}const r=await handle(new Request('https://school.example/api/'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(data)}),env,async()=>email);return {status:r.status,body:await r.json()}};
 const reservation={space:'Biblioteca',date:'2026-10-05',start:'09:00',end:'10:00',purpose:'Leitura fictícia',responsible:'Responsável fictício'};
 const taskData={title:'Conferir calendário',due:'2026-10-05',owner:'one@prof.pmf.sc.gov.br',restricted:false};
@@ -91,4 +92,23 @@ test('reservation context persists and fixed weekly ranges are inclusive, confli
  assert.equal((await send(e,'fixed-occupancy/'+f.body.id,'DELETE',{})).status,200);
  assert.equal((await send(e,'reservations','POST',{...reservation,date:'2026-10-18'})).status,201);
  const rows=(await send(e,'reservations')).body;assert.equal(rows[0].class,'Turma fictícia');assert.equal(rows[0].subject,'Disciplina fictícia');
+});
+
+
+test('private xerox attachments validate content and size, preserve ownership, replace and delete atomically',async()=>{
+ const e=setup(),owner='one@prof.pmf.sc.gov.br',other='two@prof.pmf.sc.gov.br';
+ const attachment={name:'material-ficticio.pdf',type:'application/pdf',base64:btoa('%PDF-1.4\nFICTICIO\n%%EOF')};
+ const data={title:'Material fictício',copies:5,deadline:'2026-10-13',professor:'Professor fictício',class:'Turma fictícia',color:'Colorido',attachment};
+ const created=await send(e,'xerox','POST',data,owner);assert.equal(created.status,201);const id=created.body.id;
+ const rows=(await send(e,'xerox','GET',undefined,owner)).body;assert.equal(rows[0].color,'Colorido');assert.equal(rows[0].attachment_name,attachment.name);assert.equal(JSON.stringify(rows).includes(attachment.base64),false);assert.equal(rows[0].requester,owner);
+ const download=async(email)=>handle(new Request('https://school.example/api/xerox/'+id+'/attachment'),e,async()=>email);
+ const downloaded=await download(owner);assert.equal(downloaded.status,200);assert.match(downloaded.headers.get('content-disposition'),/^attachment;/);assert.equal(downloaded.headers.get('cache-control'),'private, no-store');assert.equal(await downloaded.text(),atob(attachment.base64));
+ assert.equal((await download(other)).status,404);assert.equal((await download(null)).status,401);assert.equal((await download('director@prof.pmf.sc.gov.br')).status,200);
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,edit:true},other)).status,403);
+ for(const invalid of [{...attachment,type:'text/html'},{...attachment,name:'x.exe'},{...attachment,base64:btoa('<html>Falso</html>')},{...attachment,base64:'!?'},{...attachment,name:'../x.pdf'}])assert.equal((await send(e,'xerox','POST',{...data,attachment:invalid},owner)).status,400);
+ assert.equal((await send(e,'xerox','POST',{...data,attachment:{...attachment,base64:btoa('%PDF-'+ 'x'.repeat(262144))}},owner)).status,413);
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,attachment:undefined,edit:true,title:'Material revisado'},owner)).status,200);assert.equal((await download(owner)).status,200,'omitted attachment preserved');
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,attachment:undefined,remove_attachment:true,edit:true},owner)).status,200);assert.equal((await download(owner)).status,404);
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,edit:true,version:1},owner)).status,409);
+ assert.equal((await send(e,'xerox/'+id,'DELETE',{},owner)).status,200);assert.equal((await download(owner)).status,404);
 });
