@@ -21,3 +21,11 @@ Materiais maiores exigem uma decisão posterior de infraestrutura/limites; não 
 A área Formação mostra os mesmos registros do calendário, filtrados por tipo Formação. A direção cadastra título/data e pode acrescentar horário, local e informações de pauta; professores consultam. O filtro mensal e o filtro de formação não criam registros nem duplicam eventos. Sem cadastro, a área fica vazia. Horários são locais da escola. Edição e remoção usam controle de versão existente.
 
 A migração 0008 adiciona campos, preservando eventos, IDs e permissões anteriores. Internamente, a marca de formação é independente da restrição histórica do tipo SQL; a API apresenta o tipo Formação. Nada foi importado de calendários ou mensagens privadas.
+
+## Notas pessoais por login
+
+Minhas notas permite criar, editar e remover lembretes em cartões amarelos, azuis, rosas ou verdes. Título até 120 caracteres e texto até 4000, com controle de versão contra sobrescrita concorrente. Texto é escapado no HTML; não há interpretação de links, scripts ou markup.
+
+A API consulta e altera notas apenas com `owner=email autenticado`, inclusive na consulta individual, edição e exclusão. Não há exceção para a direção; ela acessa somente as próprias notas. Um ID alheio retorna 404 antes de revelar a versão. O cliente não escolhe o proprietário, e login inativo/não autenticado é bloqueado. Auditoria registra ação/ID, nunca título ou conteúdo. A privacidade é no acesso do aplicativo; administradores autorizados da infraestrutura continuam administrando o banco e seus backups. Não se trata de criptografia de ponta a ponta.
+
+A migração 0009 cria somente tabela e índice novos. As notas são persistidas no D1 e seguem o login, sem armazenamento público ou cache. Nenhuma nota de outro login é carregada para filtragem na interface. Testes usam dois professores fictícios e direção, com tentativas explícitas de acesso cruzado pela API.

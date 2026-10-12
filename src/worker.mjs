@@ -1,3 +1,4 @@
+import {personalNotes} from './personal-notes.mjs';
 import {xeroxFields,downloadAttachment,readLimitedBody,XeroxInputError} from './xerox.mjs';
 import {identity} from './auth.mjs';
 import {readTeachers} from './teachers.mjs';
@@ -19,7 +20,7 @@ const schoolToday=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Pau
 const weekOf=date=>{const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);return monday.toISOString().slice(0,10)};
 async function handleInner(request,env,authenticate=identity){
  const path=new URL(request.url).pathname;
- if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy'],studentData:false});
+ if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy','notes'],studentData:false});
  if(!env.DB)return json({error:'Persistência não configurada'},503);
  const email=await authenticate(request,env);if(!email)return json({error:'Login institucional necessário'},401);
  const write=async(statement,target=path)=>{const results=await env.DB.batch([statement,env.DB.prepare('INSERT INTO audit(id,actor,action,target) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),email,request.method,target)]);if(path.split('/').length===4&&!results[0].meta?.changes)throw Error('version_conflict');return results[0]};
@@ -37,6 +38,7 @@ async function handleInner(request,env,authenticate=identity){
   const asset=await env.ASSETS.fetch(request);const out=new Response(asset.body,asset);out.headers.set('Cache-Control','no-store');out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");return out;
  }
  if(request.method==='GET'){
+  if(path==='/api/notes'||/^\/api\/notes\/[^/]+$/.test(path))return personalNotes(request,env.DB,user);
   if(path==='/api/supervision/saved'){return json(await loadSupervision(env.DB))}
   if(path==='/api/supervision/classes'){try{return json(await readSupervisionClasses(env))}catch(e){return json({error:e instanceof SupervisionError?e.message:'Não foi possível consultar o SGE.'},e.status||503)}}
   if(path==='/api/me')return json(user);
@@ -77,6 +79,7 @@ async function handleInner(request,env,authenticate=identity){
  const resource=path==='/api/substitutions/from-schedule'?null:/^\/api\/(reservations|tasks|substitutions|auxiliaries|xerox|minutes|events|fixed-occupancy)\/([^/]+)$/.exec(path);
  if(resource){if(!Number.isInteger(data.version)||data.version<1)return json({error:'Versão do registro necessária. Atualize a tela'},400);const table=resource[1].replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?').bind(resource[2]).first();if(!row)return json({error:'Registro não encontrado'},404);if(row.version!==data.version)return json({error:'Este registro mudou. Atualize a tela'},409)}
  try{
+  if(path==='/api/notes'||/^\/api\/notes\/[^/]+$/.test(path))return await personalNotes(request,env.DB,user,data);
   if(path==='/api/supervision/save'&&request.method==='POST'){
    try{
     const saved=await loadSupervision(env.DB);

@@ -6,7 +6,8 @@ const responsibleMigration=await readFile(new URL('../migrations/0004_reservatio
 const contextMigration=await readFile(new URL('../migrations/0006_reservation_context.sql',import.meta.url),'utf8');
 const xeroxMigration=await readFile(new URL('../migrations/0007_xerox_attachments.sql',import.meta.url),'utf8');
 const formationMigration=await readFile(new URL('../migrations/0008_formation_calendar.sql',import.meta.url),'utf8');
-function setup(){const DB=sqlite();DB.exec(migration+planningMigration+gradeMigration+responsibleMigration+contextMigration+xeroxMigration+formationMigration);DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
+const notesMigration=await readFile(new URL('../migrations/0009_personal_notes.sql',import.meta.url),'utf8');
+function setup(){const DB=sqlite();DB.exec(migration+planningMigration+gradeMigration+responsibleMigration+contextMigration+xeroxMigration+formationMigration+notesMigration);DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
 const send=async(env,path,method='GET',data,email='director@prof.pmf.sc.gov.br',origin='https://school.example')=>{if(['PATCH','DELETE'].includes(method)&&data&&data.version===undefined){const [kind,id]=path.split('/');const table=kind.replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?').bind(id).first();data={...data,version:row?.version||1}}const r=await handle(new Request('https://school.example/api/'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(data)}),env,async()=>email);return {status:r.status,body:await r.json()}};
 const reservation={space:'Biblioteca',date:'2026-10-05',start:'09:00',end:'10:00',purpose:'Leitura fictícia',responsible:'Responsável fictício'};
 const taskData={title:'Conferir calendário',due:'2026-10-05',owner:'one@prof.pmf.sc.gov.br',restricted:false};
@@ -126,4 +127,26 @@ test('formation is a single calendar entry, with optional information and direct
  assert.equal((await send(e,'events')).body[0].formation,0);
  assert.equal((await send(e,'events/'+f.body.id,'PATCH',{...data,edit:true,version:1})).status,409);
  assert.equal((await send(e,'events/'+f.body.id,'DELETE',{})).status,200);
+});
+
+
+test('personal notes isolate two teachers and direction on every API path, including version checks',async()=>{
+ const e=setup(),one='one@prof.pmf.sc.gov.br',two='two@prof.pmf.sc.gov.br',director='director@prof.pmf.sc.gov.br';
+ const note={title:'Lembrete fictício',content:'Organizar material fictício',color:'azul',owner:two};
+ const n=await send(e,'notes','POST',note,one);assert.equal(n.status,201);
+ const call=async(email,path='notes',method='GET',data)=>{const r=await handle(new Request('https://school.example/api/'+path,{method,headers:{Origin:'https://school.example','Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(data)}),e,async()=>email);return {status:r.status,body:await r.json()}};
+ const own=(await call(one)).body;assert.equal(own.length,1);assert.equal(own[0].title,note.title);assert.equal((await call(two)).body.length,0);assert.equal((await call(director)).body.length,0);
+ for(const other of [two,director]){
+  assert.equal((await call(other,'notes/'+n.body.id)).status,404);
+  assert.equal((await call(other,'notes/'+n.body.id,'PATCH',{...note,version:1})).status,404);
+  assert.equal((await call(other,'notes/'+n.body.id,'DELETE',{version:1})).status,404);
+  assert.equal((await call(other,'notes/'+n.body.id,'PATCH',{...note,version:999})).status,404,'no version/existence leak');
+ }
+ const m=await call(two,'notes','POST',{...note,title:'Nota de outro login'});assert.equal(m.status,201);assert.equal((await call(two)).body.length,1);
+ assert.equal((await call(one,'notes/'+n.body.id,'PATCH',{...note,content:'Texto editado',version:1})).status,200);
+ assert.equal((await call(one,'notes/'+n.body.id,'PATCH',{...note,version:1})).status,409);
+ assert.equal((await call(one,'notes/'+n.body.id,'PATCH',{...note,color:'<script>',version:2})).status,400);
+ assert.equal((await call(null)).status,401);assert.equal((await call('inactive@prof.pmf.sc.gov.br')).status,403);
+ assert.equal((await call(one,'notes/'+n.body.id,'DELETE',{version:2})).status,200);assert.equal((await call(one)).body.length,0);assert.equal((await call(two)).body.length,1);
+ assert.equal(JSON.stringify((await send(e,'audit')).body).includes('Texto editado'),false);
 });
