@@ -29,3 +29,9 @@ Minhas notas permite criar, editar e remover lembretes em cartões amarelos, azu
 A API consulta e altera notas apenas com `owner=email autenticado`, inclusive na consulta individual, edição e exclusão. Não há exceção para a direção; ela acessa somente as próprias notas. Um ID alheio retorna 404 antes de revelar a versão. O cliente não escolhe o proprietário, e login inativo/não autenticado é bloqueado. Auditoria registra ação/ID, nunca título ou conteúdo. A privacidade é no acesso do aplicativo; administradores autorizados da infraestrutura continuam administrando o banco e seus backups. Não se trata de criptografia de ponta a ponta.
 
 A migração 0009 cria somente tabela e índice novos. As notas são persistidas no D1 e seguem o login, sem armazenamento público ou cache. Nenhuma nota de outro login é carregada para filtragem na interface. Testes usam dois professores fictícios e direção, com tentativas explícitas de acesso cruzado pela API.
+
+## Verificação na nuvem
+
+Marcos foram validados com lint, tipagem, testes de API/banco, testes móveis, build, reprodução dos runtimes e dry-run Wrangler. Chromium headless no executor conferiu formação e notas em 1280×900 e 390×844, sem transbordamento horizontal, e realizou upload real pela FileReader/ponte do formulário de um PDF fictício e download autenticado na demonstração local. Nenhuma credencial, dado escolar real ou imagem da conversa foi usada.
+
+O CI e a integração Cloudflare são acompanhados por commit. A consulta HTTP direta do executor ao domínio de produção recebeu `CONNECT tunnel failed, response 403` do proxy, antes de chegar ao site; não comprova falha do aplicativo. Testes locais e build aprovado não substituem uma sessão institucional autenticada de produção. Access, audiência, extensão SGE e outros projetos não foram alterados.

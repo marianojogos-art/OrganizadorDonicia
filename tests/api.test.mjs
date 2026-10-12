@@ -150,3 +150,15 @@ test('personal notes isolate two teachers and direction on every API path, inclu
  assert.equal((await call(one,'notes/'+n.body.id,'DELETE',{version:2})).status,200);assert.equal((await call(one)).body.length,0);assert.equal((await call(two)).body.length,1);
  assert.equal(JSON.stringify((await send(e,'audit')).body).includes('Texto editado'),false);
 });
+
+
+test('xerox rejects invalid base64 and mutation CSRF; returned adjustments preserve the attachment',async()=>{
+ const e=setup(),owner='one@prof.pmf.sc.gov.br',attachment={name:'ficticio.pdf',type:'application/pdf',base64:btoa('%PDF-1.4 FICTICIO')},data={title:'Fictício',copies:2,deadline:'2026-10-15',attachment};
+ for(const base64 of ['A','AAAAA','AA=A','===='])assert.equal((await send(e,'xerox','POST',{...data,attachment:{...attachment,base64}},owner)).status,400);
+ assert.equal((await send(e,'xerox','POST',data,owner,'https://foreign.example')).status,403);
+ const created=await send(e,'xerox','POST',data,owner);assert.equal(created.status,201);const id=created.body.id;
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{status:'Devolvido para ajustes'})).status,200);
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,attachment:undefined,resubmit:true,professor:'Docente fictício',class:'Turma fictícia',color:'Colorido'},owner)).status,200);
+ const row=(await send(e,'xerox','GET',undefined,owner)).body[0];assert.equal(row.status,'Aguardando aprovação');assert.equal(row.attachment_name,'ficticio.pdf');assert.equal(row.color,'Colorido');
+ const empty=await send(e,'xerox','POST',{...data,attachment:{...attachment,base64:''}},owner);assert.equal(empty.status,413);
+});

@@ -2,6 +2,15 @@
 
 Este arquivo registra mudanças verificáveis no Git. Datas são de integração/documentação; não significam release, APK novo ou publicação atual. Não havia tags ou releases publicadas na referência auditada `main` `32b11d8` em 11/10/2026. Versões web, extensão e aplicativo são independentes.
 
+## 12/10/2026 — reservas, xerox, formação e notas pessoais
+
+- `bdae6e1`: turma/disciplina e responsável nas agendas, datas inclusivas com recorrência semanal e conflitos atômicos, mantendo permissão da direção para horários fixos.
+- `4689c88`: professor, turma e impressão de xerox; anexo privado PDF/PNG/JPEG até 256 KiB no D1 existente, validação e download por proprietário/direção.
+- `c7c18e6`: Formação integrada ao calendário, com horário/local/informações e filtros, sem criação de eventos ou duplicação de registros.
+- `3d1f1a7`: notas pessoais por login, com consultas/edições/exclusões filtradas por dono na API, sem acesso especial da direção.
+- Migrações aditivas preservam IDs, dados e permissões anteriores. Código SGE, versão da extensão 1.3.1, Access e audiência permanecem iguais. Não é release ou novo APK.
+- [Guia e evidências](docs/melhorias-2026-10.md): validações locais, QA sintético no Chromium, limites de anexos e limites de confirmação de produção.
+
 ## 11/10/2026 — conector1.3.1 preparado para loja
 
 - Ícones PNG, Chrome mínimo120, retirada da permissão redundante tabs e ZIP somente produção, mantendo variante de desenvolvimento.

@@ -45,13 +45,16 @@ A CI valida raiz e aplicativo móvel sem publicar produção. Testes automatizad
 ## O que funciona
 
 - Supervisão: consulta de turmas pelo conector, resultados compartilhados salvos no D1, seleção por professor, filtros por Situação, trimestres, relatório de ocorrências e reinício da tela sem excluir os dados salvos. Veja [sge-connector/README.md](sge-connector/README.md).
-- Reservas: agenda semanal e mensal por espaço, com navegação entre períodos, reservas e ocupações fixas no mesmo dia, e reserva direta da data escolhida; responsável nominal obrigatório, preenchido inicialmente com o usuário atual; criar, editar e cancelar pelo criador ou direção; impedir sobreposição no banco de forma atômica; ocupação semanal fixa com período de validade
+- Reservas: agenda semanal e mensal por espaço, com navegação entre períodos, reservas e ocupações fixas no mesmo dia, e reserva direta da data escolhida; responsável nominal obrigatório, preenchido inicialmente com o usuário atual; criar, editar e cancelar pelo criador ou direção; impedir sobreposição no banco de forma atômica; ocupação semanal fixa com período inclusivo de validade, administrada pela direção; turma e disciplina opcionais
 - Tarefas: criar/editar/remover, prazo, responsável nominal, estados; somente direção delega ou restringe; restritas são filtradas no servidor
 - Substituições: professores e aulas do WebHorário, busca por nome, dia atual e quantidade de dias corridos; prévia por turma/horário, auxiliar padrão para todas as aulas e divisão por aula; troca direta no quadro semanal, confirmação de realização e relatório com limite semanal; conflitos de turma e auxiliar bloqueados; desativação preserva aulas realizadas e libera as futuras ainda agendadas
-- Xerox: solicitar, aprovar/devolver/recusar, produzir/concluir, ajustar e reenviar pedido devolvido; transições concorrentes usam compare-and-swap
+- Xerox: professor, turma opcional, impressão preto e branco/colorida, material, quantidade e prazo; anexo PDF/PNG/JPEG até 256 KiB com download privado pelo proprietário/direção; aprovação e transições concorrentes preservadas
 - Atas: direção registra/edita/remove; equipe autorizada consulta
-- Calendário: direção registra/edita/remove; equipe autorizada consulta
+- Calendário e Formação: mesmos registros, filtros por mês/tipo, horários, local e informações de formação; direção registra/edita/remove e equipe autorizada consulta
+- Minhas notas: cartões pessoais por login, com isolamento na API inclusive contra acesso de outros professores e direção
 - Estudantes: desabilitado, sem tabela ativa nem rota. Proposta sintética em `db/proposals/`, fora das migrações, para revisão futura
+
+Detalhes, limites e evidências das quatro melhorias: [guia de outubro](docs/melhorias-2026-10.md).
 
 Durante uma gravação, o formulário permanece protegido contra fechamento ou troca acidental. Se o banco salva e a atualização da lista falha, a interface informa que a alteração foi salva e oferece atualizar, evitando repetir a gravação.
 
