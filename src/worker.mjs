@@ -1,5 +1,6 @@
 import {officialTrainingCalendar,officialTrainingSessions} from './official-trainings.mjs';
 import {personalNotes} from './personal-notes.mjs';
+import {submitFeedback,readFeedback,updateFeedback} from './site-feedback.mjs';
 import {xeroxFields,downloadAttachment,readLimitedBody,XeroxInputError} from './xerox.mjs';
 import {identity} from './auth.mjs';
 import {readTeachers} from './teachers.mjs';
@@ -31,9 +32,10 @@ const schoolToday=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Pau
 const weekOf=date=>{const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);return monday.toISOString().slice(0,10)};
 async function handleInner(request,env,authenticate=identity){
  const path=new URL(request.url).pathname;
- if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg'||path==='/public-assets/donicia-2026.png')return serveAsset(request,env,path==='/'?'/public.html':path);
+ if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg'||path==='/public-assets/donicia-2026.png'||path==='/public-assets/feedback.js'||path==='/public-assets/feedback.css')return serveAsset(request,env,path==='/'?'/public.html':path);
  if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy','trainings','notices','notes'],studentData:false});
  if(!env.DB)return json({error:'Persistência não configurada'},503);
+ if(path==='/public/feedback')return submitFeedback(request,env.DB);
  if(path==='/public/api'||path==='/api/public'){
   if(request.method!=='GET')return json({error:'Método indisponível'},405);
   const [school,notices,events]=await Promise.all([env.DB.prepare('SELECT name,introduction,address,phone,email,hours FROM school_profile WHERE id=1').first(),env.DB.prepare('SELECT id,title,body,date FROM notices WHERE published=1 ORDER BY date DESC,id').all(),env.DB.prepare("SELECT id,title,date,CASE WHEN formation=1 THEN 'Formação' ELSE type END AS type,start,end,location FROM events WHERE visibility='public' ORDER BY date,title").all()]);
@@ -64,6 +66,7 @@ async function handleInner(request,env,authenticate=identity){
   return assets[path]?serveAsset(request,env,assets[path]):json({error:'Página não encontrada'},404);
  }
  if(request.method==='GET'){
+  if(path==='/api/feedback')return readFeedback(request,env.DB);
   if(path==='/api/official-trainings')return json({calendar:officialTrainingCalendar,sessions:officialTrainingSessions});
   if(path==='/api/notes'||/^\/api\/notes\/[^/]+$/.test(path))return personalNotes(request,env.DB,user);
   if(path==='/api/supervision/saved'){return json(await loadSupervision(env.DB))}
@@ -112,6 +115,7 @@ async function handleInner(request,env,authenticate=identity){
  const resource=path==='/api/substitutions/from-schedule'?null:/^\/api\/(reservations|tasks|substitutions|auxiliaries|xerox|minutes|events|fixed-occupancy|trainings|notices)\/([^/]+)$/.exec(path);
  if(resource){if(!Number.isInteger(data.version)||data.version<1)return json({error:'Versão do registro necessária. Atualize a tela'},400);const table=resource[1]==='trainings'?'events':resource[1].replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?'+(resource[1]==='trainings'?' AND formation=1':'')).bind(resource[2]).first();if(!row)return json({error:'Registro não encontrado'},404);if(row.version!==data.version)return json({error:'Este registro mudou. Atualize a tela'},409)}
  try{
+  if(/^\/api\/feedback\/[^/]+$/.test(path))return await updateFeedback(request,env.DB,user,data);
   if(path==='/api/notes'||/^\/api\/notes\/[^/]+$/.test(path))return await personalNotes(request,env.DB,user,data);
   if(path==='/api/school'&&request.method==='PATCH'){
    if(!Number.isInteger(data.version)||data.version<1)return json({error:'Versão do cadastro necessária'},400);

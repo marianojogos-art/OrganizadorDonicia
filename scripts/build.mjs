@@ -7,7 +7,7 @@ for(const [name,scriptName,url] of [['index','app','/equipe/app.js'],['public','
  await writeFile(new URL('../dist/'+scriptName+'.js',import.meta.url),script);
 }
 await mkdir(new URL('../dist/public-assets/',import.meta.url),{recursive:true});
-for(const name of ['logo.jpg','donicia-2026.png'])await copyFile(new URL('../src/public-assets/'+name,import.meta.url),new URL('../dist/public-assets/'+name,import.meta.url));
+for(const name of ['logo.jpg','donicia-2026.png','feedback.css','feedback.js'])await copyFile(new URL('../src/public-assets/'+name,import.meta.url),new URL('../dist/public-assets/'+name,import.meta.url));
 await copyFile(new URL('../src/staff-assets/formacao-outubro-2026.csv',import.meta.url),new URL('../dist/formation-outubro-2026.csv',import.meta.url));
 await import('./build-sge-connector.mjs');
 console.log('Build completo: portal público e área da equipe, JS separado para CSP.');

@@ -21,10 +21,10 @@ const event={title:'Evento fictício',date:'2026-10-19',type:'Evento escolar',vi
 const training={title:'Formação fictícia',area:'Linguagens',date:'2026-10-20',start:'14:00',end:'16:00',location:'Sala de formação',notes:'Material de leitura'};
 
 test('migration preserves dependent rows and keeps legacy calendar private',async()=>{
- const DB=sqlite();for(const migration of migrations.slice(0,-1))DB.exec('BEGIN;'+migration+'COMMIT;');
+ const portalIndex=migrationFiles.indexOf('0010_public_portal.sql');assert.ok(portalIndex>=0);const DB=sqlite();for(const migration of migrations.slice(0,portalIndex))DB.exec('BEGIN;'+migration+'COMMIT;');
  DB.exec("INSERT INTO users VALUES('legacy@prof.pmf.sc.gov.br','Pessoa fictícia','direction',1); INSERT INTO reservations(id,space,date,start,end,owner,purpose,responsible) VALUES('old','Biblioteca','2026-10-19','09:00','10:00','legacy@prof.pmf.sc.gov.br','Leitura','Pessoa fictícia'); INSERT INTO events(id,title,date,type,creator) VALUES('old-event','Reunião interna','2026-10-19','Reunião','legacy@prof.pmf.sc.gov.br'); INSERT INTO audit(id,actor,action,target) VALUES('audit-old','legacy@prof.pmf.sc.gov.br','POST','/api/reservations/old')");
  DB.exec("INSERT INTO personal_notes(id,owner,title,content) VALUES('legacy-note','legacy@prof.pmf.sc.gov.br','Nota fictícia','Texto fictício'); INSERT INTO events(id,title,date,type,creator,formation,start,end,location,details) VALUES('legacy-formation','Formação anterior','2026-10-20','Evento escolar','legacy@prof.pmf.sc.gov.br',1,'09:00','10:00','Sala fictícia','Detalhes anteriores')");
- DB.exec('BEGIN;'+migrations.at(-1)+'COMMIT;');
+ DB.exec('BEGIN;'+migrations[portalIndex]+'COMMIT;');
  assert.equal((await DB.prepare('SELECT status FROM reservations').first()).status,'Aprovada');
  assert.equal((await DB.prepare('SELECT visibility FROM events').first()).visibility,'internal');
  const legacyFormation=await DB.prepare("SELECT * FROM events WHERE id='legacy-formation'").first();assert.equal(legacyFormation.area,'Geral');assert.equal(legacyFormation.details,'Detalhes anteriores');assert.equal(legacyFormation.formation,1);
