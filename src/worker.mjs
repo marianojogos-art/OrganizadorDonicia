@@ -1,3 +1,4 @@
+import {officialTrainingCalendar,officialTrainingSessions} from './official-trainings.mjs';
 import {personalNotes} from './personal-notes.mjs';
 import {xeroxFields,downloadAttachment,readLimitedBody,XeroxInputError} from './xerox.mjs';
 import {identity} from './auth.mjs';
@@ -44,7 +45,7 @@ async function handleInner(request,env,authenticate=identity){
  const pedagogical=isPedagogical(user);
  if(!pedagogical&&user.role!=='teacher')return json({error:'Perfil sem permissão'},403);
  if(!pedagogical&&path.startsWith('/api/')){
-  const read=request.method==='GET'&&(['/api/me','/api/reservations','/api/fixed-occupancy','/api/xerox','/api/events','/api/trainings'].includes(path)||/^\/api\/xerox\/[^/]+\/attachment$/.test(path));
+  const read=request.method==='GET'&&(['/api/me','/api/reservations','/api/fixed-occupancy','/api/xerox','/api/events','/api/trainings','/api/official-trainings'].includes(path)||/^\/api\/xerox\/[^/]+\/attachment$/.test(path));
   const create=request.method==='POST'&&['/api/reservations','/api/xerox'].includes(path);
   const change=['PATCH','DELETE'].includes(request.method)&&/^\/api\/(reservations|xerox)\/[^/]+$/.test(path);
   if(!read&&!create&&!change)return json({error:'Acesso exclusivo da equipe pedagógica'},403);
@@ -59,10 +60,11 @@ async function handleInner(request,env,authenticate=identity){
  };
  if(!path.startsWith('/api/')){
   if(path==='/sge-connector.zip'&&!pedagogical)return json({error:'Acesso exclusivo da equipe pedagógica'},403);
-  const assets={'/equipe':'/index.html','/equipe/':'/index.html','/equipe/app.js':'/app.js','/index.html':'/index.html','/app.js':'/app.js','/sge-connector.zip':'/sge-connector.zip'};
+  const assets={'/equipe':'/index.html','/equipe/':'/index.html','/equipe/app.js':'/app.js','/index.html':'/index.html','/app.js':'/app.js','/sge-connector.zip':'/sge-connector.zip','/equipe/calendarios/formacao-outubro-2026.csv':'/formation-outubro-2026.csv'};
   return assets[path]?serveAsset(request,env,assets[path]):json({error:'Página não encontrada'},404);
  }
  if(request.method==='GET'){
+  if(path==='/api/official-trainings')return json({calendar:officialTrainingCalendar,sessions:officialTrainingSessions});
   if(path==='/api/notes'||/^\/api\/notes\/[^/]+$/.test(path))return personalNotes(request,env.DB,user);
   if(path==='/api/supervision/saved'){return json(await loadSupervision(env.DB))}
   if(path==='/api/supervision/classes'){try{return json(await readSupervisionClasses(env))}catch(e){return json({error:e instanceof SupervisionError?e.message:'Não foi possível consultar o SGE.'},e.status||503)}}

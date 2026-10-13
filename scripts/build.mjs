@@ -8,5 +8,6 @@ for(const [name,scriptName,url] of [['index','app','/equipe/app.js'],['public','
 }
 await mkdir(new URL('../dist/public-assets/',import.meta.url),{recursive:true});
 await copyFile(new URL('../src/public-assets/logo.jpg',import.meta.url),new URL('../dist/public-assets/logo.jpg',import.meta.url));
+await copyFile(new URL('../src/staff-assets/formacao-outubro-2026.csv',import.meta.url),new URL('../dist/formation-outubro-2026.csv',import.meta.url));
 await import('./build-sge-connector.mjs');
 console.log('Build completo: portal público e área da equipe, JS separado para CSP.');
