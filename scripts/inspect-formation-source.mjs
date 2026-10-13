@@ -11,7 +11,11 @@ const require=createRequire(join(process.env.PUBLIC_QA_PLAYWRIGHT_DIR,'loader.cj
 const {chromium}=require('playwright');const browser=await chromium.launch({headless:true});
 try{
  const page=await browser.newPage({viewport:{width:1280,height:960}});
- const result=await page.goto(url,{waitUntil:'networkidle',timeout:60000});if(!result.ok())throw Error('Calendar render unavailable: '+result.status());
+ // Render only the already retrieved, public, complete printable document.
+ // Do not run Google viewer scripts or follow a sign-in flow.
+ const printable=parseHTML(html).document;
+ for(const element of printable.querySelectorAll('script,noscript,meta[http-equiv="refresh"]'))element.remove();
+ await page.setContent(printable.toString(),{waitUntil:'networkidle',timeout:60000});
  await page.evaluate(()=>document.fonts.ready);
  console.log('CALENDAR_DOM '+JSON.stringify(await page.evaluate(()=>({title:document.title,body:document.body.innerText.slice(0,1000),classes:[...document.querySelectorAll('[class]')].slice(0,20).map(x=>({tag:x.tagName,class:x.className})),images:[...document.images].map(x=>({complete:x.complete,width:x.naturalWidth,height:x.naturalHeight})).slice(0,5)}))));
  await page.emulateMedia({media:'screen'});
