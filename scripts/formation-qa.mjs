@@ -23,6 +23,7 @@ try{
   await page.goto(base+'/equipe',{waitUntil:'networkidle'});
   await page.waitForSelector('#nav [data-section="formacao"]',{state:'attached'});
   await page.evaluate(()=>setPage('formacao'));
+  await page.locator('[data-training-month]').fill('2026-10');await page.locator('[data-training-month]').dispatchEvent('change');
   await page.waitForSelector('.training-entry');
   assert.equal(await page.locator('.training-entry').count(),100);
   const dimensions=await page.evaluate(()=>({viewport:innerWidth,content:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)}));
