@@ -1,6 +1,30 @@
 # Organizador Donícia — Cloudflare Workers
 
-Projeto escolar independente para a EBM Donícia Maria da Costa, publicado em [Organizador Donícia](https://organizadordonicia.carijo.workers.dev/) e protegido por Cloudflare Access. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. Não utiliza recursos operacionais da Lepidus.
+Projeto escolar independente para a EBM Donícia Maria da Costa, publicado em [Organizador Donícia](https://organizadordonicia.carijo.workers.dev/) com a área de funcionários protegida por Cloudflare Access. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. Não utiliza recursos operacionais da Lepidus.
+
+## Portal público e perfis — implementação de 13/10/2026
+
+Esta revisão implementa o portal público e a separação de acessos, preservando as melhorias existentes de reservas, xerox com anexos, formação integrada ao calendário e notas pessoais. A autorização vigente de 11/10/2026 cobre integração e publicação contínua no Worker existente após validação; o resultado efetivo deve ser comprovado pelo commit, pela CI e pelo deployment. Os totais de testes de bases anteriores não comprovam esta integração.
+
+| Acesso | Conteúdo e ações |
+| --- | --- |
+| Público, sem login, em `/` | Apresentação da escola, avisos publicados, calendário público e contatos. O link discreto **Acesso de funcionários** abre `/equipe`. |
+| Professor, após login institucional | Pedidos de xerox, pedidos de reserva de espaço, calendário público e interno, calendário de formação por área. |
+| Direção, supervisão e orientação, após login institucional | Acesso completo à gestão, incluindo aprovação de reservas e manutenção dos conteúdos públicos, calendário e formações. |
+
+As permissões são verificadas na API: professores não podem consultar tarefas, atas, substituições, Supervisão, auditoria ou cadastros administrativos. Login válido também exige uma conta nominal ativa em `users`; não existe cadastro aberto. Os papéis técnicos são `direction`, `supervision`, `guidance` e `teacher`, com as mesmas permissões completas para os três primeiros neste momento.
+
+A equipe publica avisos e edita apresentação e contatos em **Comunicação pública**. Avisos novos ficam como rascunho até a opção de publicação ser marcada. No **Calendário**, a equipe escolhe **Interno** ou **Público** por evento; eventos anteriores permanecem internos. `/api/public` expõe somente informações da escola, avisos publicados e eventos públicos, sem atas, contas, reservas, pedidos de xerox ou detalhes internos das formações.
+
+Em **Formação**, a equipe cadastra título, área, data, horários opcionais, local e observações. Professores consultam o calendário e filtram por área e mês. Os encontros existentes são preservados. O anexo mencionado para o novo calendário oficial não foi disponibilizado nesta conversa, portanto nenhuma data oficial foi inventada ou importada.
+
+A migração `0010_public_portal.sql` sucede as migrações 0006–0009 e adiciona os novos perfis, conteúdos públicos e a área das formações. Ela preserva os vínculos de usuários, marca reservas anteriores como **Aprovada** e eventos anteriores como **Interno**. O executor local aplica cada migração em uma transação, como o D1, inclusive a atualização da tabela de usuários.
+
+Formação continua usando os mesmos eventos do calendário, sem duplicar registros; `/api/trainings` apresenta os encontros por área. As notas pessoais ficam disponíveis à equipe pedagógica e preservam o isolamento por proprietário, inclusive entre direção, supervisão e orientação.
+
+Para publicar esta revisão conforme a autorização vigente, seguir o [procedimento de deploy](docs/deploy.md#portal-público-e-acesso-de-funcionários). O Access que protege o Worker inteiro impede a navegação anônima até que a configuração dos caminhos seja ajustada.
+
+A base inicial do portal (`ecf1c10`) teve 120 testes, build, dry-run e verificações de interface aprovados antes da conciliação com a `main`. Esses resultados não validam a versão integrada com as migrações 0006–0009 e as melhorias posteriores. A conclusão desta integração depende da CI do commit correspondente e da conferência do deployment, incluindo login real após ajustar o Access.
 
 ## Componentes e estado de referência — 11/10/2026
 
@@ -28,7 +52,7 @@ npm run validate
 npm run dev
 ```
 
-O servidor de demonstração abre `http://127.0.0.1:8787`, usa identidade fictícia e SQLite local em `.local/`. Não inserir dados reais. O Worker de produção verifica identidade e permissões; a identidade de demonstração existe somente em `scripts/dev.mjs`.
+O servidor de demonstração abre `http://127.0.0.1:8787`, usa identidade fictícia e SQLite local em `.local/`. Não inserir dados reais. Para conferir os perfis locais, a variável de processo `LOCAL_ROLE` admite `direction` (padrão), `supervision`, `guidance`, `teacher` ou `anonymous`; essa opção nunca é lida de requisições ou cookies. O Worker de produção verifica identidade e permissões; a identidade de demonstração existe somente em `scripts/dev.mjs`. O build gera portal e área de funcionários separados, servidos em `/` e `/equipe`, com scripts `/public.js` e `/equipe/app.js`.
 
 - [Desenvolvimento e validação](docs/desenvolvimento.md): mapa de pastas, scripts, testes, arquivos gerados e limitações.
 - [Governança e limpeza segura](docs/governanca.md): inventário de branches e proteção proposta, pendentes de aprovação.
@@ -45,30 +69,30 @@ A CI valida raiz e aplicativo móvel sem publicar produção. Testes automatizad
 ## O que funciona
 
 - Supervisão: consulta de turmas pelo conector, resultados compartilhados salvos no D1, seleção por professor, filtros por Situação, trimestres, relatório de ocorrências e reinício da tela sem excluir os dados salvos. Veja [sge-connector/README.md](sge-connector/README.md).
-- Reservas: agenda semanal e mensal por espaço, com navegação entre períodos, reservas e ocupações fixas no mesmo dia, e reserva direta da data escolhida; responsável nominal obrigatório, preenchido inicialmente com o usuário atual; criar, editar e cancelar pelo criador ou direção; impedir sobreposição no banco de forma atômica; ocupação semanal fixa com período inclusivo de validade, administrada pela direção; turma e disciplina opcionais
-- Tarefas: criar/editar/remover, prazo, responsável nominal, estados; somente direção delega ou restringe; restritas são filtradas no servidor
+- Reservas: agenda semanal e mensal por espaço, com navegação entre períodos, reservas e ocupações fixas no mesmo dia, e reserva direta da data escolhida; responsável nominal obrigatório, preenchido inicialmente com o usuário atual; professores enviam pedidos pendentes e a equipe aprova ou recusa; edição/cancelamento pelo criador ou equipe, com restrições após aprovação; impedir sobreposição entre reservas aprovadas e ocupações fixas no banco de forma atômica; ocupação semanal fixa com período inclusivo de validade, administrada pela equipe pedagógica; turma e disciplina opcionais
+- Tarefas: exclusivas da equipe pedagógica, que cria/edita/remove, define prazo, responsável nominal, estados e restrição
 - Substituições: professores e aulas do WebHorário, busca por nome, dia atual e quantidade de dias corridos; prévia por turma/horário, auxiliar padrão para todas as aulas e divisão por aula; troca direta no quadro semanal, confirmação de realização e relatório com limite semanal; conflitos de turma e auxiliar bloqueados; desativação preserva aulas realizadas e libera as futuras ainda agendadas
-- Xerox: professor, turma opcional, impressão preto e branco/colorida, material, quantidade e prazo; anexo PDF/PNG/JPEG até 256 KiB com download privado pelo proprietário/direção; aprovação e transições concorrentes preservadas
-- Atas: direção registra/edita/remove; equipe autorizada consulta
-- Calendário e Formação: mesmos registros, filtros por mês/tipo, horários, local e informações de formação; direção registra/edita/remove e equipe autorizada consulta
-- Minhas notas: cartões pessoais por login, com isolamento na API inclusive contra acesso de outros professores e direção
+- Xerox: professor, turma opcional, impressão preto e branco/colorida, material, quantidade e prazo; anexo PDF/PNG/JPEG até 256 KiB com download privado pelo proprietário/equipe pedagógica; aprovação e transições concorrentes preservadas
+- Atas: exclusivas da equipe pedagógica, que registra/edita/remove e consulta
+- Calendário e Formação: mesmos registros, filtros por mês/tipo/área, horários, local e informações; a equipe mantém os eventos e define visibilidade pública/interna; professores consultam ambos os calendários e visitantes somente eventos públicos
+- Minhas notas: cartões pessoais da equipe pedagógica, com isolamento na API inclusive contra acesso de outros integrantes da equipe e direção; professores não acessam este módulo
 - Estudantes: desabilitado, sem tabela ativa nem rota. Proposta sintética em `db/proposals/`, fora das migrações, para revisão futura
 
 Detalhes, limites e evidências das quatro melhorias: [guia de outubro](docs/melhorias-2026-10.md).
 
 Durante uma gravação, o formulário permanece protegido contra fechamento ou troca acidental. Se o banco salva e a atualização da lista falha, a interface informa que a alteração foi salva e oferece atualizar, evitando repetir a gravação.
 
-Edições e remoções usam a versão do registro para detectar mudanças concorrentes. Auditoria registra ator, método, rota e horário na mesma transação, sem copiar conteúdo pessoal. Somente direção consulta os últimos 100 eventos.
+Edições e remoções usam a versão do registro para detectar mudanças concorrentes. Auditoria registra ator, método, rota e horário na mesma transação, sem copiar conteúdo pessoal. Somente a equipe pedagógica consulta os últimos 100 eventos.
 
 ## Acesso
 
-A aplicação usa Cloudflare Access como fronteira de identidade humana. O login inicial usa código enviado ao e-mail institucional (One-time PIN), com política nominal para a conta de direção autorizada. A aplicação Access protege o Worker inteiro, incluindo todos os seus destinos. O Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.pmf.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
+A aplicação usa Cloudflare Access como fronteira de identidade humana da área de funcionários. O login inicial usa código enviado ao e-mail institucional (One-time PIN), com política nominal para a conta de direção autorizada. Na última configuração de produção registrada, o Access protege o Worker inteiro; o portal público exige a reconfiguração por caminhos descrita em [deploy](docs/deploy.md#portal-público-e-acesso-de-funcionários), preservando a autenticação da área privada. O Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.pmf.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
 
 O JWT é lido do cabeçalho `Cf-Access-Jwt-Assertion` ou, quando o cabeçalho não está presente, do cookie de aplicação `CF_Authorization`. Ambos passam pela mesma verificação criptográfica. Isso permite autenticar quando o roteador de Static Assets não encaminha o contexto de identidade ao Worker. Cookies duplicados são recusados e um cabeçalho inválido não usa o cookie como alternativa.
 
 A consulta às chaves públicas usa `redirect: 'manual'` e recusa respostas sem sucesso, incluindo redirecionamentos. O runtime Workers não aceita `redirect: 'error'`; essa opção interrompia a validação antes de consultar as chaves, mesmo depois de um login Access válido. O teste no Miniflare reproduziu a falha anterior e verifica login por cabeçalho e cookie, assinatura inválida e recusa de redirecionamentos. Diagnóstico opcional com `ACCESS_DIAGNOSTICS=1` registra somente códigos fixos de falha, sem JWT, cookies ou e-mail; fica desativado por padrão.
 
-Perfis iniciais: `direction` e `teacher`. As permissões são verificadas na API. A escola ainda precisa confirmar quem recebe cada papel e se supervisão precisa de perfil próprio. Usuários são provisionados por migração administrativa revisada; não existe cadastro aberto.
+Perfis desta revisão: `direction`, `supervision`, `guidance` e `teacher`. As permissões são verificadas na API. Direção, supervisão e orientação têm acesso completo por decisão da escola; professores têm somente os quatro recursos descritos acima. Usuários são provisionados por migração administrativa revisada; não existe cadastro aberto.
 
 ## Banco
 
@@ -81,11 +105,13 @@ Em **Espaços**, clique em **Ver agenda** no ambiente desejado ou escolha o loca
 - **Semana**: mostra de segunda a domingo as reservas e os horários fixos válidos. Use **Anterior**, **Próxima**, **Esta semana** ou o campo **Semana de**.
 - **Mês**: mostra o calendário mensal, iniciado na segunda-feira. Use **Anterior**, **Próximo**, **Este mês** ou o campo **Mês**. Cada dia informa a quantidade de reservas e horários fixos; essa quantidade não significa que o dia inteiro está ocupado.
 - Selecione um dia no mês para consultar horários, atividades e responsáveis abaixo do calendário. A seleção permanece ao alternar as visões; a semana exibida acompanha o dia escolhido.
-- **Reservar neste dia** abre o formulário com o espaço e a data selecionados. Informe início, término, responsável e atividade. O servidor continua bloqueando horários conflitantes.
+- **Reservar neste dia** abre o formulário com o espaço e a data selecionados. Informe início, término, responsável e atividade. Pedidos de professores ficam **Pendente**; reservas criadas diretamente pela equipe ficam **Aprovada**. A aprovação bloqueia horários conflitantes.
+
+A equipe pedagógica pode **Aprovar** ou **Recusar** os pedidos. Somente reservas **Aprovada** ocupam o horário: pedidos pendentes podem coincidir, mas a aprovação é recusada se houver outra reserva aprovada ou ocupação fixa conflitante. Aprovações concorrentes para o mesmo horário resultam em uma confirmação e um conflito, sem dupla reserva. Professores podem editar seus pedidos pendentes ou recusados e reenviá-los como **Pendente**; a edição de uma reserva já aprovada cabe à equipe. Professores veem seus pedidos e as reservas aprovadas; pedidos pendentes ou recusados de outros professores ficam restritos à equipe e ao solicitante.
 
 Os horários fixos só aparecem no dia da semana correspondente e dentro do período de validade. O calendário mensal inclui fins de semana e anos bissextos.
 
-O campo **Responsável** é obrigatório e pode ser alterado na criação ou edição. O nome indicado aparece na agenda, nas próximas reservas e no resumo do dia. A conta que criou a reserva permanece registrada e controla as permissões de edição e cancelamento junto com a direção. A migração `0004_reservation_responsible.sql` preenche reservas antigas com o nome do criador e preserva os demais dados. Essa migração já faz parte do conjunto aplicado; o deploy aplica apenas migrações pendentes.
+O campo **Responsável** é obrigatório e pode ser alterado na criação ou edição. O nome indicado aparece na agenda, nas próximas reservas e no resumo do dia. A conta que criou a reserva permanece registrada e controla as permissões de edição e cancelamento junto com a equipe pedagógica. A migração `0004_reservation_responsible.sql` preenche reservas antigas com o nome do criador e preserva os demais dados. Essa migração já faz parte do conjunto aplicado; o deploy aplica apenas migrações pendentes.
 
 ## Usar substituições
 
@@ -99,7 +125,7 @@ A grade é lida da [página pública da escola no WebHorário](https://www.webho
 
 O seletor de semana e os botões anterior/atual/próxima mostram as aulas e a carga de cada auxiliar. O seletor de auxiliar em cada linha troca a responsável por aquela aula, com verificação de versão, limite semanal e horários sobrepostos. **Marcar realizada** confirma uma aula de hoje ou de um dia anterior. O relatório distingue realizadas e agendadas, mostra total/limite e aulas disponíveis, e permite abrir o detalhamento de cada auxiliar. O limite considera ambas as categorias. Aulas realizadas mantêm o histórico mesmo após desativar a auxiliar; para trocar ou retirar sua responsável, desmarque a realização primeiro.
 
-A Supervisão permite baixar o relatório de ocorrências em texto e mantém consultas compartilhadas no D1 pela migração `0005_supervision.sql`. A prévia e os filtros também possuem estado local na tela. Não há envio de notificações externas nem fluxo de uploads/anexos.
+A Supervisão permite baixar o relatório de ocorrências em texto e mantém consultas compartilhadas no D1 pela migração `0005_supervision.sql`. A prévia e os filtros também possuem estado local na tela. A Supervisão não envia notificações externas nem recebe anexos; pedidos de xerox possuem o fluxo privado de arquivos descrito no guia de outubro.
 
 ## Usar no smartphone
 

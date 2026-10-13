@@ -23,10 +23,11 @@ test('pending save cannot be dismissed/replaced; refresh failure never masquerad
 test('school today and week respect Sunday/Monday boundary in São Paulo',()=>{const c=context('2026-10-05T01:00:00Z');assert.equal(vm.runInContext('iso',c),'2026-10-04');assert.equal(vm.runInContext('weekOf(iso)',c),'2026-09-28');const monday=context('2026-10-05T03:01:00Z');assert.equal(vm.runInContext('iso',monday),'2026-10-05');assert.equal(vm.runInContext('weekOf(iso)',monday),'2026-10-05')});
 
 
-test('formation calendar filters share original event indices and safely render details',()=>{
- const c=context();vm.runInContext("state.events=[{id:'old',title:'Reunião fictícia',date:'2026-10-20',type:'Reunião'},{id:'formation',title:'Formação fictícia',date:'2026-10-21',type:'Formação',start:'14:00',end:'16:00',location:'<img src=x>',details:'<script>texto</script>'},{id:'next',title:'Próximo mês',date:'2026-11-01',type:'Formação'}];calendarMonth='2026-10'",c);
- const page=vm.runInContext('formationPage()',c);assert.match(page,/Formação fictícia/);assert.match(page,/data-edit="events:1"/);assert.equal(page.includes('Reunião fictícia'),false);assert.equal(page.includes('Próximo mês'),false);assert.equal(page.includes('<script>'),false);assert.match(page,/&lt;img/);
- const all=vm.runInContext("calendarMonth='';calendarPage()",c);assert.match(all,/Reunião fictícia/);assert.match(all,/Próximo mês/);
+test('formation calendar filters share training indices and safely render details',()=>{
+ const c=context();vm.runInContext("state.trainings=[{id:'old',title:'Formação anterior',area:'Ciências',date:'2026-09-20'},{id:'formation',title:'Formação fictícia',area:'Linguagens',date:'2026-10-21',start:'14:00',end:'16:00',location:'<img src=x>',notes:'<script>texto</script>'},{id:'next',title:'Próximo mês',area:'Linguagens',date:'2026-11-01'}];trainingMonth='2026-10';trainingArea='Linguagens'",c);
+ const page=vm.runInContext('trainingPage()',c);assert.match(page,/Formação fictícia/);assert.match(page,/data-edit="trainings:1"/);assert.equal(page.includes('Formação anterior'),false);assert.equal(page.includes('Próximo mês'),false);assert.equal(page.includes('<script>'),false);assert.match(page,/&lt;img/);assert.match(page,/&lt;script/);
+ vm.runInContext("state.events=[{id:'meeting',title:'Reunião fictícia',date:'2026-10-20',type:'Reunião',visibility:'internal'},{id:'formation',title:'Formação fictícia',date:'2026-10-21',type:'Formação',formation:true,visibility:'internal',location:'<img src=x>',details:'<script>texto</script>'}];calendarMonth=''",c);
+ const all=vm.runInContext('calendarPage()',c);assert.match(all,/Reunião fictícia/);assert.match(all,/Formação fictícia/);assert.equal(all.includes('<img'),false);assert.equal(all.includes('<script>'),false);
 });
 test('personal notes escape stored markup and optional context fields stay optional',()=>{
  const c=context();vm.runInContext("state.notes=[{id:'own',title:'<img src=x>',content:'<script>conteúdo</script>',color:'amarelo',ownerEmail:currentUser.email}]",c);
