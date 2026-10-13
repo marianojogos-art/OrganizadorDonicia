@@ -1,0 +1,84 @@
+name: Verify public portal
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'codex/**'
+    paths:
+      - '.github/workflows/verify-portal.yml'
+
+permissions: {}
+
+jobs:
+  anonymous-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Verify public routes and Access redirects without credentials
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const base = 'https://organizadordonicia.carijo.workers.dev';
+          const issuer = 'tiny-dew-2c0d.cloudflareaccess.com';
+          const checks = [
+            ['/', 200],
+            ['/public.html', 200],
+            ['/public.js', 200],
+            ['/public/api', 200],
+            ['/equipe', 302],
+            ['/equipe/app.js', 302],
+            ['/api/me', 302],
+            ['/api/users', 302],
+            ['/index.html', 302],
+            ['/app.js', 302],
+            ['/sge-connector.zip', 302],
+            ['/api/public', 302],
+          ];
+          let failed = false;
+          for (const [path, expected] of checks) {
+            let response;
+            try {
+              response = await fetch(base + path, {
+                redirect: 'manual',
+                credentials: 'omit',
+                signal: AbortSignal.timeout(15000),
+              });
+              console.log(response.status + ' ' + path);
+              if (response.status !== expected) {
+                failed = true;
+                continue;
+              }
+              if (expected === 302) {
+                const location = response.headers.get('location');
+                const target = location ? new URL(location, base) : null;
+                if (!target || target.protocol !== 'https:' || target.hostname !== issuer) {
+                  console.error('INVALID_REDIRECT ' + path);
+                  failed = true;
+                }
+              } else if (path === '/public/api') {
+                const payload = await response.json();
+                const valid = payload && !Array.isArray(payload)
+                  && Object.keys(payload).sort().join(',') === 'events,notices,school'
+                  && payload.school && typeof payload.school === 'object'
+                  && !Array.isArray(payload.school)
+                  && Array.isArray(payload.notices) && Array.isArray(payload.events);
+                if (!valid) {
+                  console.error('INVALID_PUBLIC_SHAPE ' + path);
+                  failed = true;
+                }
+              }
+            } catch {
+              console.error('FETCH_ERROR ' + path);
+              failed = true;
+            } finally {
+              if (response?.body && !response.bodyUsed) await response.body.cancel().catch(() => {});
+            }
+          }
+          if (failed) process.exitCode = 1;
+          
+          NODE
