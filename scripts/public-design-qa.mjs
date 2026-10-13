@@ -53,6 +53,10 @@ try{
   await page.waitForFunction(()=>Array.from(document.images).length>0&&Array.from(document.images).every(image=>image.complete&&image.naturalWidth>0));
   const dimensions=await page.evaluate(()=>({viewport:window.innerWidth,content:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),logos:[...document.images].filter(image=>image.getAttribute('src')==='/public-assets/logo.jpg').map(image=>({width:image.naturalWidth,height:image.naturalHeight}))}));
   assert.ok(dimensions.content<=width+1,'Horizontal overflow at '+width+': '+JSON.stringify(dimensions));assert.ok(dimensions.logos.length>=1,'School logo must be loaded');
+  const identity=page.locator('.hero-visual img');
+  assert.equal(await identity.getAttribute('src'),'/public-assets/donicia-2026.png');
+  const brand=await identity.evaluate(image=>({naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight,width:image.clientWidth,height:image.clientHeight}));
+  assert.equal(brand.naturalWidth,1976);assert.equal(brand.naturalHeight,796);assert.ok(Math.abs(brand.width/brand.height-1976/796)<.04,'Identity must preserve its aspect ratio');
   assert.equal(await page.locator('.staff').getAttribute('href'),'/equipe');assert.equal((await context.request.get(base+'/equipe')).status(),401);
   assert.equal(await page.locator('#school-contacts a[href^="tel:"]').getAttribute('href'),'tel:00000000');
   assert.equal(await page.locator('#school-contacts a[href^="mailto:"]').getAttribute('href'),'mailto:secretaria@example.invalid');
@@ -69,11 +73,11 @@ try{
   await page.evaluate(()=>{history.replaceState(null,'','/');window.scrollTo(0,0)});
   await page.waitForFunction(()=>window.scrollY===0);
   assert.deepEqual(errors,[],'Browser errors at '+width);console.log('PUBLIC_QA_CHECK '+JSON.stringify({width,...dimensions,calendar:'ok',contacts:'ok',navigation:'ok',privateData:'absent',errors}));
-  if(width===390)await imageLog(page,'mobile-390-full',true);
+  if(width===390){await imageLog(page,'mobile-390-top',false);await imageLog(page,'mobile-390-full',true)}
   if(width===1440){await imageLog(page,'desktop-1440-top',false);await imageLog(page,'desktop-1440-full',true)}
   await context.close();
  }
- console.log('PUBLIC_QA_COMPLETE '+JSON.stringify({viewports:[320,390,768,1440],synthetic:true,screenshots:3}));
+ console.log('PUBLIC_QA_COMPLETE '+JSON.stringify({viewports:[320,390,768,1440],synthetic:true,screenshots:4}));
 }finally{
  if(browser)await browser.close();
  if(server&&server.exitCode===null){const exit=once(server,'exit');server.kill('SIGTERM');await Promise.race([exit,sleep(3000)]);if(server.exitCode===null)server.kill('SIGKILL')}
