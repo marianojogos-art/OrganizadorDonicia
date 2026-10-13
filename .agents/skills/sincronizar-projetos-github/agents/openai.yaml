@@ -1,0 +1,7 @@
+interface:
+  display_name: Sincronizar projetos com GitHub
+  short_description: GitHub atualizado e etapas visíveis na Cloudflare
+  default_prompt: Use $sincronizar-projetos-github para trabalhar na nuvem, atualizar
+    o GitHub a cada commit relevante e publicar etapas utilizáveis na Cloudflare.
+policy:
+  allow_implicit_invocation: true

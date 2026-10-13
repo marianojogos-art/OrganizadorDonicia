@@ -1,0 +1,2 @@
+CREATE TABLE personal_notes(id TEXT PRIMARY KEY,owner TEXT NOT NULL REFERENCES users(email),title TEXT NOT NULL,content TEXT NOT NULL,color TEXT NOT NULL DEFAULT 'amarelo' CHECK(color IN ('amarelo','azul','rosa','verde')),version INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX personal_notes_owner ON personal_notes(owner,updated_at);

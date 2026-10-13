@@ -2,7 +2,7 @@
   "expo": {
     "name": "Organizador Donícia",
     "slug": "organizador-donicia",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
@@ -10,7 +10,8 @@
       "bundleIdentifier": "br.org.donicia.organizador"
     },
     "android": {
-      "package": "br.org.donicia.organizador"
+      "package": "br.org.donicia.organizador",
+      "versionCode": 2
     },
     "extra": {
       "eas": {

@@ -53,3 +53,17 @@ test('network failure is visible and retry can recover without exposing raw serv
  assert.equal(p.document.querySelector('#load-error').classList.contains('hidden'),true);
  assert.match(p.document.querySelector('#notices').textContent,/Nenhum aviso/);
 });
+
+test('public calendar shows Portuguese times and escaped location only when supplied',async()=>{
+ const p=page({...empty,events:[
+  {title:'Encontro das famílias',date:'2026-10-14',type:'Evento escolar',start:'08:30',end:'10:00',location:'Auditório <img src=x onerror=alert(1)>',details:'Detalhes não publicados'},
+  {title:'Dia letivo',date:'2026-10-15',type:'Dia letivo',start:'',end:'',location:''}
+ ]});
+ p.document.querySelector('#calendar-month').value='2026-10';await p.load();
+ const [meeting,day]=p.document.querySelectorAll('#events .event');
+ assert.match(meeting.textContent,/Horário: 08h30 às 10h00/);
+ assert.match(meeting.textContent,/Local: Auditório <img/);
+ assert.equal(meeting.querySelector('img,script'),null);
+ assert.doesNotMatch(meeting.textContent,/Detalhes não publicados/);
+ assert.doesNotMatch(day.textContent,/Horário:|Local:/);
+});

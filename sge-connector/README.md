@@ -1,16 +1,14 @@
 # Conector SGE para Supervisão
 
-## Versão publicada: 1.2.3
+## Versão no repositório: 1.3.1
 
-O [PR6](https://github.com/marianojogos-art/OrganizadorDonicia/pull/6) publicou a versão `1.2.3`. Ela aceita sessões em `www.sgebr.com.br` e `www.sgebr.net.br`, ignora o carregamento temporário de uma aba vazia e reconhece páginas explicitamente sem planejamentos, mesmo quando o SGE retorna paginação zero ou mantém uma grade oculta. Falhas reais continuam sendo informadas.
+O manifesto, a interface web e o ping atuais usam `1.3.1`, preparada para a Chrome Web Store com ícones e permissões mínimas. A base anterior `main` `32b11d8` usava `1.3.0`. O [PR11](https://github.com/marianojogos-art/OrganizadorDonicia/pull/11) integra a espera pelo carregamento real do SGE e registra publicação Cloudflare. O código também inclui consulta por trimestre e apresentação padronizada das turmas. A versão `1.2.3` e a leitura autenticada conferida no PR6 são referências históricas, não a versão atual do manifesto.
 
-A leitura autenticada foi validada, e os resultados compartilhados persistiram após recarregar o Organizador. O ZIP publicado e os arquivos instalados neste PC foram conferidos na conclusão do PR6. Os PRs7/8 modificam o leiaute e a agenda, mantendo o conector `1.2.3`. A versão `2.0.0` do pacote principal pertence ao site, não à extensão; o aplicativo nativo tem versão própria.
+A espera confere a aba antes de injetar os scripts, evita o `about:blank` temporário e identifica redirecionamentos fora do SGE. A interface informa versão disponível e versão detectada. Suporta sessões em `www.sgebr.com.br` e `www.sgebr.net.br` e páginas explicitamente vazias, incluindo paginação zero ou grade oculta.
 
-Para atualizar a extensão, baixe o ZIP na Supervisão, substitua os arquivos da pasta instalada, abra `chrome://extensions` (ou a página de extensões do Edge), recarregue **Organizador Donícia — Supervisão SGE** e depois recarregue o Organizador. Confira `1.2.3` nos detalhes da extensão. Mantenha SGE e Organizador no mesmo perfil do navegador.
+Para atualizar, baixe o ZIP na Supervisão após login, extraia em uma pasta própria, substitua os arquivos da extensão instalada, abra `chrome://extensions` (ou a página de extensões do Edge) e recarregue **Organizador Donícia — Supervisão SGE**. Recarregue o Organizador e confira `1.3.1` nos detalhes da extensão e na interface. Mantenha SGE e Organizador no mesmo perfil. Para desenvolvimento, `npm run build` na raiz gera `dist/sge-connector.zip` e `dist/sge-connector/`.
 
-## Melhoria preparada no conector 1.3.0
-
-A espera pelo SGE confere o estado atual da aba antes de injetar os scripts e identifica redirecionamentos fora do SGE. A tela informa a versão disponível e a detectada.
+O ZIP recém-gerado mantém versão, ícones e permissões da fonte, mas limita o content script e o background à origem Organizador de produção. A pasta descompactada de desenvolvimento conserva suporte à demonstração loopback. Publicação do ZIP não atualiza automaticamente a extensão já instalada. Os testes simulados e o registro do PR11 não comprovam nova leitura em uma sessão autenticada; essa verificação permanece manual.
 
 ## Subseções e reinício da Supervisão
 
@@ -62,10 +60,14 @@ Os nomes das turmas são padronizados na apresentação e no relatório, preserv
 
 O conector 1.2.1 reconhece as sessões do SGE em `www.sgebr.com.br` e `www.sgebr.net.br`. Substitua os arquivos da extensão pela nova distribuição, recarregue-a em Extensões e recarregue o Organizador. A consulta mantém o domínio da sessão aberta.
 
-## Builds da Cloudflare e isolamento do banco
+## Build, testes e publicação
 
-O estado de produção verificado, com o commit e a versão Cloudflare, está no [README principal](../README.md#estado-verificado-após-o-pr8--10102026). A `main` publica com `npm run deploy:cloudflare`, aplicando somente migrações pendentes antes de servir os assets.
+Execute `npm run validate` na raiz para a validação conjunta. A suíte cobre parsing, paginação, seleção, filtros, permissões, navegação simulada e contratos com a ponte móvel. Veja [desenvolvimento](../docs/desenvolvimento.md).
 
-A falha inicial da prévia do PR4 foi resolvida com o banco separado `donicia-school-preview`, criado após autorização e inicializado com as cinco migrações. `wrangler.jsonc` distingue o D1 de produção (`donicia-school`) do D1 de prévia, tanto em `preview_database_id` quanto no bloco `previews`. Não usar o banco de produção para contornar falhas de prévia. `preview_urls: false` mantém as URLs públicas de prévia desativadas.
+Na conferência manual, instale o ZIP do commit revisado, confirme a versão detectada, faça login no SGE, consulte uma turma e confira filtro de trimestre, lista vazia, relatório de falhas e persistência após recarregar. Use dados autorizados e não publique capturas, relatórios ou HTML de produção no repositório.
 
-Na correção do PR4, a branch foi validada com `npm test && npx wrangler d1 migrations apply donicia-school --remote --preview && npx wrangler preview`. Configurações específicas de branches no painel são externas ao Git; conferir **Settings → Builds** antes de alterar um comando. Um build local ou de prévia não comprova publicação em produção: conferir commit, status **Ready**, tráfego ativo e, quando a extensão mudar, a versão do ZIP e da instalação.
+O [guia de deploy](../docs/deploy.md) descreve prévia isolada e verificação do commit/ZIP após publicação. Um build local ou registro histórico não comprova o estado atual de produção.
+
+## Preparação Chrome Web Store 1.3.1
+
+O código atual prepara ícones e permissões mínimas para a loja, mantendo as consultas da1.3.0. A fonte/ping e a versão disponível na web estão em1.3.1. `npm run build` gera ZIP somente produção e pasta descompactada de desenvolvimento separada. Loja, cadastro, revisão e instalação não são comprovados pelo build. Veja [materiais de submissão](../docs/chrome-web-store/README.md) e [privacidade](PRIVACY.md).

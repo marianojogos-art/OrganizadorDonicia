@@ -3,8 +3,12 @@ const migration=await readFile(new URL('../migrations/0001_initial.sql',import.m
 const gradeMigration=await readFile(new URL('../migrations/0003_webhorario_lessons.sql',import.meta.url),'utf8');
 const planningMigration=await readFile(new URL('../migrations/0002_substitution_planning.sql',import.meta.url),'utf8');
 const responsibleMigration=await readFile(new URL('../migrations/0004_reservation_responsible.sql',import.meta.url),'utf8');
-const portalMigration=await readFile(new URL('../migrations/0006_public_portal.sql',import.meta.url),'utf8');
-function setup(){const DB=sqlite();DB.exec(migration+planningMigration+gradeMigration+responsibleMigration);DB.exec('BEGIN;'+portalMigration+'COMMIT;');DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
+const contextMigration=await readFile(new URL('../migrations/0006_reservation_context.sql',import.meta.url),'utf8');
+const xeroxMigration=await readFile(new URL('../migrations/0007_xerox_attachments.sql',import.meta.url),'utf8');
+const formationMigration=await readFile(new URL('../migrations/0008_formation_calendar.sql',import.meta.url),'utf8');
+const notesMigration=await readFile(new URL('../migrations/0009_personal_notes.sql',import.meta.url),'utf8');
+const portalMigration=await readFile(new URL('../migrations/0010_public_portal.sql',import.meta.url),'utf8');
+function setup(){const DB=sqlite();DB.exec(migration+planningMigration+gradeMigration+responsibleMigration+contextMigration+xeroxMigration+formationMigration+notesMigration);DB.exec('BEGIN;'+portalMigration+'COMMIT;');DB.exec("INSERT INTO users VALUES('director@prof.pmf.sc.gov.br','Direção','direction',1),('one@prof.pmf.sc.gov.br','Professor um','teacher',1),('two@prof.pmf.sc.gov.br','Professor dois','teacher',1),('inactive@prof.pmf.sc.gov.br','Inativo','teacher',0),('supervision@prof.pmf.sc.gov.br','Supervisão fictícia','supervision',1),('guidance@prof.pmf.sc.gov.br','Orientação fictícia','guidance',1)");return {DB,ASSETS:{fetch:async()=>new Response('<html>teste</html>')}}}
 const send=async(env,path,method='GET',data,email='director@prof.pmf.sc.gov.br',origin='https://school.example')=>{if(['PATCH','DELETE'].includes(method)&&data&&data.version===undefined){const [kind,id]=path.split('/');const table=kind.replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?').bind(id).first();data={...data,version:row?.version||1}}const r=await handle(new Request('https://school.example/api/'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(data)}),env,async()=>email);return {status:r.status,body:await r.json()}};
 const reservation={space:'Biblioteca',date:'2026-10-05',start:'09:00',end:'10:00',purpose:'Leitura fictícia',responsible:'Responsável fictício'};
 const taskData={title:'Conferir calendário',due:'2026-10-05',owner:'one@prof.pmf.sc.gov.br',restricted:false};
@@ -88,3 +92,87 @@ test('transactional audit rolls back business mutation when audit cannot be writ
 test('simultaneous competing reservations result in one committed write and one conflict',async()=>{const e=setup();const results=await Promise.all([send(e,'reservations','POST',reservation),send(e,'reservations','POST',reservation)]);assert.deepEqual(results.map(x=>x.status).sort(),[201,409]);assert.equal((await send(e,'reservations')).body.length,1);assert.equal((await send(e,'audit')).body.length,1)});
 test('item mutations reject malformed routes without bypassing version checks',async()=>{const e=setup();const b=await send(e,'reservations','POST',reservation);for(const suffix of ['/extra','/','//']){const r=await send(e,'reservations/'+b.body.id+suffix,'DELETE',{});assert.equal(r.status,404)}assert.equal((await send(e,'reservations')).body.length,1);const t=await send(e,'tasks','POST',taskData);assert.equal((await send(e,'tasks/'+t.body.id+'/extra','PATCH',{status:'Concluída'})).status,404);assert.equal((await send(e,'tasks')).body[0].status,'Pendente')});
 test('substitution can be unassigned; deactivating auxiliary releases future lessons atomically',async()=>{const e=setup();const a=await send(e,'auxiliaries','POST',{name:'Auxiliar fictícia'});const sub=await send(e,'substitutions','POST',{date:'2099-10-05',start:'08:00',end:'08:45',class:'Turma fictícia',teacher:'Professor fictício'});assert.equal((await send(e,'substitutions/'+sub.body.id,'PATCH',{auxiliary:a.body.id})).status,200);assert.equal((await send(e,'substitutions/'+sub.body.id,'PATCH',{auxiliary:null})).status,200);assert.equal((await send(e,'substitutions')).body[0].auxiliary,null);await send(e,'substitutions/'+sub.body.id,'PATCH',{auxiliary:a.body.id});assert.equal((await send(e,'auxiliaries/'+a.body.id,'DELETE',{})).status,200);assert.equal((await send(e,'substitutions')).body[0].auxiliary,null);assert.equal((await send(e,'substitutions/'+sub.body.id,'PATCH',{auxiliary:a.body.id})).status,400)});
+
+
+test('reservation context persists and fixed weekly ranges are inclusive, conflict-safe and editable',async()=>{
+ const e=setup(),fixed={space:'Biblioteca',weekday:0,start:'09:00',end:'10:00',from_date:'2026-10-03',to_date:'2026-10-11',purpose:'Encontro fictício',responsible:'Docente fictício',class:'Turma fictícia',subject:'Disciplina fictícia'};
+ const f=await send(e,'fixed-occupancy','POST',fixed);assert.equal(f.status,201);
+ for(const date of ['2026-10-04','2026-10-11'])assert.equal((await send(e,'reservations','POST',{...reservation,date})).status,409);
+ for(const date of ['2026-10-03','2026-10-12'])assert.equal((await send(e,'reservations','POST',{...reservation,date,class:'Turma fictícia',subject:'Disciplina fictícia'})).status,201);
+ assert.equal((await send(e,'fixed-occupancy','POST',{...fixed,from_date:'2026-10-05',to_date:'2026-10-10'})).status,400,'range without selected weekday');
+ assert.equal((await send(e,'fixed-occupancy','POST',{...fixed,from_date:'2026-02-30'})).status,400);
+ assert.equal((await send(e,'fixed-occupancy/'+f.body.id,'PATCH',{...fixed,to_date:'2026-10-18',edit:true},'one@prof.pmf.sc.gov.br')).status,403);
+ assert.equal((await send(e,'fixed-occupancy/'+f.body.id,'PATCH',{...fixed,to_date:'2026-10-18',edit:true})).status,200);
+ assert.equal((await send(e,'reservations','POST',{...reservation,date:'2026-10-18'})).status,409);
+ assert.equal((await send(e,'fixed-occupancy/'+f.body.id,'DELETE',{})).status,200);
+ assert.equal((await send(e,'reservations','POST',{...reservation,date:'2026-10-18'})).status,201);
+ const rows=(await send(e,'reservations')).body;assert.equal(rows[0].class,'Turma fictícia');assert.equal(rows[0].subject,'Disciplina fictícia');
+});
+
+
+test('private xerox attachments validate content and size, preserve ownership, replace and delete atomically',async()=>{
+ const e=setup(),owner='one@prof.pmf.sc.gov.br',other='two@prof.pmf.sc.gov.br';
+ const attachment={name:'material-ficticio.pdf',type:'application/pdf',base64:btoa('%PDF-1.4\nFICTICIO\n%%EOF')};
+ const data={title:'Material fictício',copies:5,deadline:'2026-10-13',professor:'Professor fictício',class:'Turma fictícia',color:'Colorido',attachment};
+ const created=await send(e,'xerox','POST',data,owner);assert.equal(created.status,201);const id=created.body.id;
+ const rows=(await send(e,'xerox','GET',undefined,owner)).body;assert.equal(rows[0].color,'Colorido');assert.equal(rows[0].attachment_name,attachment.name);assert.equal(JSON.stringify(rows).includes(attachment.base64),false);assert.equal(rows[0].requester,owner);
+ const download=async(email)=>handle(new Request('https://school.example/api/xerox/'+id+'/attachment'),e,async()=>email);
+ const downloaded=await download(owner);assert.equal(downloaded.status,200);assert.match(downloaded.headers.get('content-disposition'),/^attachment;/);assert.equal(downloaded.headers.get('cache-control'),'private, no-store');assert.equal(await downloaded.text(),atob(attachment.base64));
+ assert.equal((await download(other)).status,404);assert.equal((await download(null)).status,401);assert.equal((await download('director@prof.pmf.sc.gov.br')).status,200);
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,edit:true},other)).status,403);
+ for(const invalid of [{...attachment,type:'text/html'},{...attachment,name:'x.exe'},{...attachment,base64:btoa('<html>Falso</html>')},{...attachment,base64:'!?'},{...attachment,name:'../x.pdf'}])assert.equal((await send(e,'xerox','POST',{...data,attachment:invalid},owner)).status,400);
+ assert.equal((await send(e,'xerox','POST',{...data,attachment:{...attachment,base64:btoa('%PDF-'+ 'x'.repeat(262144))}},owner)).status,413);
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,attachment:undefined,edit:true,title:'Material revisado'},owner)).status,200);assert.equal((await download(owner)).status,200,'omitted attachment preserved');
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,attachment:undefined,remove_attachment:true,edit:true},owner)).status,200);assert.equal((await download(owner)).status,404);
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,edit:true,version:1},owner)).status,409);
+ assert.equal((await send(e,'xerox/'+id,'DELETE',{},owner)).status,200);assert.equal((await download(owner)).status,404);
+});
+
+
+test('formation is a single calendar entry, with optional information and direction-only changes',async()=>{
+ const e=setup(),data={title:'Formação fictícia',date:'2026-10-15',type:'Formação',visibility:'internal',area:'Linguagens',start:'14:00',end:'16:00',location:'Sala fictícia',details:'Pauta de formação fictícia'};
+ assert.equal((await send(e,'events','POST',data,'one@prof.pmf.sc.gov.br')).status,403);
+ const f=await send(e,'events','POST',data);assert.equal(f.status,201);
+ const rows=(await send(e,'events','GET',undefined,'one@prof.pmf.sc.gov.br')).body;assert.equal(rows.length,1);assert.equal(rows[0].type,'Formação');assert.equal(rows[0].details,data.details);const trainings=(await send(e,'trainings','GET',undefined,'one@prof.pmf.sc.gov.br')).body;assert.equal(trainings.length,1);assert.equal(trainings[0].id,f.body.id);assert.equal(trainings[0].notes,data.details);assert.equal(trainings[0].area,data.area);
+ assert.equal((await send(e,'events','POST',{...data,start:'17:00',end:'16:00'})).status,400);
+ assert.equal((await send(e,'events','POST',{...data,start:'',end:'16:00'})).status,400);
+ assert.equal((await send(e,'events/'+f.body.id,'PATCH',{...data,type:'Reunião',edit:true})).status,200);
+ assert.equal((await send(e,'events')).body[0].formation,0);assert.equal((await send(e,'trainings')).body.length,0);
+ assert.equal((await send(e,'events/'+f.body.id,'PATCH',{...data,edit:true,version:1})).status,409);
+ assert.equal((await send(e,'events/'+f.body.id,'DELETE',{})).status,200);
+});
+
+
+test('personal notes isolate pedagogical users and direction on every API path, including version checks',async()=>{
+ const e=setup(),one='supervision@prof.pmf.sc.gov.br',two='guidance@prof.pmf.sc.gov.br',director='director@prof.pmf.sc.gov.br';
+ const note={title:'Lembrete fictício',content:'Organizar material fictício',color:'azul',owner:two};
+ const n=await send(e,'notes','POST',note,one);assert.equal(n.status,201);
+ const call=async(email,path='notes',method='GET',data)=>{const r=await handle(new Request('https://school.example/api/'+path,{method,headers:{Origin:'https://school.example','Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(data)}),e,async()=>email);return {status:r.status,body:await r.json()}};
+ for(const teacher of ['one@prof.pmf.sc.gov.br','two@prof.pmf.sc.gov.br']){assert.equal((await call(teacher)).status,403);assert.equal((await call(teacher,'notes','POST',note)).status,403);for(const method of ['GET','PATCH','DELETE'])assert.equal((await call(teacher,'notes/'+n.body.id,method,{...note,version:1})).status,403)}
+ const own=(await call(one)).body;assert.equal(own.length,1);assert.equal(own[0].title,note.title);assert.equal((await call(two)).body.length,0);assert.equal((await call(director)).body.length,0);
+ for(const other of [two,director]){
+  assert.equal((await call(other,'notes/'+n.body.id)).status,404);
+  assert.equal((await call(other,'notes/'+n.body.id,'PATCH',{...note,version:1})).status,404);
+  assert.equal((await call(other,'notes/'+n.body.id,'DELETE',{version:1})).status,404);
+  assert.equal((await call(other,'notes/'+n.body.id,'PATCH',{...note,version:999})).status,404,'no version/existence leak');
+ }
+ const m=await call(two,'notes','POST',{...note,title:'Nota de outro login'});assert.equal(m.status,201);assert.equal((await call(two)).body.length,1);
+ assert.equal((await call(one,'notes/'+n.body.id,'PATCH',{...note,content:'Texto editado',version:1})).status,200);
+ assert.equal((await call(one,'notes/'+n.body.id,'PATCH',{...note,version:1})).status,409);
+ assert.equal((await call(one,'notes/'+n.body.id,'PATCH',{...note,color:'<script>',version:2})).status,400);
+ assert.equal((await call(null)).status,401);assert.equal((await call('inactive@prof.pmf.sc.gov.br')).status,403);
+ assert.equal((await call(one,'notes/'+n.body.id,'DELETE',{version:2})).status,200);assert.equal((await call(one)).body.length,0);assert.equal((await call(two)).body.length,1);
+ assert.equal(JSON.stringify((await send(e,'audit')).body).includes('Texto editado'),false);
+});
+
+
+test('xerox rejects invalid base64 and mutation CSRF; returned adjustments preserve the attachment',async()=>{
+ const e=setup(),owner='one@prof.pmf.sc.gov.br',attachment={name:'ficticio.pdf',type:'application/pdf',base64:btoa('%PDF-1.4 FICTICIO')},data={title:'Fictício',copies:2,deadline:'2026-10-15',attachment};
+ for(const base64 of ['A','AAAAA','AA=A','===='])assert.equal((await send(e,'xerox','POST',{...data,attachment:{...attachment,base64}},owner)).status,400);
+ assert.equal((await send(e,'xerox','POST',data,owner,'https://foreign.example')).status,403);
+ const created=await send(e,'xerox','POST',data,owner);assert.equal(created.status,201);const id=created.body.id;
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{status:'Devolvido para ajustes'})).status,200);
+ assert.equal((await send(e,'xerox/'+id,'PATCH',{...data,attachment:undefined,resubmit:true,professor:'Docente fictício',class:'Turma fictícia',color:'Colorido'},owner)).status,200);
+ const row=(await send(e,'xerox','GET',undefined,owner)).body[0];assert.equal(row.status,'Aguardando aprovação');assert.equal(row.attachment_name,'ficticio.pdf');assert.equal(row.color,'Colorido');
+ const empty=await send(e,'xerox','POST',{...data,attachment:{...attachment,base64:''}},owner);assert.equal(empty.status,413);
+});

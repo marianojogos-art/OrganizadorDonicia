@@ -1,10 +1,10 @@
 # Organizador Donícia — Cloudflare Workers
 
-Projeto escolar independente para a EBM Donícia Maria da Costa, publicado em [Organizador Donícia](https://organizadordonicia.carijo.workers.dev/). O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. Não utiliza recursos operacionais da Lepidus.
+Projeto escolar independente para a EBM Donícia Maria da Costa, publicado em [Organizador Donícia](https://organizadordonicia.carijo.workers.dev/) com a área de funcionários protegida por Cloudflare Access. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. Não utiliza recursos operacionais da Lepidus.
 
 ## Portal público e perfis — implementação de 13/10/2026
 
-Esta revisão prepara o portal público e a separação de acessos. **A publicação, a migração remota e a alteração do Cloudflare Access ainda dependem de autorização específica; não foram executadas nesta implementação.** O estado de produção verificado anteriormente está registrado na seção seguinte.
+Esta revisão implementa o portal público e a separação de acessos, preservando as melhorias existentes de reservas, xerox com anexos, formação integrada ao calendário e notas pessoais. A autorização vigente de 11/10/2026 cobre integração e publicação contínua no Worker existente após validação; o resultado efetivo deve ser comprovado pelo commit, pela CI e pelo deployment. Os totais de testes de bases anteriores não comprovam esta integração.
 
 | Acesso | Conteúdo e ações |
 | --- | --- |
@@ -14,67 +14,71 @@ Esta revisão prepara o portal público e a separação de acessos. **A publica�
 
 As permissões são verificadas na API: professores não podem consultar tarefas, atas, substituições, Supervisão, auditoria ou cadastros administrativos. Login válido também exige uma conta nominal ativa em `users`; não existe cadastro aberto. Os papéis técnicos são `direction`, `supervision`, `guidance` e `teacher`, com as mesmas permissões completas para os três primeiros neste momento.
 
-A equipe publica avisos e edita apresentação e contatos em **Comunicação pública**. Avisos novos ficam como rascunho até a opção de publicação ser marcada. No **Calendário**, a equipe escolhe **Interno** ou **Público** por evento; eventos anteriores permanecem internos. `/api/public` expõe somente informações da escola, avisos publicados e eventos públicos, sem atas, contas, reservas, pedidos de xerox ou formações.
+A equipe publica avisos e edita apresentação e contatos em **Comunicação pública**. Avisos novos ficam como rascunho até a opção de publicação ser marcada. No **Calendário**, a equipe escolhe **Interno** ou **Público** por evento; eventos anteriores permanecem internos. `/api/public` expõe somente informações da escola, avisos publicados e eventos públicos, sem atas, contas, reservas, pedidos de xerox ou detalhes internos das formações.
 
-Em **Formação**, a equipe cadastra título, área, data, horários opcionais, local e observações. Professores consultam o calendário e filtram por área e mês. O calendário começa vazio e depende do documento oficial da escola para o cadastro dos encontros; nenhuma data ou área é preenchida como exemplo em produção.
+Em **Formação**, a equipe cadastra título, área, data, horários opcionais, local e observações. Professores consultam o calendário e filtram por área e mês. Os encontros existentes são preservados. O anexo mencionado para o novo calendário oficial não foi disponibilizado nesta conversa, portanto nenhuma data oficial foi inventada ou importada.
 
-A migração `0006_public_portal.sql` adiciona os novos perfis, conteúdos públicos e formações. Ela preserva os vínculos de usuários, marca reservas anteriores como **Aprovada** e eventos anteriores como **Interno**. O executor local aplica cada migração em uma transação, como o D1, inclusive a atualização da tabela de usuários.
+A migração `0010_public_portal.sql` sucede as migrações 0006–0009 e adiciona os novos perfis, conteúdos públicos e a área das formações. Ela preserva os vínculos de usuários, marca reservas anteriores como **Aprovada** e eventos anteriores como **Interno**. O executor local aplica cada migração em uma transação, como o D1, inclusive a atualização da tabela de usuários.
 
-Para publicar esta revisão após a autorização, revisar a seção **Publicar o portal público** abaixo. O Access que protege o Worker inteiro impede a navegação anônima até que a configuração dos caminhos seja ajustada.
+Formação continua usando os mesmos eventos do calendário, sem duplicar registros; `/api/trainings` apresenta os encontros por área. As notas pessoais ficam disponíveis à equipe pedagógica e preservam o isolamento por proprietário, inclusive entre direção, supervisão e orientação.
 
-Validação local desta revisão: **120 testes aprovados**, build concluído e `wrangler deploy --dry-run` aprovado. A suíte inclui autenticação no runtime Workers, migração com referências preservadas no D1, concorrência de aprovações, isolamento dos perfis, publicação explícita e formulários. Portal, dez seções pedagógicas e quatro seções do professor foram verificados no Chrome em 320, 390, 768 e 1366 px, sem rolagem horizontal ou erros JavaScript. Fluxos completos de pedido/aprovação, aviso e evento público/interno, contatos e Formação foram exercitados com dados fictícios em SQLite local. Isso não substitui a validação do login real após configurar o Access, nem equivale a teste em aparelho físico.
+Para publicar esta revisão conforme a autorização vigente, seguir o [procedimento de deploy](docs/deploy.md#portal-público-e-acesso-de-funcionários). O Access que protege o Worker inteiro impede a navegação anônima até que a configuração dos caminhos seja ajustada.
 
-## Estado verificado após o PR8 — 10/10/2026
+A base inicial do portal (`ecf1c10`) teve 120 testes, build, dry-run e verificações de interface aprovados antes da conciliação com a `main`. Esses resultados não validam a versão integrada com as migrações 0006–0009 e as melhorias posteriores. A conclusão desta integração depende da CI do commit correspondente e da conferência do deployment, incluindo login real após ajustar o Access.
 
-A base desta revisão é o commit de produção [`bcebc67`](https://github.com/marianojogos-art/OrganizadorDonicia/commit/bcebc67d1c3a75e59b9f53ad740ff0b425bed8ce). O deploy do PR8 foi confirmado como **Ready**, com **100% do tráfego**, versão Cloudflare com prefixo `bceb7364`. Os registros abaixo são uma fotografia dessa publicação, não uma consulta de status em tempo real.
+## Componentes e estado de referência — 11/10/2026
 
-| Componente | Versão / referência | Observação |
+A auditoria partiu da `main` [`32b11d8`](https://github.com/marianojogos-art/OrganizadorDonicia/commit/32b11d8), que integrou o PR11. A organização ([PR12](https://github.com/marianojogos-art/OrganizadorDonicia/pull/12)) e a conciliação Android ([PR13](https://github.com/marianojogos-art/OrganizadorDonicia/pull/13)) foram integradas depois, preservando os históricos. Os números abaixo identificam componentes diferentes; não são uma release conjunta.
+
+| Componente | Versão no código integrado | Distribuição e limites |
 | --- | --- | --- |
-| Site | `package.json`: `2.0.0`; publicação identificada pelo commit | O número do pacote não muda a cada PR; o commit e o deployment identificam o código publicado. |
-| Conector Chrome/Edge | `1.2.3` em `sge-connector/manifest.json` | Distribuição em `/sge-connector.zip`, após login. Arquivos instalados neste PC e ZIP foram conferidos na publicação do PR6. |
-| Aplicativo nativo | `mobile-sge/package.json`: `1.0.0` | Projeto separado; veja os limites de instalação e atualização em [mobile-sge/README.md](mobile-sge/README.md). Os PRs7/8 não geraram outro APK/IPA. |
-| Banco de produção | `donicia-school` | Binding `DB`; cinco migrações versionadas. |
-| Banco de prévia | `donicia-school-preview` | Isolado da produção; URLs públicas de prévia desativadas. |
+| Web / API Workers | `package.json`: `2.0.0` | O commit e o deployment identificam cada publicação; o número do pacote não muda a cada PR. |
+| Extensão Chrome/Edge | `sge-connector/manifest.json`: `1.3.1` | O build gera o ZIP e a pasta descompactada. Reinstalar/recarregar a extensão para atualizar a versão instalada. |
+| Aplicativo Expo | `mobile-sge/package.json` e `app.json`: `1.0.1`, Android `versionCode` 2 | Código conciliado pelo PR13; exportação aprovada. Nenhum novo APK assinado/instalado foi produzido nesta tarefa. |
+| Banco | `migrations/`: cinco migrações na base | Produção `donicia-school`; prévia isolada `donicia-school-preview`. |
 
-### Mudanças publicadas
+O PR11 registra publicação Cloudflare `d777092a-f6b0-4564-bac5-8b940b03d10d`, em 11/10/2026 às 04:42:58 UTC. Esse registro histórico não comprova o status atual do Worker, a atualização de uma extensão instalada ou uma nova consulta autenticada. A `main` contém conector `1.3.0`, consulta por trimestre, nomes de turmas padronizados e espera pelo carregamento real do SGE. A referência anterior `1.2.3` pertence ao PR6. O [changelog](CHANGELOG.md) registra a sequência sem inventar tags ou releases.
 
-- [PR1](https://github.com/marianojogos-art/OrganizadorDonicia/pull/1), [PR2](https://github.com/marianojogos-art/OrganizadorDonicia/pull/2) e [PR3](https://github.com/marianojogos-art/OrganizadorDonicia/pull/3): resultados por professor, relatório de ocorrências, diagnóstico de falhas, subseções e reinício da Supervisão.
-- [PR4](https://github.com/marianojogos-art/OrganizadorDonicia/pull/4), [PR5](https://github.com/marianojogos-art/OrganizadorDonicia/pull/5) e [PR6](https://github.com/marianojogos-art/OrganizadorDonicia/pull/6): conexão com os domínios do SGE, navegação inicial e leitura de listas vazias, incluindo paginação zero e grade oculta. Conector final `1.2.3`.
-- [PR7](https://github.com/marianojogos-art/OrganizadorDonicia/pull/7): navegação e leiaute adaptados ao smartphone, tabelas por registro, campos maiores e formulários ajustados à altura da tela.
-- [PR8](https://github.com/marianojogos-art/OrganizadorDonicia/pull/8): agenda mensal por espaço, seleção do dia, contagem de agendamentos e reserva com data/espaço preenchidos.
+A branch `app-android-1-0-1` deve ser preservada. Sua compatibilidade com a web atual foi conciliada nesta branch por merges e regeneração dos runtimes; isso não equivale a compilar, assinar, instalar ou testar um APK `1.0.1`.
 
-### Validação e limites atuais
+## Começar e encontrar a documentação
 
-- **94 testes da raiz aprovados** e `npm run build` concluído na versão do PR8. A suíte cobre API, autenticação, persistência, SGE, navegação móvel e agenda mensal, incluindo ano bissexto e virada de ano.
-- As oito seções foram verificadas no navegador em 320, 390, 768 e 1366 px no PR7; a agenda mensal foi verificada nas mesmas larguras no PR8, sem rolagem horizontal da página. A verificação móvel usa emulação de viewport no Chromium, não um aparelho físico.
-- Em produção, a visão mensal mostrou a reserva existente; alternância semana/mês, navegação entre meses e preenchimento da nova reserva foram conferidos sem criar dados de teste no banco de produção.
-- A leitura real do SGE com o conector `1.2.3` foi concluída e os resultados salvos permaneceram após recarregar o site. Links diretos podem continuar indisponíveis conforme o comportamento do SGE; nesse caso, a interface oferece o acesso pela lista do professor.
-- A suíte de `mobile-sge` e a geração dos runtimes foram executadas nesta revisão documental. Isso não equivale a gerar, instalar ou validar outro APK/IPA. Recuperação de backup D1, geração Drizzle e validação física completa do aplicativo nativo continuam sem nova evidência nesta revisão.
+Requer Node.js 24, npm e dependências fixadas nos dois lockfiles:
 
-Orientações para contribuições e autorizações estão em [AGENTS.md](AGENTS.md). Alterações na `main` disparam publicação; registrar um PR não autoriza seu merge/deploy.
+```sh
+npm ci
+npm --prefix mobile-sge ci
+npm run validate
+npm run dev
+```
 
-## Executar localmente
+O servidor de demonstração abre `http://127.0.0.1:8787`, usa identidade fictícia e SQLite local em `.local/`. Não inserir dados reais. Para conferir os perfis locais, a variável de processo `LOCAL_ROLE` admite `direction` (padrão), `supervision`, `guidance`, `teacher` ou `anonymous`; essa opção nunca é lida de requisições ou cookies. O Worker de produção verifica identidade e permissões; a identidade de demonstração existe somente em `scripts/dev.mjs`. O build gera portal e área de funcionários separados, servidos em `/` e `/equipe`, com scripts `/public.js` e `/equipe/app.js`.
 
-Requer Node.js 24 (SQLite nativo). Execute `npm ci` para instalar as versões fixadas, incluindo Wrangler:
+- [Desenvolvimento e validação](docs/desenvolvimento.md): mapa de pastas, scripts, testes, arquivos gerados e limitações.
+- [Governança e limpeza segura](docs/governanca.md): inventário de branches e proteção proposta, pendentes de aprovação.
+- [Verificação desta revisão](docs/verificacao.md): resultados, SHAs e limites de execução.
+- [Preparação Chrome Web Store](docs/chrome-web-store/README.md): pacote, imagens, privacidade e requisitos para submissão.
+- [Habilidade de sincronização](.agents/skills/sincronizar-projetos-github/SKILL.md): cópia exportável do fluxo cloud/GitHub/Cloudflare de Mariano.
+- [Contribuição](CONTRIBUTING.md): revisão, commits, PRs e cuidado com dados/credenciais.
+- [Deploy e plano de versões](docs/deploy.md): prévia, autorização, migrações, publicação e validação posterior.
+- [Extensão SGE](sge-connector/README.md) e [aplicativo móvel](mobile-sge/README.md): instalação, diferenças e verificação manual.
+- [Orientações do projeto](AGENTS.md) e [revisão inicial](REVIEW.md): regras e contexto histórico.
 
-- `npm run build`: gera o portal (`dist/public.html`, `dist/public.js`) e a área autenticada (`dist/index.html`, `dist/app.js`); os scripts são servidos em `/public.js` e `/equipe/app.js`
-- `npm test`: testes de API com SQLite real local, JWT RSA no Node e no runtime Workers (Miniflare instalado com Wrangler), e contratos de renderização
-- `npm run dev`: demonstração em `http://127.0.0.1:8787`, somente loopback, com direção fictícia e SQLite em `.local/demo-v3.sqlite`
-
-A identidade fixa do servidor de demonstração está exclusivamente em `scripts/dev.mjs`. Para conferir os perfis locais, defina a variável de processo `LOCAL_ROLE` como `direction` (padrão), `supervision`, `guidance`, `teacher` ou `anonymous` antes de iniciar `npm run dev`. Essa opção nunca é lida de requisições ou cookies. O Worker de produção não tem bypass nem modo demo. Reiniciar o servidor preserva o SQLite local. Não inserir dados reais de estudantes ou funcionários na demonstração.
+A CI valida raiz e aplicativo móvel sem publicar produção. Testes automatizados não substituem login institucional, SGE autenticado, aparelho físico nem ensaio de recuperação D1. Evidências históricas do PR8 incluem 94 testes da raiz, build e emulação de viewport; use a execução do commit revisado para conhecer os resultados atuais.
 
 ## O que funciona
 
 - Supervisão: consulta de turmas pelo conector, resultados compartilhados salvos no D1, seleção por professor, filtros por Situação, trimestres, relatório de ocorrências e reinício da tela sem excluir os dados salvos. Veja [sge-connector/README.md](sge-connector/README.md).
-- Reservas: agenda semanal e mensal por espaço; pedidos de professores ficam pendentes até aprovação da equipe; responsável nominal obrigatório; edição e cancelamento pelo criador ou equipe pedagógica; impedir sobreposição entre reservas aprovadas e ocupações fixas no banco de forma atômica
-- Tarefas: equipe pedagógica cria/edita/remove, define prazo, responsável nominal, estados e restrição; professores não acessam esse módulo
+- Reservas: agenda semanal e mensal por espaço, com navegação entre períodos, reservas e ocupações fixas no mesmo dia, e reserva direta da data escolhida; responsável nominal obrigatório, preenchido inicialmente com o usuário atual; professores enviam pedidos pendentes e a equipe aprova ou recusa; edição/cancelamento pelo criador ou equipe, com restrições após aprovação; impedir sobreposição entre reservas aprovadas e ocupações fixas no banco de forma atômica; ocupação semanal fixa com período inclusivo de validade, administrada pela equipe pedagógica; turma e disciplina opcionais
+- Tarefas: exclusivas da equipe pedagógica, que cria/edita/remove, define prazo, responsável nominal, estados e restrição
 - Substituições: professores e aulas do WebHorário, busca por nome, dia atual e quantidade de dias corridos; prévia por turma/horário, auxiliar padrão para todas as aulas e divisão por aula; troca direta no quadro semanal, confirmação de realização e relatório com limite semanal; conflitos de turma e auxiliar bloqueados; desativação preserva aulas realizadas e libera as futuras ainda agendadas
-- Xerox: solicitar, aprovar/devolver/recusar, produzir/concluir, ajustar e reenviar pedido devolvido; transições concorrentes usam compare-and-swap
+- Xerox: professor, turma opcional, impressão preto e branco/colorida, material, quantidade e prazo; anexo PDF/PNG/JPEG até 256 KiB com download privado pelo proprietário/equipe pedagógica; aprovação e transições concorrentes preservadas
 - Atas: exclusivas da equipe pedagógica, que registra/edita/remove e consulta
-- Calendário: equipe pedagógica registra/edita/remove e define a visibilidade; professores consultam todos os eventos e visitantes somente os públicos
-- Formação: equipe pedagógica mantém o calendário por área; professores consultam com filtros de área e mês
-- Portal público: equipe pedagógica mantém apresentação, contatos e avisos, com controle explícito de publicação
+- Calendário e Formação: mesmos registros, filtros por mês/tipo/área, horários, local e informações; a equipe mantém os eventos e define visibilidade pública/interna; professores consultam ambos os calendários e visitantes somente eventos públicos
+- Minhas notas: cartões pessoais da equipe pedagógica, com isolamento na API inclusive contra acesso de outros integrantes da equipe e direção; professores não acessam este módulo
 - Estudantes: desabilitado, sem tabela ativa nem rota. Proposta sintética em `db/proposals/`, fora das migrações, para revisão futura
+
+Detalhes, limites e evidências das quatro melhorias: [guia de outubro](docs/melhorias-2026-10.md).
 
 Durante uma gravação, o formulário permanece protegido contra fechamento ou troca acidental. Se o banco salva e a atualização da lista falha, a interface informa que a alteração foi salva e oferece atualizar, evitando repetir a gravação.
 
@@ -82,13 +86,13 @@ Edições e remoções usam a versão do registro para detectar mudanças concor
 
 ## Acesso
 
-A aplicação usa Cloudflare Access como fronteira de identidade humana da área de funcionários. O login inicial usa código enviado ao e-mail institucional (One-time PIN), com política nominal. Na última configuração de produção verificada, o Access protege o Worker inteiro, incluindo todos os seus destinos; a abertura do portal exige o ajuste descrito adiante. Para as rotas protegidas, o Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.pmf.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
+A aplicação usa Cloudflare Access como fronteira de identidade humana da área de funcionários. O login inicial usa código enviado ao e-mail institucional (One-time PIN), com política nominal para a conta de direção autorizada. Na última configuração de produção registrada, o Access protege o Worker inteiro; o portal público exige a reconfiguração por caminhos descrita em [deploy](docs/deploy.md#portal-público-e-acesso-de-funcionários), preservando a autenticação da área privada. O Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.pmf.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
 
 O JWT é lido do cabeçalho `Cf-Access-Jwt-Assertion` ou, quando o cabeçalho não está presente, do cookie de aplicação `CF_Authorization`. Ambos passam pela mesma verificação criptográfica. Isso permite autenticar quando o roteador de Static Assets não encaminha o contexto de identidade ao Worker. Cookies duplicados são recusados e um cabeçalho inválido não usa o cookie como alternativa.
 
 A consulta às chaves públicas usa `redirect: 'manual'` e recusa respostas sem sucesso, incluindo redirecionamentos. O runtime Workers não aceita `redirect: 'error'`; essa opção interrompia a validação antes de consultar as chaves, mesmo depois de um login Access válido. O teste no Miniflare reproduziu a falha anterior e verifica login por cabeçalho e cookie, assinatura inválida e recusa de redirecionamentos. Diagnóstico opcional com `ACCESS_DIAGNOSTICS=1` registra somente códigos fixos de falha, sem JWT, cookies ou e-mail; fica desativado por padrão.
 
-Perfis desta revisão: `direction`, `supervision`, `guidance` e `teacher`. Direção, supervisão e orientação têm acesso completo por decisão da escola; professores têm somente os quatro recursos descritos acima. Usuários são provisionados por migração administrativa revisada; não existe cadastro aberto. Atribuir um perfil no D1 também exige que a pessoa esteja autorizada na política nominal do Access.
+Perfis desta revisão: `direction`, `supervision`, `guidance` e `teacher`. As permissões são verificadas na API. Direção, supervisão e orientação têm acesso completo por decisão da escola; professores têm somente os quatro recursos descritos acima. Usuários são provisionados por migração administrativa revisada; não existe cadastro aberto.
 
 ## Banco
 
@@ -101,7 +105,7 @@ Em **Espaços**, clique em **Ver agenda** no ambiente desejado ou escolha o loca
 - **Semana**: mostra de segunda a domingo as reservas e os horários fixos válidos. Use **Anterior**, **Próxima**, **Esta semana** ou o campo **Semana de**.
 - **Mês**: mostra o calendário mensal, iniciado na segunda-feira. Use **Anterior**, **Próximo**, **Este mês** ou o campo **Mês**. Cada dia informa a quantidade de reservas e horários fixos; essa quantidade não significa que o dia inteiro está ocupado.
 - Selecione um dia no mês para consultar horários, atividades e responsáveis abaixo do calendário. A seleção permanece ao alternar as visões; a semana exibida acompanha o dia escolhido.
-- **Reservar neste dia** abre o formulário com o espaço e a data selecionados. Informe início, término, responsável e atividade. Pedidos de professores ficam **Pendente**; reservas cadastradas diretamente pela equipe ficam **Aprovada**.
+- **Reservar neste dia** abre o formulário com o espaço e a data selecionados. Informe início, término, responsável e atividade. Pedidos de professores ficam **Pendente**; reservas criadas diretamente pela equipe ficam **Aprovada**. A aprovação bloqueia horários conflitantes.
 
 A equipe pedagógica pode **Aprovar** ou **Recusar** os pedidos. Somente reservas **Aprovada** ocupam o horário: pedidos pendentes podem coincidir, mas a aprovação é recusada se houver outra reserva aprovada ou ocupação fixa conflitante. Aprovações concorrentes para o mesmo horário resultam em uma confirmação e um conflito, sem dupla reserva. Professores podem editar seus pedidos pendentes ou recusados e reenviá-los como **Pendente**; a edição de uma reserva já aprovada cabe à equipe. Professores veem seus pedidos e as reservas aprovadas; pedidos pendentes ou recusados de outros professores ficam restritos à equipe e ao solicitante.
 
@@ -121,7 +125,7 @@ A grade é lida da [página pública da escola no WebHorário](https://www.webho
 
 O seletor de semana e os botões anterior/atual/próxima mostram as aulas e a carga de cada auxiliar. O seletor de auxiliar em cada linha troca a responsável por aquela aula, com verificação de versão, limite semanal e horários sobrepostos. **Marcar realizada** confirma uma aula de hoje ou de um dia anterior. O relatório distingue realizadas e agendadas, mostra total/limite e aulas disponíveis, e permite abrir o detalhamento de cada auxiliar. O limite considera ambas as categorias. Aulas realizadas mantêm o histórico mesmo após desativar a auxiliar; para trocar ou retirar sua responsável, desmarque a realização primeiro.
 
-A Supervisão permite baixar o relatório de ocorrências em texto e mantém consultas compartilhadas no D1 pela migração `0005_supervision.sql`. A prévia e os filtros também possuem estado local na tela. Não há envio de notificações externas nem fluxo de uploads/anexos.
+A Supervisão permite baixar o relatório de ocorrências em texto e mantém consultas compartilhadas no D1 pela migração `0005_supervision.sql`. A prévia e os filtros também possuem estado local na tela. A Supervisão não envia notificações externas nem recebe anexos; pedidos de xerox possuem o fluxo privado de arquivos descrito no guia de outubro.
 
 ## Usar no smartphone
 
@@ -139,54 +143,12 @@ No navegador do celular, é possível usar a gestão e consultar os resultados s
 6. Confirmar política escolar de 32 aulas por semana (configurável na tabela settings por migração administrativa), duração das aulas e cadastro de ocupação fixa
 7. Para estudantes: definir finalidade, acesso, retenção, base de autorização e integração antes de ativar qualquer armazenamento
 
-## Conectar GitHub e Cloudflare
+## Cloudflare e histórico
 
-A conexão já existe entre o Worker `organizadordonicia` e `marianojogos-art/OrganizadorDonicia`. Para conferir, abra **Workers & Pages → organizadordonicia → Settings → Builds**. A configuração validada é:
+A integração GitHub/Cloudflare registrada usa a branch `main`, Worker `organizadordonicia` e banco D1 separado de prévia. Fazer merge pode disparar publicação. Consulte [o procedimento de deploy](docs/deploy.md) antes de alterar a integração ou executar comandos remotos. A autorização vigente de 11/10/2026 permite integrar e publicar etapas concluídas/verificadas no destino existente, conforme [AGENTS.md](AGENTS.md). Alterações de segurança, dados ou destino exigem revisão própria.
 
-- Branch de produção: `main`
-- Diretório raiz: `/`
-- Versão de Node.js: `24` (variável de build `NODE_VERSION=24`)
-- Comando de build: `npm run build`
-- Comando de deploy: `npm run deploy:cloudflare`
-- O token do build precisa de permissão para editar Workers e o banco D1 configurado, pois o deploy aplica migrações pendentes.
+As primeiras versões de persistência, Cloudflare Access e Supervisão são documentadas em 06/10/2026. Totais antigos de testes são fotografias das respectivas revisões. O [CHANGELOG.md](CHANGELOG.md) e os PRs vinculados identificam as mudanças; resultados atuais devem apontar para o commit e a execução de CI correspondentes.
 
-O nome do Worker no painel deve coincidir com `name` em `wrangler.jsonc`. O deploy usa Wrangler fixado no lockfile, gera os assets e aplica as migrações antes de publicar. Se o banco já foi inicializado manualmente por SQL, confira o esquema e o histórico `d1_migrations` antes de executar a migração inicial novamente; não apague tabelas para resolver um erro de tabela existente.
+## Android conciliado nesta branch
 
-As variáveis de runtime foram configuradas em **Settings → Variables & Secrets**. Se a aplicação Access for recriada, atualize:
-
-- `ACCESS_ISSUER`: URL do time Zero Trust, por exemplo `https://seu-time.cloudflareaccess.com`, sem barra final.
-- `ACCESS_AUD`: Application Audience (AUD) da aplicação Access que protege este Worker.
-
-`keep_vars: true` preserva essas variáveis do painel em novos deploys. Elas não recebem valores vazios do repositório. Variáveis de build não substituem variáveis de runtime. Sem configuração válida do Access e usuário nominal ativo no D1, o Worker recusa o acesso à área de funcionários e às APIs privadas.
-
-`workers.dev` está habilitado no arquivo Wrangler. As URLs públicas de prévia continuam desativadas (`preview_urls: false`); builds de prévia usam o D1 isolado definido no bloco `previews`. A organização Zero Trust `Organizador Donícia` e a aplicação Access foram criadas, com proteção apenas deste Worker. `ACCESS_ISSUER` e `ACCESS_AUD` foram confirmados no runtime, preservando `DB` e `ASSETS`. As contas nominais de direção são provisionadas administrativamente, fora do repositório público. O cadastro nominal continua obrigatório para qualquer usuário adicional, assim como a inclusão na política Access. Google institucional pode ser configurado posteriormente como outro provedor de identidade; o código não contém credenciais Google.
-
-Para publicar pelo terminal, somente após autorização específica e a revisão do plano de acesso abaixo:
-
-```sh
-npx wrangler login --browser=false --callback-host=127.0.0.1
-npm test
-npm run check:cloudflare
-npx wrangler d1 migrations list donicia-school --remote
-npm run deploy:cloudflare
-```
-
-Referências: [Git integration](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/), [Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/) e [Wrangler configuration](https://developers.cloudflare.com/workers/wrangler/configuration/).
-
-## Publicar o portal público
-
-Este é um plano de publicação pendente, não um registro de configuração realizada. O [AGENTS.md](AGENTS.md) exige autorização vigente para deploy, migrações remotas e merge que dispare publicação. Commit, push e abertura de PR não executam essas etapas.
-
-1. Revisar o PR, executar `npm test`, `npm run build` e `npm run check:cloudflare`; revisar `0006_public_portal.sql` e ensaiar a atualização de um banco local com registros anteriores. Preservar a configuração atual do Access e uma referência de recuperação do D1 antes da alteração remota.
-2. Preparar uma aplicação Access do tipo self-hosted por hostname e caminhos para os funcionários. A proteção atual do Worker inteiro também cobre a página inicial e precisa ser substituída para permitir acesso público. A Cloudflare documenta a proteção por caminhos, inclusive em hostnames `workers.dev`, em [Cloudflare Access para Workers](https://developers.cloudflare.com/workers/configuration/cloudflare-access/).
-3. Conferir o resultado esperado: `/`, `/public.html`, `/public.js` e `GET /api/public` livres; `/equipe`, `/equipe/`, `/equipe/app.js`, os aliases privados `/index.html` e `/app.js`, `/sge-connector.zip` e as APIs internas protegidos. `/api/health` é apenas diagnóstico público. Se for utilizada uma regra ampla `/api/*`, configurar a exceção específica de `/api/public` e verificar a precedência; as regras por caminho obedecem à especificidade, conforme [Application paths](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/app-paths/). Não liberar as demais APIs junto com a exceção pública.
-4. Manter uma política nominal de funcionários e garantir que o audience da aplicação de funcionários corresponda a `ACCESS_AUD`. Se a aplicação for recriada, atualizar o runtime antes da validação. A assinatura do JWT, o emissor, o audience, a validade e o usuário ativo continuam obrigatórios no Worker mesmo com o portal público.
-5. Com autorização, aplicar as migrações pendentes e publicar o código. Só liberar a entrada pública depois que a versão com separação de permissões estiver ativa e a aplicação Access de funcionários estiver pronta. O comando `npm run deploy:cloudflare` aplica migrações e publica; o merge em `main` também dispara esse fluxo.
-6. Conferir em uma sessão anônima que o portal abre sem login e não retorna dados internos. Conferir login nominal como professor: quatro recursos disponíveis e chamadas diretas a tarefas, atas, substituições e Supervisão negadas. Conferir direção, supervisão e orientação com acesso completo, além de pedido de reserva pendente, aprovação e conflito de horário. Validar em cada hostname efetivamente publicado e manter as URLs públicas de prévia desativadas.
-7. Completar os contatos escolares e o calendário de formação a partir dos dados fornecidos pela escola; publicar somente os avisos e eventos destinados ao público. Registrar commit, versão publicada e resultados da validação após concluir a operação autorizada.
-
-## Histórico anterior
-
-A persistência, autenticação por Cloudflare Access e primeiras versões da Supervisão foram publicadas em 06/10/2026. A migração `0005_supervision.sql` passou a guardar a última consulta por turma e uma revisão global para impedir sobrescritas concorrentes. Falhas preservam registros anteriores; atualizações por Situação mantêm as datas dos registros não relidos.
-
-Os antigos totais de 47, 56, 62 e 74 testes descreviam etapas anteriores. Os 94 testes e os PRs listados no início deste arquivo são evidências da publicação do PR8; a revisão do portal possui sua própria validação no PR correspondente. A origem do projeto e as pendências estão em [REVIEW.md](REVIEW.md).
+Código nativo 1.0.1/versionCode 2 com ponte SGE 1.3.0, dois domínios e controles nativos preservados. Incorpora main e a organização por merges sem reescrever a branch original do PR10. Testes e exportação Hermes aprovados; não foi gerado APK/IPA novo nem feita validação física ou SGE autenticada. Veja [retomada](mobile-sge/RETOMADA.md).

@@ -23,9 +23,12 @@ const training={title:'Formação fictícia',area:'Linguagens',date:'2026-10-20'
 test('migration preserves dependent rows and keeps legacy calendar private',async()=>{
  const DB=sqlite();for(const migration of migrations.slice(0,-1))DB.exec('BEGIN;'+migration+'COMMIT;');
  DB.exec("INSERT INTO users VALUES('legacy@prof.pmf.sc.gov.br','Pessoa fictícia','direction',1); INSERT INTO reservations(id,space,date,start,end,owner,purpose,responsible) VALUES('old','Biblioteca','2026-10-19','09:00','10:00','legacy@prof.pmf.sc.gov.br','Leitura','Pessoa fictícia'); INSERT INTO events(id,title,date,type,creator) VALUES('old-event','Reunião interna','2026-10-19','Reunião','legacy@prof.pmf.sc.gov.br'); INSERT INTO audit(id,actor,action,target) VALUES('audit-old','legacy@prof.pmf.sc.gov.br','POST','/api/reservations/old')");
+ DB.exec("INSERT INTO personal_notes(id,owner,title,content) VALUES('legacy-note','legacy@prof.pmf.sc.gov.br','Nota fictícia','Texto fictício'); INSERT INTO events(id,title,date,type,creator,formation,start,end,location,details) VALUES('legacy-formation','Formação anterior','2026-10-20','Evento escolar','legacy@prof.pmf.sc.gov.br',1,'09:00','10:00','Sala fictícia','Detalhes anteriores')");
  DB.exec('BEGIN;'+migrations.at(-1)+'COMMIT;');
  assert.equal((await DB.prepare('SELECT status FROM reservations').first()).status,'Aprovada');
  assert.equal((await DB.prepare('SELECT visibility FROM events').first()).visibility,'internal');
+ const legacyFormation=await DB.prepare("SELECT * FROM events WHERE id='legacy-formation'").first();assert.equal(legacyFormation.area,'Geral');assert.equal(legacyFormation.details,'Detalhes anteriores');assert.equal(legacyFormation.formation,1);
+ assert.equal((await DB.prepare('SELECT content FROM personal_notes').first()).content,'Texto fictício');
  assert.equal((await DB.prepare('SELECT actor FROM audit').first()).actor,'legacy@prof.pmf.sc.gov.br');
  assert.deepEqual((await DB.prepare('PRAGMA foreign_key_check').all()).results,[]);
  assert.equal((await DB.prepare('PRAGMA foreign_keys').first()).foreign_keys,1);
@@ -36,13 +39,14 @@ test('migration preserves dependent rows and keeps legacy calendar private',asyn
 
 test('anonymous portal serves only public assets and explicitly published content',async()=>{
  const env=setup();
- await send(env,'/api/events','POST',event);
- await send(env,'/api/events','POST',{...event,title:'Festa pública',visibility:'public'});
+ await send(env,'/api/events','POST',{...event,location:'Sala reservada',details:'Texto interno restrito'});
+ await send(env,'/api/events','POST',{...event,title:'Festa pública',visibility:'public',start:'14:00',end:'16:00',location:'Pátio',details:'Detalhes não exibidos no portal'});
  await send(env,'/api/notices','POST',{title:'Rascunho',body:'Conteúdo não publicado',date:'2026-10-19',published:false});
  await send(env,'/api/notices','POST',{title:'Aviso público',body:'Comunicado às famílias',date:'2026-10-19',published:true});
  const portal=await send(env,'/api/public','GET',undefined,'anonymous');assert.equal(portal.status,200);
  assert.deepEqual(Object.keys(portal.body).sort(),['events','notices','school']);assert.equal(portal.body.events.length,1);assert.equal(portal.body.notices.length,1);
- assert.deepEqual(Object.keys(portal.body.events[0]).sort(),['date','id','title','type']);assert.deepEqual(Object.keys(portal.body.notices[0]).sort(),['body','date','id','title']);
+ assert.deepEqual(Object.keys(portal.body.events[0]).sort(),['date','end','id','location','start','title','type']);assert.deepEqual(Object.keys(portal.body.notices[0]).sort(),['body','date','id','title']);
+ assert.equal(portal.body.events[0].start,'14:00');assert.equal(portal.body.events[0].end,'16:00');assert.equal(portal.body.events[0].location,'Pátio');assert.equal(Object.hasOwn(portal.body.events[0],'details'),false);assert.equal(JSON.stringify(portal.body).includes('Sala reservada'),false);assert.equal(JSON.stringify(portal.body).includes('Texto interno restrito'),false);
  assert.equal(JSON.stringify(portal.body).includes('@prof.pmf.sc.gov.br'),false);assert.equal(JSON.stringify(portal.body).includes('Rascunho'),false);
  for(const path of ['/','/public.html','/public.js'])assert.equal((await send(env,path,'GET',undefined,'anonymous')).status,200);
  assert.equal((await send({},'/api/public','GET',undefined,'anonymous')).status,503);
@@ -57,7 +61,7 @@ test('anonymous portal serves only public assets and explicitly published conten
 
 test('teacher API allowlist blocks internal reads and writes while all pedagogical roles retain access',async()=>{
  const env=setup();
- for(const path of ['tasks','minutes','users','teachers','substitutions','auxiliaries','settings','audit','school','notices','supervision/saved']){
+ for(const path of ['tasks','minutes','users','teachers','substitutions','auxiliaries','settings','audit','school','notices','notes','supervision/saved']){
   assert.equal((await send(env,'/api/'+path,'GET',undefined,'teacher')).status,403,path);
   assert.equal((await send(env,'/api/'+path,'POST',{},'teacher')).status,403,path);
  }
@@ -150,5 +154,40 @@ test('failed audit rolls back publication and reservation approval',async()=>{
  assert.equal((await send(env,'/api/reservations')).body[0].status,'Pendente');
  assert.equal((await send(env,'/api/notices','POST',{title:'Aviso',body:'Texto',date:'2026-10-20',published:true})).status,503);
  assert.equal((await send(env,'/api/public','GET',undefined,'anonymous')).body.notices.length,0);
+ env.DB.close();
+});
+
+test('training API shares calendar records and cannot mutate unrelated events',async()=>{
+ const env=setup();
+ const legacy=await send(env,'/api/events','POST',{...event,title:'Formação pelo calendário',type:'Formação',start:'09:00',end:'10:00',location:'Sala fictícia',details:'Leitura prévia'});
+ assert.equal(legacy.status,201);const id=legacy.body.id;
+ const trainings=(await send(env,'/api/trainings','GET',undefined,'teacher')).body;assert.equal(trainings.length,1);assert.equal(trainings[0].id,id);assert.equal(trainings[0].notes,'Leitura prévia');assert.equal(trainings[0].area,'Geral');
+ assert.equal((await send(env,'/api/trainings/'+id,'PATCH',{...training,title:'Formação por área',notes:'Detalhes revisados',version:1})).status,200);
+ const calendar=(await send(env,'/api/events')).body.find(row=>row.id===id);assert.equal(calendar.type,'Formação');assert.equal(calendar.formation,1);assert.equal(calendar.area,'Linguagens');assert.equal(calendar.details,'Detalhes revisados');assert.equal(calendar.visibility,'internal');
+ assert.equal((await send(env,'/api/public','GET',undefined,'anonymous')).body.events.length,0);
+ const regular=await send(env,'/api/events','POST',event);
+ assert.equal((await send(env,'/api/trainings/'+regular.body.id,'PATCH',{...training,version:1})).status,404);
+ assert.equal((await send(env,'/api/trainings/'+regular.body.id,'DELETE',{version:1})).status,404);
+ const flagged=await send(env,'/api/events','POST',{...event,formation:true,area:'Ciências'});assert.equal(flagged.status,201);
+ assert.equal((await send(env,'/api/trainings','GET',undefined,'teacher')).body.find(row=>row.id===flagged.body.id).area,'Ciências');
+ assert.equal((await send(env,'/api/trainings/'+id,'DELETE',{version:2})).status,200);
+ assert.equal((await send(env,'/api/events')).body.some(row=>row.id===id),false);
+ env.DB.close();
+});
+
+test('xerox attachment access and pedagogical private notes survive portal separation',async()=>{
+ const env=setup(),attachment={name:'material.pdf',type:'application/pdf',base64:btoa('%PDF-1.4\nMaterial fictício')};
+ const created=await send(env,'/api/xerox','POST',{title:'Material',copies:1,deadline:'2026-10-20',attachment},'teacher');assert.equal(created.status,201);
+ const path='/api/xerox/'+created.body.id+'/attachment';
+ assert.equal((await send(env,path,'GET',undefined,'teacher')).status,200);
+ assert.equal((await send(env,path,'GET',undefined,'other')).status,404);
+ assert.equal((await send(env,path,'GET',undefined,'anonymous')).status,401);
+ for(const role of ['direction','supervision','guidance'])assert.equal((await send(env,path,'GET',undefined,role)).status,200);
+ const listings=(await send(env,'/api/xerox','GET',undefined,'teacher')).body;assert.equal(listings[0].attachment_data,undefined);
+ const note=await send(env,'/api/notes','POST',{title:'Nota fictícia',content:'Detalhes privados',color:'azul'},'supervision');assert.equal(note.status,201);
+ assert.equal((await send(env,'/api/notes/'+note.body.id,'GET',undefined,'guidance')).status,404);
+ assert.equal((await send(env,'/api/notes/'+note.body.id,'GET',undefined,'teacher')).status,403);
+ assert.equal((await send(env,'/api/notes/'+note.body.id,'PATCH',{title:'Nota revisada',content:'Texto',color:'verde',version:1},'teacher')).status,403);
+ assert.equal((await send(env,'/api/notes/'+note.body.id,'DELETE',{version:1},'teacher')).status,403);
  env.DB.close();
 });
