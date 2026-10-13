@@ -9,7 +9,7 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -19,4 +19,27 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - run: node scripts/inspect-formation-source.mjs
+      - name: Install isolated calendar browser
+        env:
+          PUBLIC_QA_PLAYWRIGHT_DIR: ${{ runner.temp }}/public-qa-playwright
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/public-qa-browsers
+        run: |
+          npm install --prefix "$PUBLIC_QA_PLAYWRIGHT_DIR" --no-save --package-lock=false playwright@1.64.0
+          "$PUBLIC_QA_PLAYWRIGHT_DIR/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Download printable public calendar
+        env:
+          PUBLIC_QA_PLAYWRIGHT_DIR: ${{ runner.temp }}/public-qa-playwright
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/public-qa-browsers
+        run: node scripts/inspect-formation-source.mjs
+      - name: Verify and render the calendar PDF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+          pdfinfo "$RUNNER_TEMP/formation-source/formacao-ensino-fundamental-outubro-2026.pdf"
+          pdftoppm -scale-to 800 -jpeg -jpegopt quality=65 "$RUNNER_TEMP/formation-source/formacao-ensino-fundamental-outubro-2026.pdf" "$RUNNER_TEMP/formation-source/slide"
+          python3 - <<'PY'
+          import os,json,base64,glob
+          for path in sorted(glob.glob(os.environ['RUNNER_TEMP']+'/formation-source/slide-*.jpg')):
+              data=base64.b64encode(open(path,'rb').read()).decode()
+              print('CALENDAR_PAGE '+json.dumps({'name':os.path.basename(path),'mime':'image/jpeg','base64':data}))
+          PY

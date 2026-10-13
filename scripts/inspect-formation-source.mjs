@@ -1,14 +1,23 @@
-import {writeFile,mkdir} from 'node:fs/promises';
+import {writeFile,mkdir,readFile} from 'node:fs/promises';
 import {join} from 'node:path';
+import {createRequire} from 'node:module';
 import {parseHTML} from 'linkedom';
+const url='https://docs.google.com/presentation/d/e/2PACX-1vSfesD6aPQbTgK-tBDcBEu5bFId-0RWJQ4YZ37WbgjBdd53Nrq6p2u-tNpdFAO1ZA/htmlpresent';
 const directory=join(process.env.RUNNER_TEMP,'formation-source');await mkdir(directory,{recursive:true});
-for(const source of [{"kind":"fundamental","url":"https://docs.google.com/presentation/d/e/2PACX-1vSfesD6aPQbTgK-tBDcBEu5bFId-0RWJQ4YZ37WbgjBdd53Nrq6p2u-tNpdFAO1ZA/htmlpresent"},{"kind":"especial","url":"https://docs.google.com/presentation/d/e/2PACX-1vStiyKUQ014_p2fdJGn0IhVzATJzoVBKGki1hgE3AKrMQRqsiTuoPSscmpg92NYcw/htmlpresent"}]){
- const response=await fetch(source.url,{redirect:'manual',signal:AbortSignal.timeout(30000)});
- if(!response.ok){console.log('CALENDAR_SOURCE '+JSON.stringify({...source,status:response.status,location:response.headers.get('location')}));continue;}
- const html=await response.text();if(html.length>50000000)throw Error('Calendar source too large');
- const {document}=parseHTML(html);const title=document.querySelector('title')?.textContent||'';
- const slides=[...document.querySelectorAll('svg')].map((x,i)=>({index:i,viewBox:x.getAttribute('viewBox'),texts:[...x.querySelectorAll('text')].map(x=>x.textContent),html:x.outerHTML.length}));
- for(const item of document.querySelectorAll('script,style'))item.remove();
- const text=document.body?.textContent.replace(/\s+/g,' ').trim()||'';
- console.log('CALENDAR_SOURCE '+JSON.stringify({...source,status:response.status,title,htmlLength:html.length,text:text.slice(0,150000),slides,links:[...document.querySelectorAll('a[href]')].map(x=>({text:x.textContent,href:x.getAttribute('href')})).slice(0,30)}));
-}
+const response=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(30000)});if(!response.ok)throw Error('Official calendar unavailable: '+response.status);
+const html=await response.text(),{document}=parseHTML(html);
+console.log('CALENDAR_TABLES '+JSON.stringify({tables:[...document.querySelectorAll('table')].map((table,index)=>({index,rows:[...table.querySelectorAll('tr')].map(row=>[...row.querySelectorAll('td,th')].map(x=>x.textContent))})),structure:[...document.body.children].map(x=>({tag:x.tagName,class:x.className,text:x.textContent.slice(0,120)})).slice(0,15)}));
+const require=createRequire(join(process.env.PUBLIC_QA_PLAYWRIGHT_DIR,'loader.cjs'));
+const {chromium}=require('playwright');const browser=await chromium.launch({headless:true});
+try{
+ const page=await browser.newPage({viewport:{width:1280,height:960}});
+ const result=await page.goto(url,{waitUntil:'networkidle',timeout:60000});if(!result.ok())throw Error('Calendar render unavailable: '+result.status());
+ await page.evaluate(()=>document.fonts.ready);
+ console.log('CALENDAR_DOM '+JSON.stringify(await page.evaluate(()=>({title:document.title,body:document.body.innerText.slice(0,1000),classes:[...document.querySelectorAll('[class]')].slice(0,20).map(x=>({tag:x.tagName,class:x.className})),images:[...document.images].map(x=>({complete:x.complete,width:x.naturalWidth,height:x.naturalHeight})).slice(0,5)}))));
+ await page.pdf({path:join(directory,'formacao-ensino-fundamental-outubro-2026.pdf'),printBackground:true,preferCSSPageSize:true,width:'10in',height:'7.5in',margin:{top:0,bottom:0,left:0,right:0}});
+}finally{await browser.close()}
+const bytes=await readFile(join(directory,'formacao-ensino-fundamental-outubro-2026.pdf'));
+if(bytes.length>8000000)throw Error('Calendar PDF too large');
+const base64=bytes.toString('base64'),chunk=24000,total=Math.ceil(base64.length/chunk);
+console.log('CALENDAR_PDF_INFO '+JSON.stringify({bytes:bytes.length,source:url}));
+for(let i=0;i<total;i++)console.log('CALENDAR_PDF '+JSON.stringify({part:i+1,total,base64:base64.slice(i*chunk,(i+1)*chunk)}));
