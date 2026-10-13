@@ -1,11 +1,13 @@
 name: Formation calendar QA
 on:
   push:
-    branches: [main, 'codex/calendario-formacao-oficial']
+    branches: [main, 'codex/**']
     paths:
       - '.github/workflows/formation-qa.yml'
       - 'scripts/formation-qa.mjs'
       - 'src/index.html'
+      - 'src/public-assets/feedback.js'
+      - 'src/public-assets/feedback.css'
       - 'src/official-trainings.mjs'
       - 'src/staff-assets/**'
       - 'src/worker.mjs'
