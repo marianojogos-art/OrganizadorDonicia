@@ -14,7 +14,7 @@ Esta revisão implementa o portal público e a separação de acessos, preservan
 
 As permissões são verificadas na API: professores não podem consultar tarefas, atas, substituições, Supervisão, auditoria ou cadastros administrativos. Login válido também exige uma conta nominal ativa em `users`; não existe cadastro aberto. Os papéis técnicos são `direction`, `supervision`, `guidance` e `teacher`, com as mesmas permissões completas para os três primeiros neste momento.
 
-A equipe publica avisos e edita apresentação e contatos em **Comunicação pública**. Avisos novos ficam como rascunho até a opção de publicação ser marcada. No **Calendário**, a equipe escolhe **Interno** ou **Público** por evento; eventos anteriores permanecem internos. `/api/public` expõe somente informações da escola, avisos publicados e eventos públicos, sem atas, contas, reservas, pedidos de xerox ou detalhes internos das formações.
+A equipe publica avisos e edita apresentação e contatos em **Comunicação pública**. Avisos novos ficam como rascunho até a opção de publicação ser marcada. No **Calendário**, a equipe escolhe **Interno** ou **Público** por evento; eventos anteriores permanecem internos. `/public/api` expõe somente informações da escola, avisos publicados e eventos públicos, sem atas, contas, reservas, pedidos de xerox ou detalhes internos das formações.
 
 Em **Formação**, a equipe cadastra título, área, data, horários opcionais, local e observações. Professores consultam o calendário e filtram por área e mês. Os encontros existentes são preservados. O anexo mencionado para o novo calendário oficial não foi disponibilizado nesta conversa, portanto nenhuma data oficial foi inventada ou importada.
 
@@ -22,9 +22,9 @@ A migração `0010_public_portal.sql` sucede as migrações 0006–0009 e adicio
 
 Formação continua usando os mesmos eventos do calendário, sem duplicar registros; `/api/trainings` apresenta os encontros por área. As notas pessoais ficam disponíveis à equipe pedagógica e preservam o isolamento por proprietário, inclusive entre direção, supervisão e orientação.
 
-Para publicar esta revisão conforme a autorização vigente, seguir o [procedimento de deploy](docs/deploy.md#portal-público-e-acesso-de-funcionários). O Access que protege o Worker inteiro impede a navegação anônima até que a configuração dos caminhos seja ajustada.
+A configuração Access salva usa a mesma aplicação e audience, com proteção integral das prévias do Worker e quatro destinos privados no domínio de produção: `/equipe`, `/ap*`, `/index.html` e `/sge-connector.zip`. O endpoint anônimo canônico é `/public/api`; o alias `/api/public` permanece protegido na borda. Veja o [registro e procedimento de deploy](docs/deploy.md#portal-público-e-acesso-de-funcionários).
 
-A base inicial do portal (`ecf1c10`) teve 120 testes, build, dry-run e verificações de interface aprovados antes da conciliação com a `main`. Esses resultados não validam a versão integrada com as migrações 0006–0009 e as melhorias posteriores. A conclusão desta integração depende da CI do commit correspondente e da conferência do deployment, incluindo login real após ajustar o Access.
+A versão integrada [`90e4bec`](https://github.com/marianojogos-art/OrganizadorDonicia/commit/90e4bec189b7ccf1879ccd601491e13f6383b4e4) passou pela validação e exportação móvel da CI e foi publicada com sucesso na Cloudflare, versão `919cf186-31b7-4e37-bb49-ab449edfb31e`. A verificação HTTP anônima pela nuvem ainda precisa de resultado registrado; os logins reais dos quatro perfis não foram testados. A publicação preserva os registros anteriores e não completa o calendário oficial de formação sem o anexo.
 
 ## Componentes e estado de referência — 11/10/2026
 
@@ -86,7 +86,7 @@ Edições e remoções usam a versão do registro para detectar mudanças concor
 
 ## Acesso
 
-A aplicação usa Cloudflare Access como fronteira de identidade humana da área de funcionários. O login inicial usa código enviado ao e-mail institucional (One-time PIN), com política nominal para a conta de direção autorizada. Na última configuração de produção registrada, o Access protege o Worker inteiro; o portal público exige a reconfiguração por caminhos descrita em [deploy](docs/deploy.md#portal-público-e-acesso-de-funcionários), preservando a autenticação da área privada. O Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.pmf.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
+A aplicação usa Cloudflare Access como fronteira de identidade humana da área de funcionários. O login inicial usa código enviado ao e-mail institucional (One-time PIN), com política nominal para a conta de direção autorizada. Na configuração registrada em 13/10/2026, o Access protege as prévias do Worker e os caminhos privados do domínio de produção, conforme [deploy](docs/deploy.md#portal-público-e-acesso-de-funcionários), preservando a autenticação da área privada. O Worker verifica a assinatura RSA do JWT, emissor, audience, validade e domínio `@prof.pmf.sc.gov.br`. Isso não autoriza todo o domínio: o e-mail deve existir e estar ativo na tabela `users`.
 
 O JWT é lido do cabeçalho `Cf-Access-Jwt-Assertion` ou, quando o cabeçalho não está presente, do cookie de aplicação `CF_Authorization`. Ambos passam pela mesma verificação criptográfica. Isso permite autenticar quando o roteador de Static Assets não encaminha o contexto de identidade ao Worker. Cookies duplicados são recusados e um cabeçalho inválido não usa o cookie como alternativa.
 
