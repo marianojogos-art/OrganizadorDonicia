@@ -2,14 +2,15 @@ name: Public design QA
 on:
   workflow_dispatch:
   push:
-    branches: ['codex/**']
+    branches: [main, 'codex/**']
     paths:
       - '.github/workflows/public-design-qa.yml'
       - 'src/public.html'
-      - 'scripts/build.mjs'
       - 'src/public-assets/**'
-      - 'src/assets/**'
-      - 'assets/**'
+      - 'src/worker.mjs'
+      - 'scripts/build.mjs'
+      - 'scripts/dev.mjs'
+      - 'scripts/public-design-qa.mjs'
 permissions:
   contents: read
 concurrency:
@@ -18,45 +19,23 @@ concurrency:
 jobs:
   public-design:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      PUBLIC_QA_PLAYWRIGHT_DIR: ${{ runner.temp }}/public-qa-playwright
+      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/public-qa-browsers
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
           cache: npm
-      - name: Inspect public school image sources and Instagram metadata
-        run: |
-          node --input-type=module <<'NODE'
-          import {mkdir,writeFile} from 'node:fs/promises';
-          import {join} from 'node:path';
-          const sources=[
-            'https://lh5.googleusercontent.com/php5zgqY1VvexTlJWSej2HEkq_NE4DCFcTIBaYIx89VuBwZIT8VcKkHKx3ugj4_WPraHU6dfZUYme5DTre1OWb0=w512',
-            'https://redexredesdeprotecao.com/wp-content/uploads/2022/05/esc_basica_donicia_maria_costa.jpeg'
-          ];
-          async function limited(response,max){const reader=response.body?.getReader();if(!reader)throw Error('empty');const chunks=[];let size=0;try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>max){await reader.cancel();throw Error('too_large')}chunks.push(Buffer.from(value))}}finally{reader.releaseLock()}return Buffer.concat(chunks)}
-          const directory=join(process.env.RUNNER_TEMP,'donicia-public-images');await mkdir(directory,{recursive:true});
-          for(const [index,source] of sources.entries()){
-            try{
-              const response=await fetch(source,{redirect:'manual',signal:AbortSignal.timeout(20000)});
-              if(!response.ok)throw Error('http_'+response.status);
-              const bytes=await limited(response,100000);
-              const kind=bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))?['image/png','png']:bytes[0]===255&&bytes[1]===216&&bytes[2]===255?['image/jpeg','jpg']:bytes.subarray(0,4).toString()==='RIFF'&&bytes.subarray(8,12).toString()==='WEBP'?['image/webp','webp']:null;
-              if(!kind)throw Error('not_a_supported_image');
-              await writeFile(join(directory,'source-'+index+'.'+kind[1]),bytes);
-              console.log('PUBLIC_LOGO '+JSON.stringify({source,mime:kind[0],base64:bytes.toString('base64')}));
-            }catch(error){console.log('PUBLIC_LOGO_UNAVAILABLE '+JSON.stringify({source,reason:error.message}))}
-          }
-          const source='https://www.instagram.com/escoladoniciamariadacosta/';
-          try{
-            // One ordinary public request. Do not follow a login redirect or retry a blocked request.
-            const response=await fetch(source,{redirect:'manual',headers:{Accept:'text/html'},signal:AbortSignal.timeout(20000)});
-            if(!response.ok)throw Error('unavailable');
-            const html=(await limited(response,500000)).toString('utf8'),metadata={};
-            for(const tag of html.match(/<meta\b[^>]*>/gi)||[]){const attributes={};for(const match of tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g))attributes[match[1].toLowerCase()]=match[2]??match[3];const name=attributes.property||attributes.name;if(['og:title','og:description','og:image'].includes(name))metadata[name]=attributes.content||''}
-            if(!metadata['og:title']||/login|log in|sign in|entrar/i.test(metadata['og:title'])||/\/accounts\/login/i.test(response.headers.get('location')||''))throw Error('unavailable');
-            console.log('PUBLIC_INSTAGRAM '+JSON.stringify({source,status:'available',metadata}));
-          }catch{console.log('PUBLIC_INSTAGRAM '+JSON.stringify({source,status:'unavailable'}))}
-          NODE
       - run: npm ci
       - run: npm run build
+      - name: Install isolated visual QA browser
+        run: |
+          npm install --prefix "$PUBLIC_QA_PLAYWRIGHT_DIR" --no-save --package-lock=false playwright@1.64.0
+          "$PUBLIC_QA_PLAYWRIGHT_DIR/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Inspect synthetic public page at four viewport widths
+        run: node scripts/public-design-qa.mjs

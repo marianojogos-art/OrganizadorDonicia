@@ -14,6 +14,8 @@ Esta revisão implementa o portal público e a separação de acessos, preservan
 
 As permissões são verificadas na API: professores não podem consultar tarefas, atas, substituições, Supervisão, auditoria ou cadastros administrativos. Login válido também exige uma conta nominal ativa em `users`; não existe cadastro aberto. Os papéis técnicos são `direction`, `supervision`, `guidance` e `teacher`, com as mesmas permissões completas para os três primeiros neste momento.
 
+A página inicial usa o emblema azul e branco da escola e apresenta informações para famílias, redes sociais oficiais, contatos, avisos e calendário público. Os [registros de fontes](docs/portal-publico-fontes.md) distinguem dados confirmados, histórico e conteúdo mantido pela equipe. O logo é servido pelo próprio site, sem dependência de imagens externas. O fluxo `Public design QA` verifica o layout em quatro larguras de tela com dados fictícios na nuvem.
+
 A equipe publica avisos e edita apresentação e contatos em **Comunicação pública**. Avisos novos ficam como rascunho até a opção de publicação ser marcada. No **Calendário**, a equipe escolhe **Interno** ou **Público** por evento; eventos anteriores permanecem internos. `/public/api` expõe somente informações da escola, avisos publicados e eventos públicos, sem atas, contas, reservas, pedidos de xerox ou detalhes internos das formações.
 
 Em **Formação**, a equipe cadastra título, área, data, horários opcionais, local e observações. Professores consultam o calendário e filtram por área e mês. Os encontros existentes são preservados. O anexo mencionado para o novo calendário oficial não foi disponibilizado nesta conversa, portanto nenhuma data oficial foi inventada ou importada.
@@ -24,7 +26,7 @@ Formação continua usando os mesmos eventos do calendário, sem duplicar regist
 
 A configuração Access salva usa a mesma aplicação e audience, com proteção integral das prévias do Worker e quatro destinos privados no domínio de produção: `/equipe`, `/ap*`, `/index.html` e `/sge-connector.zip`. O endpoint anônimo canônico é `/public/api`; o alias `/api/public` permanece protegido na borda. Veja o [registro e procedimento de deploy](docs/deploy.md#portal-público-e-acesso-de-funcionários).
 
-A versão integrada [`90e4bec`](https://github.com/marianojogos-art/OrganizadorDonicia/commit/90e4bec189b7ccf1879ccd601491e13f6383b4e4) passou pela validação e exportação móvel da CI e foi publicada com sucesso na Cloudflare, versão `919cf186-31b7-4e37-bb49-ab449edfb31e`. A verificação HTTP anônima pela nuvem ainda precisa de resultado registrado; os logins reais dos quatro perfis não foram testados. A publicação preserva os registros anteriores e não completa o calendário oficial de formação sem o anexo.
+A versão integrada [`90e4bec`](https://github.com/marianojogos-art/OrganizadorDonicia/commit/90e4bec189b7ccf1879ccd601491e13f6383b4e4) passou pela validação e exportação móvel da CI e foi publicada com sucesso na Cloudflare, versão `919cf186-31b7-4e37-bb49-ab449edfb31e`. A [verificação HTTP anônima pela nuvem](https://github.com/marianojogos-art/OrganizadorDonicia/actions/runs/38346207238) passou em 13/10/2026, com quatro rotas públicas em HTTP 200 e oito rotas privadas redirecionadas ao Access; os logins reais dos quatro perfis não foram testados. A publicação preserva os registros anteriores e não completa o calendário oficial de formação sem o anexo.
 
 ## Componentes e estado de referência — 11/10/2026
 
