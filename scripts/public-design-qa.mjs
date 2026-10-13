@@ -73,11 +73,11 @@ try{
   await page.evaluate(()=>{history.replaceState(null,'','/');window.scrollTo(0,0)});
   await page.waitForFunction(()=>window.scrollY===0);
   assert.deepEqual(errors,[],'Browser errors at '+width);console.log('PUBLIC_QA_CHECK '+JSON.stringify({width,...dimensions,calendar:'ok',contacts:'ok',navigation:'ok',privateData:'absent',errors}));
-  if(width===390)await imageLog(page,'mobile-390-full',true);
+  if(width===390){await imageLog(page,'mobile-390-top',false);await imageLog(page,'mobile-390-full',true)}
   if(width===1440){await imageLog(page,'desktop-1440-top',false);await imageLog(page,'desktop-1440-full',true)}
   await context.close();
  }
- console.log('PUBLIC_QA_COMPLETE '+JSON.stringify({viewports:[320,390,768,1440],synthetic:true,screenshots:3}));
+ console.log('PUBLIC_QA_COMPLETE '+JSON.stringify({viewports:[320,390,768,1440],synthetic:true,screenshots:4}));
 }finally{
  if(browser)await browser.close();
  if(server&&server.exitCode===null){const exit=once(server,'exit');server.kill('SIGTERM');await Promise.race([exit,sleep(3000)]);if(server.exitCode===null)server.kill('SIGKILL')}
