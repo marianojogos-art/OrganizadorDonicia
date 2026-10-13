@@ -14,7 +14,7 @@ function page(role='teacher'){
  window.HTMLElement.prototype.scrollIntoView=function(){};
  const Clock=class extends Date{constructor(...args){super(...(args.length?args:['2026-10-13T15:00:00Z']))}};
  const user={...teacher,role};const calls=[];
- const data={me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
+ const data={me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],'official-trainings':{calendar:null,sessions:[]},tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
  const context=vm.createContext({document,Date:Clock,Intl,FormData,setTimeout:()=>{},confirm:()=>true});
  const run=code=>vm.runInContext(code,context);
  context.testApi=async(path,method='GET',body)=>{calls.push({path,method,body});if(path.startsWith('auxiliaries/weekly?'))return {week:'2026-10-12',auxiliaries:[]};if(method!=='GET')return {ok:true};assert.ok(Object.hasOwn(data,path),'Unexpected endpoint '+path);return data[path]};
@@ -27,7 +27,7 @@ function page(role='teacher'){
 
 test('teacher boot loads only permitted resources and cannot navigate or open pedagogical actions',async()=>{
  const p=page();await p.run('boot()');
- assert.deepEqual(p.calls.map(x=>x.path).sort(),['me','reservations','xerox','events','fixed-occupancy','trainings'].sort());
+ assert.deepEqual(p.calls.map(x=>x.path).sort(),['me','reservations','xerox','events','fixed-occupancy','trainings','official-trainings'].sort());
  assert.deepEqual([...p.document.querySelectorAll('#nav [data-section]')].map(x=>x.dataset.section),['espacos','xerox','calendario','formacao']);
  assert.match(p.document.querySelector('#page').textContent,/Meus pedidos de reserva/);
  p.run("setPage('tarefas');setPage('notas');modal('new-task');modal('new-note')");
@@ -137,7 +137,7 @@ test('xerox keeps professor, class, color and attachment operations in the teach
  const p=page();await p.run('boot()');p.click('[data-section="xerox"]');p.click('[data-action="new-xerox"]');
  assert.ok(p.document.querySelector('[name=professor]'));assert.ok(p.document.querySelector('[name=color]'));assert.ok(p.document.querySelector('[name=file]'));assert.equal(p.document.querySelector('[name=class]').hasAttribute('required'),false);
  p.context.form=new FormData();for(const [key,value]of Object.entries({title:'Atividade',professor:teacher.name,class:'Turma A',color:'Colorido',copies:'12',deadline:'2026-10-15'}))p.context.form.append(key,value);
- p.context.form.append('file',new Blob(['%PDF-1.4'],{type:'application/pdf'}),'atividade.pdf');
+ p.context.form.append('file',new Blob(['%PDF-1.4'],{type:'text/csv; charset=utf-8'}),'atividade.pdf');
  p.context.FileReader=class{readAsDataURL(){this.result='data:application/pdf;base64,JVBERi0xLjQ=';this.onload()}};
  await p.run("save('new-xerox',null,form)");
  const created=p.calls.find(x=>x.path==='xerox'&&x.method==='POST');assert.equal(created.body.professor,teacher.name);assert.equal(created.body.class,'Turma A');assert.equal(created.body.color,'Colorido');assert.equal(created.body.copies,12);assert.equal(created.body.attachment.name,'atividade.pdf');assert.equal(created.body.file,undefined);
@@ -146,4 +146,22 @@ test('xerox keeps professor, class, color and attachment operations in the teach
  p.click('[data-revise-xerox="0"]');assert.ok(p.document.querySelector('[name=remove_attachment]'));
  await p.save('revise-xerox',0,{title:'Atividade',professor:teacher.name,class:'Turma A',color:'Preto e branco',copies:'12',deadline:'2026-10-15',remove_attachment:'on'});
  const updated=p.calls.find(x=>x.path==='xerox/xerox'&&x.method==='PATCH');assert.equal(updated.body.remove_attachment,true);assert.equal(updated.body.resubmit,true);assert.equal(updated.body.version,4);
+});
+
+test('official SME formations are shared in Formation and Calendar, with a protected CSV and no school edit controls',async()=>{
+ const p=page('direction');
+ p.data['official-trainings']={calendar:{title:'Calendário SME outubro/2026',capturedAt:'2026-10-13',sourcePages:25,source:'https://docs.google.com/presentation/d/e/test/pub',portal:'https://sites.google.com/sme.pmf.sc.gov.br/portaleducacional/',unscheduled:[{area:'Matemática',group:'Grupo 1'}]},sessions:[{id:'sme-test',title:'História · Grupo 1',area:'História',date:'2026-10-14',start:'09:00',end:'12:00',location:'CEC',notes:'Encontro oficial',official:true,sourcePage:15,version:1}]};
+ p.data.trainings=[{id:'school-test',title:'Encontro da escola',area:'História',date:'2026-10-16',start:'08:00',end:'10:00',location:'Escola',notes:'',version:1}];
+ p.data.events=[{...p.data.trainings[0],formation:true,type:'Formação',visibility:'internal'}];
+ await p.run('boot()');p.click('[data-section="formacao"]');
+ assert.equal(p.document.querySelectorAll('.training-entry').length,2);
+ assert.equal(p.document.querySelector('a[download]').getAttribute('href'),'/equipe/calendarios/formacao-outubro-2026.csv');
+ assert.match(p.document.querySelector('#page').textContent,/Data e horário ainda não informados.*Matemática/);
+ assert.ok(p.document.querySelector('[data-edit="trainings:0"]'));assert.equal(p.document.querySelector('[data-edit="trainings:1"]'),null);
+ p.run("modal('edit-trainings',1)");assert.equal(p.document.querySelector('.modal'),null);
+ p.click('[data-section="calendario"]');
+ assert.match(p.document.querySelector('#page').textContent,/História · Grupo 1/);
+ assert.equal(p.document.querySelector('[data-edit="events:1"]'),null);
+ await p.run('refresh()');
+ assert.equal(p.run('state.trainings.filter(x=>x.official).length'),1,'refresh does not duplicate the SME calendar');
 });
