@@ -21,6 +21,7 @@ test('anonymous contribution records its exact page and is not exposed to visito
  const env=setup(),input=draft({contributor:'Pessoa fictícia'}),result=await send(env,'/public/feedback','POST',input);
  assert.equal(result.status,201);
  assert.equal((await send(env,'/public/feedback')).status,405);
+ assert.equal((await send(env,'/public/feedback','HEAD')).status,204);
  assert.equal((await send(env,'/api/feedback')).status,401);
  assert.equal((await send(env,'/api/feedback','GET',undefined,'teacher')).status,403);
  for(const path of ['/public-assets/feedback.js','/public-assets/feedback.css'])assert.equal((await send({ASSETS:env.ASSETS},path)).status,200);

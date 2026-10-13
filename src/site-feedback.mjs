@@ -5,6 +5,7 @@ const kinds=['impression','improvement','feature'],statuses=['Nova','Em análise
 const pagePaths=['/','/public.html','/equipe','/equipe/','/index.html'];
 const fields='id,kind,message,contributor,page_path,page_section,page_title,status,version,created_at,updated_at';
 export async function submitFeedback(request,DB){
+ if(request.method==='HEAD'){await DB.prepare('SELECT id FROM site_feedback LIMIT 1').first();return new Response(null,{status:204,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}})}
  if(request.method!=='POST')return reply({error:'Use o post-it para enviar uma contribuição'},405);
  if(request.headers.get('Origin')!==new URL(request.url).origin)return reply({error:'Origem inválida'},403);
  if(!request.headers.get('Content-Type')?.startsWith('application/json'))return reply({error:'JSON necessário'},415);

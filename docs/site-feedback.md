@@ -9,3 +9,5 @@ As contribuições são reunidas em **Contribuições**, acessível a direção,
 A migração aditiva `0011_site_feedback.sql` cria `site_feedback` no D1 existente. `POST /public/feedback` aceita texto de até 3000 caracteres, exige origem do próprio site e limita o corpo da requisição. Um identificador aleatório por navegador limita envios repetidos a 12 por hora e 50 por dia; não se coleta IP. A mesma anotação reenviada com o mesmo identificador não é duplicada. O limite por navegador evita repetição acidental; não substitui um serviço de proteção contra abuso distribuído.
 
 `GET /api/feedback` e `PATCH /api/feedback/:id` exigem conta nominal ativa e perfil pedagógico. A alteração de situação usa versão para impedir sobrescrita concorrente e registra auditoria sem copiar o texto. Não há publicação automática no GitHub nem mensagens externas. As contribuições permanecem no banco privado do site.
+
+A verificação externa de publicação usa `HEAD /public/feedback`: retorna 204 somente quando a tabela está disponível, sem expor nem criar contribuições. Os testes completos de envio utilizam exclusivamente banco sintético no runner da nuvem.

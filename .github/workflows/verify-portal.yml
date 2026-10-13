@@ -53,9 +53,6 @@ jobs:
             ['/public.html', 200],
             ['/public.js', 200],
             ['/public/api', 200],
-            ['/public-assets/feedback.js', 200],
-            ['/public-assets/feedback.css', 200],
-            ['/public/feedback', 405],
             ['/equipe', 302],
             ['/equipe/app.js', 302],
             ['/api/me', 302],
@@ -68,8 +65,14 @@ jobs:
             ['/api/official-trainings', 302],
             ['/equipe/calendarios/formacao-outubro-2026.csv', 302],
           ];
-          if (verifyDesign) checks.push(['/public-assets/logo.jpg', 200], ['/public-assets/donicia-2026.png', 200]);
+          if (verifyDesign) checks.push(['/public-assets/logo.jpg', 200], ['/public-assets/donicia-2026.png', 200], ['/public-assets/feedback.js', 200], ['/public-assets/feedback.css', 200], ['/public/feedback', 405]);
           let failed = false;
+          if (verifyDesign) {
+            const readiness = await fetch(base + '/public/feedback', {method:'HEAD',redirect:'manual',credentials:'omit',signal:AbortSignal.timeout(15000)});
+            console.log(readiness.status + ' HEAD /public/feedback');
+            if (readiness.status !== 204) failed = true;
+            if (readiness.body) await readiness.body.cancel();
+          }
           for (const [path, expected] of checks) {
             let response;
             try {
