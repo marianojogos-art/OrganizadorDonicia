@@ -27,6 +27,7 @@ try{
   await page.waitForSelector('.training-entry');
   assert.equal(await page.locator('.training-entry').count(),100);
   const dimensions=await page.evaluate(()=>({viewport:innerWidth,content:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)}));
+  if(dimensions.content>width+1)console.log('FORMATION_OVERFLOW '+JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('select,a.button,.training-entry,.badge,.field,.training-entry p,h3')].map(x=>({tag:x.tagName,class:x.className,right:x.getBoundingClientRect().right,width:x.getBoundingClientRect().width,text:x.textContent.slice(0,60)})).filter(x=>x.right>innerWidth+1).slice(0,20))));
   assert.ok(dimensions.content<=width+1,'Horizontal overflow '+JSON.stringify(dimensions));
   await page.locator('[data-training-area]').selectOption('História');
   assert.equal(await page.locator('.training-entry').count(),6);
