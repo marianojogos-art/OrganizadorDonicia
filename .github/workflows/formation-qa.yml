@@ -1,0 +1,44 @@
+name: Formation calendar QA
+on:
+  push:
+    branches: [main, 'codex/calendario-formacao-oficial']
+    paths:
+      - '.github/workflows/formation-qa.yml'
+      - 'scripts/formation-qa.mjs'
+      - 'src/index.html'
+      - 'src/official-trainings.mjs'
+      - 'src/staff-assets/**'
+      - 'src/worker.mjs'
+      - 'scripts/build.mjs'
+      - 'scripts/dev.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: formation-qa-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  formation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Install isolated browser
+        env:
+          PUBLIC_QA_PLAYWRIGHT_DIR: ${{ runner.temp }}/public-qa-playwright
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/public-qa-browsers
+        run: |
+          npm install --prefix "$PUBLIC_QA_PLAYWRIGHT_DIR" --no-save --package-lock=false playwright@1.64.0
+          "$PUBLIC_QA_PLAYWRIGHT_DIR/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Verify formation filters, download and layout with a synthetic teacher
+        env:
+          PUBLIC_QA_PLAYWRIGHT_DIR: ${{ runner.temp }}/public-qa-playwright
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/public-qa-browsers
+        run: node scripts/formation-qa.mjs
