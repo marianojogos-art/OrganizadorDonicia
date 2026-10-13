@@ -2,9 +2,18 @@ import {writeFile,mkdir,readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {createRequire} from 'node:module';
 import {parseHTML} from 'linkedom';
-const url='https://docs.google.com/presentation/d/e/2PACX-1vSfesD6aPQbTgK-tBDcBEu5bFId-0RWJQ4YZ37WbgjBdd53Nrq6p2u-tNpdFAO1ZA/htmlpresent';
+const publishedUrl='https://docs.google.com/presentation/d/e/2PACX-1vSfesD6aPQbTgK-tBDcBEu5bFId-0RWJQ4YZ37WbgjBdd53Nrq6p2u-tNpdFAO1ZA/pub';
 const directory=join(process.env.RUNNER_TEMP,'formation-source');await mkdir(directory,{recursive:true});
-const response=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(30000)});if(!response.ok)throw Error('Official calendar unavailable: '+response.status);
+// Follow the printable URL issued by the publicly published Google viewer.
+const publication=await fetch(publishedUrl,{redirect:'manual',signal:AbortSignal.timeout(30000)});
+if(!publication.ok)throw Error('Published calendar unavailable: '+publication.status);
+const published=await publication.text();
+const index=published.indexOf('/htmlpresent');if(index<0)throw Error('No public printable link');
+const start=published.lastIndexOf("'",index),end=published.indexOf("'",index);
+const url=published.slice(start+1,end).replace(/\\x([0-9a-f]{2})/gi,(_,hex)=>String.fromCharCode(parseInt(hex,16))).replace(/\\\//g,'/');
+const printableUrl=new URL(url);
+if(printableUrl.hostname!=='docs.google.com'||printableUrl.pathname!==new URL(publishedUrl).pathname.replace(/\/pub$/,'/htmlpresent'))throw Error('Unexpected public printable resource');
+const response=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(30000)});if(!response.ok)throw Error('Official public printable calendar unavailable: '+response.status);
 const html=await response.text(),{document}=parseHTML(html);
 console.log('CALENDAR_TABLES '+JSON.stringify({tables:[...document.querySelectorAll('table')].map((table,index)=>({index,rows:[...table.querySelectorAll('tr')].map(row=>[...row.querySelectorAll('td,th')].map(x=>x.textContent))})),structure:[...document.body.children].map(x=>({tag:x.tagName,class:x.className,text:x.textContent.slice(0,120)})).slice(0,15)}));
 const require=createRequire(join(process.env.PUBLIC_QA_PLAYWRIGHT_DIR,'loader.cjs'));
@@ -28,5 +37,5 @@ const bytes=await readFile(join(directory,'formacao-ensino-fundamental-outubro-2
 if(bytes.length<20000)throw Error('Calendar export is blank');
 if(bytes.length>8000000)throw Error('Calendar PDF too large');
 const base64=bytes.toString('base64'),chunk=24000,total=Math.ceil(base64.length/chunk);
-console.log('CALENDAR_PDF_INFO '+JSON.stringify({bytes:bytes.length,source:url}));
+console.log('CALENDAR_PDF_INFO '+JSON.stringify({bytes:bytes.length,source:publishedUrl}));
 for(let i=0;i<total;i++)console.log('CALENDAR_PDF '+JSON.stringify({part:i+1,total,base64:base64.slice(i*chunk,(i+1)*chunk)}));
