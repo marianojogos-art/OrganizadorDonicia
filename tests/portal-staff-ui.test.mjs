@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {parseHTML} from 'linkedom';
 
 const html=await readFile(new URL('../src/index.html',import.meta.url),'utf8');
-const script=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace('});boot();','});');
+const script=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace(/boot\(\);\s*$/,'');
 const teacher={email:'teacher@example.test',name:'Docente fictício',role:'teacher'};
 const school={name:'Escola fictícia',introduction:'Apresentação',address:'',phone:'',email:'',hours:'',version:2};
 function page(role='teacher'){
@@ -42,7 +42,7 @@ test('direction, supervision and guidance have the complete workspace and publis
  for(const role of ['direction','supervision','guidance']){
   const p=page(role);await p.run('boot()');
   assert.equal(p.run('state.section'),'inicio');
-  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,11);
+  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,12);
   assert.ok(p.document.querySelector('#nav [data-section="supervisao"]'));
   p.click('[data-section="comunicacao"]');assert.match(p.document.querySelector('#page').textContent,/Escola fictícia/);
   assert.ok(p.document.querySelector('[data-action="new-notice"]'));
