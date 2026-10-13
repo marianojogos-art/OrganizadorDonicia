@@ -52,7 +52,7 @@ function renderPublic(){
 async function loadPublic(){
  const status=document.querySelector('#load-status'),error=document.querySelector('#load-error'),retry=document.querySelector('#retry');
  retry.disabled=true;status.textContent='Carregando avisos e calendário…';status.classList.remove('hidden');error.classList.add('hidden');
- try{const response=await fetch('/api/public',{credentials:'omit',headers:{Accept:'application/json'}});if(!response.ok)throw Error('unavailable');const data=await response.json();if(!data.school||!Array.isArray(data.notices)||!Array.isArray(data.events))throw Error('invalid');publicData=data;renderPublic();status.textContent='';status.classList.add('hidden')}
+ try{const response=await fetch('/public/api',{credentials:'omit',headers:{Accept:'application/json'}});if(!response.ok)throw Error('unavailable');const data=await response.json();if(!data.school||!Array.isArray(data.notices)||!Array.isArray(data.events))throw Error('invalid');publicData=data;renderPublic();status.textContent='';status.classList.add('hidden')}
  catch{status.textContent='';status.classList.add('hidden');error.classList.remove('hidden')}
  finally{retry.disabled=false}
 }

@@ -127,7 +127,7 @@ test('formation events remain one shared record with the training view and prese
  const filter=p.document.querySelector('[data-calendar-formation]');filter.checked=true;filter.dispatchEvent(new p.document.defaultView.Event('change',{bubbles:true}));
  assert.match(p.document.querySelector('#page').textContent,/Encontro integrado/);assert.doesNotMatch(p.document.querySelector('#page').textContent,/Reunião comum/);
  assert.match(p.document.querySelector('#page').textContent,/Sala de formação/);assert.equal(p.document.querySelector('#page img'),null);
- p.click('[data-edit="events:0"]');assert.equal(p.document.querySelector('[name=type]').value,'Formação');
+ p.click('[data-edit="events:0"]');const typeSelect=p.document.querySelector('[name=type]');const selectedType=typeSelect.querySelector('option[selected]')||typeSelect.querySelector('option');assert.equal(selectedType.getAttribute('value'),'Formação');
  await p.save('edit-events',0,{title:event.title,date:event.date,type:'Formação',area:event.area,start:event.start,end:event.end,location:event.location,details:event.details,visibility:'internal'});
  const writes=p.calls.filter(x=>x.method!=='GET');assert.equal(writes.length,1);assert.equal(writes[0].path,'events/shared');assert.equal(writes[0].body.formation,true);assert.equal(writes[0].body.type,'Evento escolar');assert.equal(writes[0].body.version,6);
  p.click('[data-section="formacao"]');assert.equal(p.document.querySelectorAll('.training-entry').length,1);assert.ok(p.document.querySelector('[data-edit="trainings:0"]'));assert.equal(p.document.querySelector('#page img'),null);

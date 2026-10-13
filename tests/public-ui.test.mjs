@@ -15,7 +15,7 @@ function page(data){
 const empty={school:{name:'Escola fictícia',introduction:'Apresentação fictícia'},notices:[],events:[]};
 test('public portal loads only the anonymous endpoint and exposes discreet employee entrance',async()=>{
  const p=page(empty);await p.load();
- assert.equal(p.calls.length,1);assert.equal(p.calls[0][0],'/api/public');assert.equal(p.calls[0][1].credentials,'omit');
+ assert.equal(p.calls.length,1);assert.equal(p.calls[0][0],'/public/api');assert.equal(p.calls[0][1].credentials,'omit');
  assert.equal(p.document.querySelector('a.staff').getAttribute('href'),'/equipe');
  assert.match(p.document.querySelector('#notices').textContent,/Nenhum aviso/);
  assert.match(p.document.querySelector('#events').textContent,/Nenhum evento/);

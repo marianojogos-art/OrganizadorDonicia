@@ -33,7 +33,7 @@ async function handleInner(request,env,authenticate=identity){
  if(path==='/'||path==='/public.html'||path==='/public.js')return serveAsset(request,env,path==='/'?'/public.html':path);
  if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy','trainings','notices','notes'],studentData:false});
  if(!env.DB)return json({error:'Persistência não configurada'},503);
- if(path==='/api/public'){
+ if(path==='/public/api'||path==='/api/public'){
   if(request.method!=='GET')return json({error:'Método indisponível'},405);
   const [school,notices,events]=await Promise.all([env.DB.prepare('SELECT name,introduction,address,phone,email,hours FROM school_profile WHERE id=1').first(),env.DB.prepare('SELECT id,title,body,date FROM notices WHERE published=1 ORDER BY date DESC,id').all(),env.DB.prepare("SELECT id,title,date,CASE WHEN formation=1 THEN 'Formação' ELSE type END AS type,start,end,location FROM events WHERE visibility='public' ORDER BY date,title").all()]);
   return json({school,notices:notices.results,events:events.results});

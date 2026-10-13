@@ -43,19 +43,20 @@ test('anonymous portal serves only public assets and explicitly published conten
  await send(env,'/api/events','POST',{...event,title:'Festa pública',visibility:'public',start:'14:00',end:'16:00',location:'Pátio',details:'Detalhes não exibidos no portal'});
  await send(env,'/api/notices','POST',{title:'Rascunho',body:'Conteúdo não publicado',date:'2026-10-19',published:false});
  await send(env,'/api/notices','POST',{title:'Aviso público',body:'Comunicado às famílias',date:'2026-10-19',published:true});
- const portal=await send(env,'/api/public','GET',undefined,'anonymous');assert.equal(portal.status,200);
+ const portal=await send(env,'/public/api','GET',undefined,'anonymous');assert.equal(portal.status,200);
+ const compatibility=await send(env,'/api/public','GET',undefined,'anonymous');assert.equal(compatibility.status,200);assert.deepEqual(compatibility.body,portal.body);
  assert.deepEqual(Object.keys(portal.body).sort(),['events','notices','school']);assert.equal(portal.body.events.length,1);assert.equal(portal.body.notices.length,1);
  assert.deepEqual(Object.keys(portal.body.events[0]).sort(),['date','end','id','location','start','title','type']);assert.deepEqual(Object.keys(portal.body.notices[0]).sort(),['body','date','id','title']);
  assert.equal(portal.body.events[0].start,'14:00');assert.equal(portal.body.events[0].end,'16:00');assert.equal(portal.body.events[0].location,'Pátio');assert.equal(Object.hasOwn(portal.body.events[0],'details'),false);assert.equal(JSON.stringify(portal.body).includes('Sala reservada'),false);assert.equal(JSON.stringify(portal.body).includes('Texto interno restrito'),false);
  assert.equal(JSON.stringify(portal.body).includes('@prof.pmf.sc.gov.br'),false);assert.equal(JSON.stringify(portal.body).includes('Rascunho'),false);
  for(const path of ['/','/public.html','/public.js'])assert.equal((await send(env,path,'GET',undefined,'anonymous')).status,200);
- assert.equal((await send({},'/api/public','GET',undefined,'anonymous')).status,503);
+ for(const publicPath of ['/public/api','/api/public'])assert.equal((await send({},publicPath,'GET',undefined,'anonymous')).status,503);
  const asset=await send({ASSETS:env.ASSETS},'/','GET',undefined,'anonymous');assert.equal(asset.body,'/public.html');assert.match(asset.headers.get('content-security-policy'),/script-src 'self'/);
  for(const path of ['/equipe','/equipe/','/equipe/app.js','/index.html','/app.js','/api/events','/api/trainings','/sge-connector.zip'])assert.equal((await send(env,path,'GET',undefined,'anonymous')).status,401,path);
  assert.equal((await send(env,'/equipe','GET',undefined,'teacher')).body,'/index.html');assert.equal((await send(env,'/equipe/app.js','GET',undefined,'teacher')).body,'/app.js');
  assert.equal((await send(env,'/sge-connector.zip','GET',undefined,'teacher')).status,403);
  for(const role of ['direction','supervision','guidance'])assert.equal((await send(env,'/sge-connector.zip','GET',undefined,role)).body,'/sge-connector.zip');
- assert.equal((await send(env,'/api/public','POST',{},'anonymous')).status,405);
+ for(const publicPath of ['/public/api','/api/public'])assert.equal((await send(env,publicPath,'POST',{},'anonymous')).status,405);
  env.DB.close();
 });
 
@@ -117,14 +118,14 @@ test('school profile, notices and calendar enforce explicit publication and opti
  const env=setup(),school=(await send(env,'/api/school')).body;
  assert.equal((await send(env,'/api/school','PATCH',{...school,introduction:'Apresentação revisada'},'guidance')).status,200);
  assert.equal((await send(env,'/api/school','PATCH',school)).status,409);
- assert.equal((await send(env,'/api/public','GET',undefined,'anonymous')).body.school.introduction,'Apresentação revisada');
+ assert.equal((await send(env,'/public/api','GET',undefined,'anonymous')).body.school.introduction,'Apresentação revisada');
  assert.equal((await send(env,'/api/events','POST',{...event,visibility:undefined})).status,400);
  const created=await send(env,'/api/events','POST',event),path='/api/events/'+created.body.id;
  assert.equal((await send(env,path,'PATCH',{...event,edit:true,visibility:'public',version:1})).status,200);
- assert.equal((await send(env,'/api/public','GET',undefined,'anonymous')).body.events.length,1);
+ assert.equal((await send(env,'/public/api','GET',undefined,'anonymous')).body.events.length,1);
  assert.equal((await send(env,path,'PATCH',{...event,edit:true,visibility:'public',version:1})).status,409);
  assert.equal((await send(env,path,'PATCH',{...event,edit:true,visibility:'internal',version:2})).status,200);
- assert.equal((await send(env,'/api/public','GET',undefined,'anonymous')).body.events.length,0);
+ assert.equal((await send(env,'/public/api','GET',undefined,'anonymous')).body.events.length,0);
  const notice={title:'Comunicado',body:'Detalhes',date:'2026-10-20',published:false},n=await send(env,'/api/notices','POST',notice);
  assert.equal((await send(env,'/api/notices/'+n.body.id,'PATCH',{...notice,published:true,version:1})).status,200);
  assert.equal((await send(env,'/api/notices')).body[0].published,true);
@@ -153,7 +154,7 @@ test('failed audit rolls back publication and reservation approval',async()=>{
  assert.equal((await send(env,'/api/reservations/'+created.body.id,'PATCH',{status:'Aprovada',version:1})).status,503);
  assert.equal((await send(env,'/api/reservations')).body[0].status,'Pendente');
  assert.equal((await send(env,'/api/notices','POST',{title:'Aviso',body:'Texto',date:'2026-10-20',published:true})).status,503);
- assert.equal((await send(env,'/api/public','GET',undefined,'anonymous')).body.notices.length,0);
+ assert.equal((await send(env,'/public/api','GET',undefined,'anonymous')).body.notices.length,0);
  env.DB.close();
 });
 
@@ -164,7 +165,7 @@ test('training API shares calendar records and cannot mutate unrelated events',a
  const trainings=(await send(env,'/api/trainings','GET',undefined,'teacher')).body;assert.equal(trainings.length,1);assert.equal(trainings[0].id,id);assert.equal(trainings[0].notes,'Leitura prévia');assert.equal(trainings[0].area,'Geral');
  assert.equal((await send(env,'/api/trainings/'+id,'PATCH',{...training,title:'Formação por área',notes:'Detalhes revisados',version:1})).status,200);
  const calendar=(await send(env,'/api/events')).body.find(row=>row.id===id);assert.equal(calendar.type,'Formação');assert.equal(calendar.formation,1);assert.equal(calendar.area,'Linguagens');assert.equal(calendar.details,'Detalhes revisados');assert.equal(calendar.visibility,'internal');
- assert.equal((await send(env,'/api/public','GET',undefined,'anonymous')).body.events.length,0);
+ assert.equal((await send(env,'/public/api','GET',undefined,'anonymous')).body.events.length,0);
  const regular=await send(env,'/api/events','POST',event);
  assert.equal((await send(env,'/api/trainings/'+regular.body.id,'PATCH',{...training,version:1})).status,404);
  assert.equal((await send(env,'/api/trainings/'+regular.body.id,'DELETE',{version:1})).status,404);
