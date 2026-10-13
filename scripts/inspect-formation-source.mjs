@@ -14,9 +14,14 @@ try{
  const result=await page.goto(url,{waitUntil:'networkidle',timeout:60000});if(!result.ok())throw Error('Calendar render unavailable: '+result.status());
  await page.evaluate(()=>document.fonts.ready);
  console.log('CALENDAR_DOM '+JSON.stringify(await page.evaluate(()=>({title:document.title,body:document.body.innerText.slice(0,1000),classes:[...document.querySelectorAll('[class]')].slice(0,20).map(x=>({tag:x.tagName,class:x.className})),images:[...document.images].map(x=>({complete:x.complete,width:x.naturalWidth,height:x.naturalHeight})).slice(0,5)}))));
+ await page.emulateMedia({media:'screen'});
+ const rectangle=await page.locator('.slide-content').first().boundingBox();if(!rectangle||rectangle.width<100||rectangle.height<100)throw Error('Missing original slide geometry');
+ console.log('CALENDAR_GEOMETRY '+JSON.stringify(rectangle));
+ await page.addStyleTag({content:'@page{size:'+rectangle.width+'px '+rectangle.height+'px;margin:0} html,body{margin:0!important;padding:0!important} .slide{margin:0!important;padding:0!important;break-after:page!important} .offscreen-header{display:none!important}'});
  await page.pdf({path:join(directory,'formacao-ensino-fundamental-outubro-2026.pdf'),printBackground:true,preferCSSPageSize:true,width:'10in',height:'7.5in',margin:{top:0,bottom:0,left:0,right:0}});
 }finally{await browser.close()}
 const bytes=await readFile(join(directory,'formacao-ensino-fundamental-outubro-2026.pdf'));
+if(bytes.length<20000)throw Error('Calendar export is blank');
 if(bytes.length>8000000)throw Error('Calendar PDF too large');
 const base64=bytes.toString('base64'),chunk=24000,total=Math.ceil(base64.length/chunk);
 console.log('CALENDAR_PDF_INFO '+JSON.stringify({bytes:bytes.length,source:url}));
