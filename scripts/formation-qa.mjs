@@ -22,6 +22,9 @@ try{
   const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base+'/equipe',{waitUntil:'networkidle'});
   await page.waitForSelector('#nav [data-section="formacao"]',{state:'attached'});
+  // The construction post-it starts open; reclaim the page before exercising its download.
+  const postit=page.locator('#donicia-feedback .df-toggle');
+  await postit.waitFor();if(await postit.getAttribute('aria-expanded')==='true')await postit.click();
   await page.evaluate(()=>setPage('formacao'));
   await page.locator('[data-training-month]').fill('2026-10');await page.locator('[data-training-month]').dispatchEvent('change');
   await page.waitForSelector('.training-entry');
