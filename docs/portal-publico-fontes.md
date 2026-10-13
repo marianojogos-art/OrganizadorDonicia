@@ -26,3 +26,11 @@ Avisos e calendário continuam vindo exclusivamente de `/public/api`. Eventos in
 ## Arquivo do logo
 
 `src/public-assets/logo.jpg` contém o emblema original azul e branco, sem redesenho: [reprodução identificada como Escola Básica Donícia Maria da Costa no RDX](https://redexredesdeprotecao.com/wp-content/uploads/2022/05/esc_basica_donicia_maria_costa.jpeg), vinculada pela [página de clientes](https://redexredesdeprotecao.com/clientes/). JPEG de 130 × 130 pixels, inspecionado visualmente. O arquivo indicado no portal institucional retornou HTTP 403 na aquisição. A imagem foi incorporada ao build para não depender de um servidor externo ao abrir o site; seu tamanho de exibição é limitado pela resolução disponível.
+
+## Identidade Donícia 2026
+
+A imagem `donicia2026.jpeg` foi fornecida pelo responsável nesta tarefa. Sua versão tratada com ImageGen, `src/public-assets/donicia-2026.png` (1976 × 796 px, PNG com transparência), preserva a composição azul e branca e substitui o emblema ampliado no destaque da página. O emblema compacto permanece no cabeçalho e no favicon. A identidade horizontal aparece sobre uma moldura clara, levemente inclinada, no painel azul da página; o leiaute adapta espaçamento e proporções ao celular.
+
+Prompt utilizado no tratamento:
+
+> Use case: background-extraction. Asset type: official school logo for website homepage. Input image: edit target, the supplied Donícia 2026 school identity. Remove ONLY the black background to genuine alpha transparency and clean compression artifacts and jagged edges. Preserve original horizontal composition, proportions, navy blue and white colors, book illustration, circular seal, stars, exact typography and ALL lettering. Text must remain exactly as supplied: 'ESCOLA BÁSICA MUNICIPAL', 'EBM', 'DMC', 'DONÍCIA MARIA DA COSTA', 'Donícia', '2026'. Keep the white fill and white outlines within the logo fully opaque. Do not redesign or alter the logo or replace letters. The full identity must be visible without cropping, with a small transparent margin around all sides. Clean crisp high quality PNG suitable for a school website. No new elements, shadows, glow, slogans, or background.

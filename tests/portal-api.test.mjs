@@ -49,10 +49,10 @@ test('anonymous portal serves only public assets and explicitly published conten
  assert.deepEqual(Object.keys(portal.body.events[0]).sort(),['date','end','id','location','start','title','type']);assert.deepEqual(Object.keys(portal.body.notices[0]).sort(),['body','date','id','title']);
  assert.equal(portal.body.events[0].start,'14:00');assert.equal(portal.body.events[0].end,'16:00');assert.equal(portal.body.events[0].location,'Pátio');assert.equal(Object.hasOwn(portal.body.events[0],'details'),false);assert.equal(JSON.stringify(portal.body).includes('Sala reservada'),false);assert.equal(JSON.stringify(portal.body).includes('Texto interno restrito'),false);
  assert.equal(JSON.stringify(portal.body).includes('@prof.pmf.sc.gov.br'),false);assert.equal(JSON.stringify(portal.body).includes('Rascunho'),false);
- for(const path of ['/','/public.html','/public.js'])assert.equal((await send(env,path,'GET',undefined,'anonymous')).status,200);
+ for(const path of ['/','/public.html','/public.js','/public-assets/donicia-2026.png'])assert.equal((await send(env,path,'GET',undefined,'anonymous')).status,200);
  for(const publicPath of ['/public/api','/api/public'])assert.equal((await send({},publicPath,'GET',undefined,'anonymous')).status,503);
  const asset=await send({ASSETS:env.ASSETS},'/','GET',undefined,'anonymous');assert.equal(asset.body,'/public.html');assert.match(asset.headers.get('content-security-policy'),/script-src 'self'/);
- for(const path of ['/equipe','/equipe/','/equipe/app.js','/index.html','/app.js','/api/events','/api/trainings','/sge-connector.zip'])assert.equal((await send(env,path,'GET',undefined,'anonymous')).status,401,path);
+ for(const path of ['/public-assets/private.png','/equipe','/equipe/','/equipe/app.js','/index.html','/app.js','/api/events','/api/trainings','/sge-connector.zip'])assert.equal((await send(env,path,'GET',undefined,'anonymous')).status,401,path);
  assert.equal((await send(env,'/equipe','GET',undefined,'teacher')).body,'/index.html');assert.equal((await send(env,'/equipe/app.js','GET',undefined,'teacher')).body,'/app.js');
  assert.equal((await send(env,'/sge-connector.zip','GET',undefined,'teacher')).status,403);
  for(const role of ['direction','supervision','guidance'])assert.equal((await send(env,'/sge-connector.zip','GET',undefined,role)).body,'/sge-connector.zip');
