@@ -9,7 +9,7 @@ Consulta em 13/10/2026, exclusivamente na nuvem.
 - 100 faixas de horário, correspondentes aos grupos e períodos com data publicada, em 19 áreas.
 - Quatro atividades on-line sem data e horário definidos: Matemática, grupos 1, 3 e 4; Estudos Matemáticos, grupo 1.
 - CSV em UTF-8 com BOM e separador ponto e vírgula: 104 registros, incluindo os quatro pendentes. É uma cópia dos dados para consulta no Excel, não o arquivo original da apresentação.
-- Formação e calendário interno apresentam os mesmos registros oficiais. O PDF/PPTX original continua referenciado pelo link da SME. A exportação da apresentação pelo Google passou a exigir autenticação; nenhuma cópia PDF foi anunciada como baixada.
+- Formação e calendário interno apresentam os mesmos registros oficiais. A apresentação original continua referenciada pelo link da SME. A exportação da apresentação pelo Google passou a exigir autenticação; nenhuma cópia PDF foi anunciada como baixada.
 - Campos vazios do calendário original permanecem vazios. Os horários de manhã e tarde em encontros integrais são apresentados separadamente, preservando os intervalos.
 
 Os registros oficiais são somente para consulta. A equipe continua criando e editando os encontros próprios da escola. A fonte oficial é uma fotografia da publicação consultada, sem sincronização automática. Novas retificações precisam ser conferidas na página da SME.
@@ -31,3 +31,7 @@ A interface combina a referência da SME com os encontros próprios, sem copiar 
 ## Evidência de obtenção
 
 As tabelas completas foram lidas com resposta HTTP 200 no [runner de consulta](https://github.com/marianojogos-art/OrganizadorDonicia/actions/runs/38349737203), antes de o Google passar a exigir login para novas solicitações. A consulta também verificou o portal atual, evitando usar locais antigos do índice de busca. As tentativas de exportação que geraram documento vazio ou foram recusadas foram descartadas e não fazem parte da entrega.
+
+## Validação automatizada
+
+139 testes web e 14 testes móveis passaram, incluindo cobertura das 82 linhas datadas da fonte, os 100 períodos, quatro atividades sem data e acesso nominal. A [verificação no navegador com professor fictício](https://github.com/marianojogos-art/OrganizadorDonicia/actions/runs/38352018909) testou filtros, download com 104 registros e UTF-8/BOM, sem overflow em 320, 390 e 1440 pixels. As imagens foram inspecionadas; o bloco de referência foi reduzido para priorizar os filtros no celular. Os logins reais continuam fora desta validação.
