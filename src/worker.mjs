@@ -30,7 +30,7 @@ const schoolToday=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Pau
 const weekOf=date=>{const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);return monday.toISOString().slice(0,10)};
 async function handleInner(request,env,authenticate=identity){
  const path=new URL(request.url).pathname;
- if(path==='/'||path==='/public.html'||path==='/public.js')return serveAsset(request,env,path==='/'?'/public.html':path);
+ if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg')return serveAsset(request,env,path==='/'?'/public.html':path);
  if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy','trainings','notices','notes'],studentData:false});
  if(!env.DB)return json({error:'Persistência não configurada'},503);
  if(path==='/public/api'||path==='/api/public'){

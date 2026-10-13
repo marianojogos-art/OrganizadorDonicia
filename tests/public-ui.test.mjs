@@ -49,6 +49,8 @@ test('network failure is visible and retry can recover without exposing raw serv
  assert.equal(p.document.querySelector('#load-error').classList.contains('hidden'),false);
  assert.equal(p.document.querySelector('#retry').disabled,false);
  assert.doesNotMatch(p.document.body.textContent,/internal connection data/);
+ assert.equal(p.document.querySelector('#school-contacts a[href^="tel:"]').getAttribute('href'),'tel:+554832382299');
+ assert.match(p.document.querySelector('#school-contacts').textContent,/Virgílio Várzea/);
  p.context.fetch=async()=>({ok:true,json:async()=>empty});await p.load();
  assert.equal(p.document.querySelector('#load-error').classList.contains('hidden'),true);
  assert.match(p.document.querySelector('#notices').textContent,/Nenhum aviso/);
@@ -66,4 +68,27 @@ test('public calendar shows Portuguese times and escaped location only when supp
  assert.equal(meeting.querySelector('img,script'),null);
  assert.doesNotMatch(meeting.textContent,/Detalhes não publicados/);
  assert.doesNotMatch(day.textContent,/Horário:|Local:/);
+});
+
+test('verified school details fill empty fields and neutral introduction without replacing administrator content',async()=>{
+ const defaults={name:'',introduction:'Informações e serviços para estudantes, famílias e comunidade escolar.',address:'',phone:'',email:'',hours:''};
+ const p=page({...empty,school:defaults});await p.load();
+ assert.equal(p.document.querySelector('#school-title').textContent,'EBM Donícia Maria da Costa');
+ assert.match(p.document.querySelector('#school-introduction').textContent,/1º ao 9º ano/);
+ assert.match(p.document.querySelector('#school-contacts').textContent,/Rodovia Virgílio Várzea, 1264/);
+ assert.match(p.document.querySelector('#school-contacts').textContent,/CEP 88032-001/);
+ assert.equal(p.document.querySelector('#school-contacts a[href^="mailto:"]').getAttribute('href'),'mailto:ebm.donicia@sme.pmf.sc.gov.br');
+ assert.equal(new URL(p.document.querySelector('#school-map').getAttribute('href')).searchParams.get('query'),'Rodovia Virgílio Várzea, 1264 · Saco Grande\nFlorianópolis/SC · CEP 88032-001');
+ const custom={name:'Nome cadastrado',introduction:'Nossa apresentação escrita pela escola.',address:'Endereço cadastrado, 42',phone:'(48) 3000-1234',email:'contato@example.test',hours:'Horário informado pela secretaria'};
+ p.context.fetch=async()=>({ok:true,json:async()=>({...empty,school:custom})});await p.load();
+ assert.equal(p.document.querySelector('#school-title').textContent,custom.name);
+ assert.equal(p.document.querySelector('.hero-school').textContent,custom.name);
+ assert.equal(p.document.querySelector('#school-introduction').textContent,custom.introduction);
+ assert.equal(p.document.querySelector('#school-contacts a[href^="tel:"]').getAttribute('href'),'tel:4830001234');
+ assert.match(p.document.querySelector('#school-contacts').textContent,/Horário informado pela secretaria/);
+ assert.equal(new URL(p.document.querySelector('#school-map').getAttribute('href')).searchParams.get('query'),custom.address);
+ p.context.fetch=async()=>({ok:true,json:async()=>({...empty,school:{...custom,phone:'   ',introduction:''}})});await p.load();
+ assert.equal(p.document.querySelector('#school-contacts a[href^="tel:"]').getAttribute('href'),'tel:+554832382299');
+ assert.match(p.document.querySelector('#school-introduction').textContent,/1º ao 9º ano/);
+ assert.equal(p.document.querySelector('#school-title').textContent,custom.name);
 });
