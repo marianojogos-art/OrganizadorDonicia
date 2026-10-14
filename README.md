@@ -68,9 +68,9 @@ O servidor de demonstração abre `http://127.0.0.1:8787`, usa identidade fictí
 
 A CI valida raiz e aplicativo móvel sem publicar produção. Testes automatizados não substituem login institucional, SGE autenticado, aparelho físico nem ensaio de recuperação D1. Evidências históricas do PR8 incluem 94 testes da raiz, build e emulação de viewport; use a execução do commit revisado para conhecer os resultados atuais.
 
-## Etapa local em revisão — sugestões de 14/10
+## Melhorias e métricas de 14/10
 
-Doze sugestões foram preparadas e testadas localmente, ainda sem push ou implantação desta etapa. Veja [escopo, evidências e pendências](docs/sugestoes-2026-10.md). A existência do código nesta revisão não comprova atualização da produção.
+Doze sugestões e métricas agregadas foram implementadas e testadas na nuvem; a atualização do GitHub e publicação no destino existente foram autorizadas pelo usuário. Veja [escopo, evidências e pendências](docs/sugestoes-2026-10.md). Veja também [definições e privacidade das métricas](docs/metricas-do-site.md). A CI e a verificação HTTP registram a publicação de cada commit.
 
 ## O que funciona
 

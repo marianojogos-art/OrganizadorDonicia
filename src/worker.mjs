@@ -1,3 +1,4 @@
+import {ingestMetrics,readMetrics} from './site-metrics.mjs';
 import {isStaffServicesRoute,handleStaffServices} from './staff-services.mjs';
 import {resourceCatalog,resourceCategories} from './resource-catalog.mjs';
 import {officialTrainingCalendar,officialTrainingSessions} from './official-trainings.mjs';
@@ -37,9 +38,10 @@ const schoolToday=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Pau
 const weekOf=date=>{const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);return monday.toISOString().slice(0,10)};
 async function handleInner(request,env,authenticate=identity){
  const path=new URL(request.url).pathname;
- if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg'||path==='/public-assets/donicia-2026.png'||path==='/public-assets/feedback.js'||path==='/public-assets/feedback.css')return serveAsset(request,env,path==='/'?'/public.html':path);
+ if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg'||path==='/public-assets/donicia-2026.png'||path==='/public-assets/feedback.js'||path==='/public-assets/site-metrics.js'||path==='/public-assets/feedback.css')return serveAsset(request,env,path==='/'?'/public.html':path);
  if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy','trainings','notices','notes'],studentData:false});
  if(!env.DB)return json({error:'Persistência não configurada'},503);
+ if(path==='/public/metrics')return ingestMetrics(request,env.DB);
  if(path==='/public/feedback')return submitFeedback(request,env.DB);
  if(path==='/public/api'||path==='/api/public'){
   if(request.method!=='GET')return json({error:'Método indisponível'},405);
@@ -71,6 +73,7 @@ async function handleInner(request,env,authenticate=identity){
   return assets[path]?serveAsset(request,env,assets[path]):json({error:'Página não encontrada'},404);
  }
  if(request.method==='GET'){
+  if(path==='/api/site-metrics')return readMetrics(request,env.DB,user);
   if(isStaffServicesRoute(path))return handleStaffServices(request,env.DB,user);
   if(path==='/api/resource-catalog')return json({items:resourceCatalog,categories:resourceCategories});
   if(path==='/api/feedback')return readFeedback(request,env.DB);

@@ -15,9 +15,9 @@ function page(role='teacher'){
  const Clock=class extends Date{constructor(...args){super(...(args.length?args:['2026-10-13T15:00:00Z']))}};
  const user={...teacher,role};const calls=[];
  const data={'staff-requests':[],'pedagogical-album':[],'resource-library':[],'resource-catalog':{items:[],categories:[]},me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],'official-trainings':{calendar:null,sessions:[]},tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
- const context=vm.createContext({document,Date:Clock,Intl,FormData,setTimeout:()=>{},confirm:()=>true});
+ const context=vm.createContext({document,Date:Clock,Intl,FormData,URLSearchParams,setTimeout:()=>{},confirm:()=>true});
  const run=code=>vm.runInContext(code,context);
- context.testApi=async(path,method='GET',body)=>{calls.push({path,method,body});if(path.startsWith('auxiliaries/weekly?'))return {week:'2026-10-12',auxiliaries:[]};if(method!=='GET')return {ok:true};assert.ok(Object.hasOwn(data,path),'Unexpected endpoint '+path);return data[path]};
+ context.testApi=async(path,method='GET',body)=>{calls.push({path,method,body});if(path.startsWith('site-metrics?'))return data['site-metrics'];if(path.startsWith('auxiliaries/weekly?'))return {week:'2026-10-12',auxiliaries:[]};if(method!=='GET')return {ok:true};assert.ok(Object.hasOwn(data,path),'Unexpected endpoint '+path);return data[path]};
  run(script);run('api=testApi');
  const click=selector=>{const el=document.querySelector(selector);assert.ok(el,selector);el.dispatchEvent(new window.Event('click',{bubbles:true}))};
  const change=(selector,value)=>{const el=document.querySelector(selector);assert.ok(el,selector);Object.defineProperty(el,'value',{value,configurable:true});el.dispatchEvent(new window.Event('change',{bubbles:true}))};
@@ -42,7 +42,7 @@ test('direction, supervision and guidance have the complete workspace and publis
  for(const role of ['direction','supervision','guidance']){
   const p=page(role);await p.run('boot()');
   assert.equal(p.run('state.section'),'inicio');
-  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,16);
+  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,17);
   assert.ok(p.document.querySelector('#nav [data-section="supervisao"]'));
   p.click('[data-section="comunicacao"]');assert.match(p.document.querySelector('#page').textContent,/Escola fictícia/);
   assert.ok(p.document.querySelector('[data-action="new-notice"]'));
@@ -174,3 +174,11 @@ test('teacher can request a message or materials without any external delivery o
 test('team agenda reuses internal events and links library stays within the pedagogical workspace',async()=>{
  const p=page('guidance');p.data.events=[{id:'a',title:'Interno fictício',date:'2026-10-13',type:'Reunião',visibility:'internal',version:1},{id:'b',title:'Público fictício',date:'2026-10-13',type:'Evento escolar',visibility:'public',version:1}];p.data['resource-catalog'].items=[{id:'bncc',title:'Referência fictícia',category:'bncc',url:'https://example.test/doc',description:'Fonte fictícia'}];await p.run('boot()');p.click('[data-section="agenda-equipe"]');assert.match(p.document.querySelector('#page').textContent,/Interno fictício/);assert.doesNotMatch(p.document.querySelector('#page').textContent,/Público fictício/);p.click('[data-action="new-team-event"]');assert.equal(p.document.querySelector('input[name="visibility"]').value,'internal');await p.save('new-team-event',null,{title:'Reunião fictícia',date:'2026-10-14',type:'Reunião',start:'',end:'',location:'',details:''});assert.equal(p.calls.find(x=>x.method==='POST').body.visibility,'internal');p.click('[data-section="biblioteca"]');assert.ok(p.document.querySelector('a[href="https://example.test/doc"]'));
 });
+
+
+test('site metrics panel is pedagogical-only, shows aggregates and sends selected UTC dates',async()=>{
+ const p=page('direction');p.data['site-metrics']={from:'2026-10-07',to:'2026-10-13',totals:{views:10,estimatedVisits:3,sectionClicks:7,whatsappClicks:2},byDay:[{day:'2026-10-13',views:10,estimatedVisits:3,sectionClicks:7,whatsappClicks:2}],bySection:[{section:'whatsapp_secretaria',views:0,sectionClicks:0,whatsappClicks:2}]};await p.run('boot()');p.click('[data-section="metricas"]');await new Promise(resolve=>setImmediate(resolve));assert.match(p.document.querySelector('#page').textContent,/não pessoas únicas/);assert.match(p.document.querySelector('#page').textContent,/WhatsApp da secretaria/);assert.match(p.document.querySelector('#page').textContent,/10/);assert.equal(p.document.querySelectorAll('#page table').length,2);p.change('[data-metrics-from]','2026-10-10');p.click('[data-metrics-load]');await new Promise(resolve=>setImmediate(resolve));assert.ok(p.calls.at(-1).path.includes('from=2026-10-10'));const restricted=page();await restricted.run('boot()');restricted.run("setPage('metricas')");assert.equal(restricted.document.querySelector('#nav [data-section="metricas"]'),null);assert.ok(restricted.calls.every(call=>!call.path.startsWith('site-metrics')));
+});
+
+
+test('opening the metrics hash directly also fetches its initial aggregates',async()=>{const p=page('direction');p.data['site-metrics']={from:'2026-10-07',to:'2026-10-13',totals:{views:0,estimatedVisits:0,sectionClicks:0,whatsappClicks:0},byDay:[],bySection:[]};p.context.window={};p.context.location={hash:'#metricas'};await p.run('boot()');await new Promise(resolve=>setImmediate(resolve));assert.equal(p.run('state.section'),'metricas');assert.ok(p.calls.some(call=>call.path.startsWith('site-metrics?')));assert.match(p.document.querySelector('#page').textContent,/Visitas estimadas/)});

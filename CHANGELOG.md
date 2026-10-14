@@ -2,12 +2,14 @@
 
 Este arquivo registra mudanças verificáveis no Git. Datas são de integração/documentação; não significam release, APK novo ou publicação atual. Não havia tags ou releases publicadas na referência auditada `main` `32b11d8` em 11/10/2026. Versões web, extensão e aplicativo são independentes.
 
-## 14/10/2026 — etapa local de sugestões, pendente de publicação
+## 14/10/2026 — sugestões da equipe e métricas do portal
 
 - Supervisão com cancelamento lógico e descarte de retornos tardios, grupos de turmas e revisão de situações reais; sem escrita no SGE ou alteração da extensão.
 - Solicitações internas de mensagem/materiais, álbum privado com imagens limitadas, biblioteca categorizada de links, agenda derivada e verificador designado nas tarefas.
 - Botão WhatsApp da secretaria com número exato autorizado, orientação sem número ativo; referências oficiais da rede/BNCC, sem inventar documentos ou números da escola.
-- Migrações aditivas 0012/0013 preparadas; dados sintéticos e validações locais documentados em [sugestões](docs/sugestoes-2026-10.md). Push, CI remoto e deploy desta etapa aguardam coordenação; não é release.
+- Migrações aditivas 0012/0013 preparadas; dados sintéticos e validações locais documentados em [sugestões](docs/sugestoes-2026-10.md). Push e publicação no Worker existente autorizados; conclusão verificada pela CI e workflow HTTP, sem criar release.
+
+- Painel restrito de métricas agregadas: visualizações, estimativa de abas/dia e cliques por seção/WhatsApp, intervalo UTC selecionável, preferências DNT/GPC e limites de abuso. Migração aditiva 0014; nenhum serviço externo, identificador bruto ou IP armazenado nas métricas.
 
 ## 12/10/2026 — reservas, xerox, formação e notas pessoais
 

@@ -41,7 +41,7 @@ jobs:
             for (let attempt = 0; attempt < 36; attempt++) {
               try {
                 const response = await fetch(base + '/', {redirect: 'manual', credentials: 'omit', signal: AbortSignal.timeout(10000)});
-                if (response.ok && (await response.text()).includes('/public-assets/feedback.js')) { ready = true; break; }
+                if (response.ok && (await response.text()).includes('/public-assets/site-metrics.js')) { ready = true; break; }
                 if (response.body && !response.bodyUsed) await response.body.cancel();
               } catch {}
               await new Promise(resolve => setTimeout(resolve, 5000));
@@ -57,6 +57,10 @@ jobs:
             ['/equipe/app.js', 302],
             ['/api/me', 302],
             ['/api/feedback', 302],
+            ['/api/site-metrics', 302],
+            ['/api/staff-requests', 302],
+            ['/api/pedagogical-album', 302],
+            ['/api/resource-library', 302],
             ['/api/users', 302],
             ['/index.html', 302],
             ['/app.js', 302],
@@ -65,13 +69,17 @@ jobs:
             ['/api/official-trainings', 302],
             ['/equipe/calendarios/formacao-outubro-2026.csv', 302],
           ];
-          if (verifyDesign) checks.push(['/public-assets/logo.jpg', 200], ['/public-assets/donicia-2026.png', 200], ['/public-assets/feedback.js', 200], ['/public-assets/feedback.css', 200], ['/public/feedback', 405]);
+          if (verifyDesign) checks.push(['/public-assets/logo.jpg', 200], ['/public-assets/donicia-2026.png', 200], ['/public-assets/feedback.js', 200], ['/public-assets/feedback.css', 200], ['/public/feedback', 405], ['/public-assets/site-metrics.js', 200], ['/public/metrics', 405]);
           let failed = false;
           if (verifyDesign) {
             const readiness = await fetch(base + '/public/feedback', {method:'HEAD',redirect:'manual',credentials:'omit',signal:AbortSignal.timeout(15000)});
             console.log(readiness.status + ' HEAD /public/feedback');
             if (readiness.status !== 204) failed = true;
             if (readiness.body) await readiness.body.cancel();
+            const metricsReadiness = await fetch(base + '/public/metrics', {method:'HEAD',redirect:'manual',credentials:'omit',signal:AbortSignal.timeout(15000)});
+            console.log(metricsReadiness.status + ' HEAD /public/metrics');
+            if (metricsReadiness.status !== 204) failed = true;
+            if (metricsReadiness.body) await metricsReadiness.body.cancel();
           }
           for (const [path, expected] of checks) {
             let response;
@@ -112,6 +120,7 @@ jobs:
                   && payload.school && typeof payload.school === 'object'
                   && !Array.isArray(payload.school)
                   && Array.isArray(payload.notices) && Array.isArray(payload.events);
+                if (payload?.school?.whatsapp_secretaria !== '554888734629' || payload?.school?.whatsapp_orientacao) {console.error('UNEXPECTED_WHATSAPP_CONFIGURATION');failed = true;}
                 if (!valid) {
                   console.error('INVALID_PUBLIC_SHAPE ' + path);
                   failed = true;

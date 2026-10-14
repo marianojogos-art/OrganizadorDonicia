@@ -1,5 +1,5 @@
 import {sql} from 'drizzle-orm';
-import {sqliteTable,text,integer,index} from 'drizzle-orm/sqlite-core';
+import {sqliteTable,text,integer,index,primaryKey} from 'drizzle-orm/sqlite-core';
 export const settings=sqliteTable('settings',{key:text('key').primaryKey(),value:integer('value').notNull()});
 export const supervisionState=sqliteTable('supervision_state',{id:integer('id').primaryKey(),version:integer('version').notNull().default(0),token:text('token'),metadata:text('metadata').notNull().default('{}')});
 export const supervisionClasses=sqliteTable('supervision_classes',{classId:text('class_id').primaryKey(),data:text('data').notNull()});
@@ -39,3 +39,17 @@ export const pedagogicalAlbum=sqliteTable('pedagogical_album',{
 export const resourceLibrary=sqliteTable('resource_library',{
  id:text('id').primaryKey(),creator:text('creator').notNull().references(()=>users.email),title:text('title').notNull(),category:text('category',{enum:['bncc','matriz','documentos']}).notNull(),url:text('url').notNull(),description:text('description').notNull().default(''),version:integer('version').notNull().default(1),createdAt:text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`)
 },t=>[index('resource_library_category').on(t.category,t.title)]);
+
+// Anonymous portal metrics; migration 0014 owns validation and atomic aggregate triggers.
+export const siteMetricsDaily=sqliteTable('site_metrics_daily',{
+ day:text('day').primaryKey(),views:integer('views').notNull().default(0),estimatedVisits:integer('estimated_visits').notNull().default(0),sectionClicks:integer('section_clicks').notNull().default(0),whatsappClicks:integer('whatsapp_clicks').notNull().default(0),acceptedEvents:integer('accepted_events').notNull().default(0)
+});
+export const siteMetricsSections=sqliteTable('site_metrics_sections',{
+ day:text('day').notNull(),section:text('section').notNull(),event:text('event').notNull(),count:integer('count').notNull().default(0)
+},t=>[primaryKey({columns:[t.day,t.section,t.event]})]);
+export const siteMetricsSessions=sqliteTable('site_metrics_sessions',{
+ day:text('day').notNull(),sessionHash:text('session_hash').notNull(),events:integer('events').notNull().default(0),views:integer('views').notNull().default(0),createdMs:integer('created_ms').notNull()
+},t=>[primaryKey({columns:[t.day,t.sessionHash]}),index('site_metrics_sessions_retention').on(t.createdMs)]);
+export const siteMetricsEvents=sqliteTable('site_metrics_events',{
+ eventHash:text('event_hash').primaryKey(),day:text('day').notNull(),sessionHash:text('session_hash').notNull(),event:text('event',{enum:['page_view','section_click','whatsapp_click']}).notNull(),section:text('section',{enum:['home','escola','avisos','calendario','contatos','redes','entrada_equipe','whatsapp_secretaria','whatsapp_orientacao']}).notNull(),createdMs:integer('created_ms').notNull()
+},t=>[index('site_metrics_events_session').on(t.day,t.sessionHash,t.event,t.section,t.createdMs),index('site_metrics_events_retention').on(t.createdMs)]);

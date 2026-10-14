@@ -1,6 +1,6 @@
 # Sugestões de outubro de 2026 — fontes, reuso e limites
 
-Preparação na nuvem em 14/10/2026, base `33af10f`. Esta etapa não autoriza push, merge ou deploy. A integração das doze sugestões está descrita adiante; implementação local, testes e publicação são estados distintos.
+Preparação na nuvem em 14/10/2026, base `33af10f`. A publicação no destino Cloudflare existente foi autorizada posteriormente em 14/10/2026, após a preparação local. A integração das doze sugestões está descrita adiante; implementação local, testes e publicação são estados distintos.
 
 ## Catálogo de referências oficiais
 
@@ -75,7 +75,7 @@ Listagens de pedidos, fotos e documentos mostram no máximo 500 registros cada. 
 
 ### Situação da entrega
 
-Preparada em branch local para revisão e coordenação antes de push/publicação. Migrações remotas não executadas. O catálogo foi conferido em fontes oficiais; a verificação funcional usa dados sintéticos na nuvem. Login institucional, leitura SGE autenticada, números WhatsApp definitivos e documentos próprios da escola dependem dos acessos/conteúdos autorizados correspondentes, não de dados inventados.
+Preparada e testada em branch local; a atualização da main e aplicação das migrações aditivas foram autorizadas. O resultado remoto é conferido pela CI e pelo verificador HTTP da publicação. O catálogo foi conferido em fontes oficiais; a verificação funcional usa dados sintéticos na nuvem. Login institucional, leitura SGE autenticada, números WhatsApp definitivos e documentos próprios da escola dependem dos acessos/conteúdos autorizados correspondentes, não de dados inventados.
 
 ### Evidência da integração completa
 
@@ -85,8 +85,14 @@ Preparada em branch local para revisão e coordenação antes de push/publicaç�
 - Supervisão: testes específicos cobrem cancelamento em ping/lista/professores/planejamentos, progresso e erros atrasados, trava de concorrência, fase de salvamento não cancelável, agrupamentos e preservação do auxiliar. Não houve consulta SGE autenticada ou escrita no SGE.
 - Solicitações seguem Pendente → Em análise/Aprovada/Recusada, Em análise → Pendente/Aprovada/Recusada, Aprovada → Concluída/Recusada; Recusada pode voltar a Pendente pela equipe. Concluída não reabre diretamente. Os rótulos são do fluxo interno e não representam entrega externa.
 
-CI remoto e publicação desta etapa **não executados**, conforme coordenação solicitada. Não houve acesso ao computador pessoal, uso de fotos reais, criação de credenciais, alterações nos registros reais de Contribuições ou chamadas pagas. O canal da orientação e os documentos próprios continuam dependendo de cadastro institucional autorizado; a funcionalidade para cadastrá-los está pronta localmente.
+CI remoto e publicação desta etapa são acompanhados após o envio autorizado à main. Não houve acesso ao computador pessoal, uso de fotos reais, criação de credenciais, alterações nos registros reais de Contribuições ou chamadas pagas. O canal da orientação e os documentos próprios continuam dependendo de cadastro institucional autorizado; a funcionalidade para cadastrá-los está pronta localmente.
 
 ### Ajuste do contato da secretaria
 
-Botão com nome acessível “Abrir WhatsApp da secretaria em nova aba”, alvo HTTPS `https://wa.me/554888734629`, proteção `noopener noreferrer`, foco visível e altura mínima 44 px. Não há texto de mensagem pré-preenchido, chamada telefônica ou envio automático. A migração ainda local inicializa somente esse contato quando vazio e preserva qualquer valor institucional já configurado. Não foi enviado teste ao número; disponibilidade no WhatsApp não confirmada. Push/deploy continuam pendentes.
+Botão com nome acessível “Abrir WhatsApp da secretaria em nova aba”, alvo HTTPS `https://wa.me/554888734629`, proteção `noopener noreferrer`, foco visível e altura mínima 44 px. Não há texto de mensagem pré-preenchido, chamada telefônica ou envio automático. A migração ainda local inicializa somente esse contato quando vazio e preserva qualquer valor institucional já configurado. Não foi enviado teste ao número; disponibilidade no WhatsApp não confirmada. A publicação segue a autorização posterior do usuário e a verificação por commit.
+
+### Métricas e publicação
+
+O painel Métricas do site acrescenta agregados do portal público sem instrumentar páginas privadas; consulte [definições, limites e retenção](metricas-do-site.md). A migração 0014 cria somente tabelas/índices/triggers novos, sem alterar contribuições, fotos ou registros existentes.
+
+Checkpoint de código anterior: `33af10f084d54fdfcba983fdd637360b4bd20966`, com validação e build de produção Cloudflare aprovados antes da etapa. Em regressão, restaurar código por commit normal/deployment conhecido bom; preservar as novas tabelas e dados, sem migração reversa destrutiva, force-push ou alteração do Access. A integração existente aplica as migrações antes de publicar o Worker.
