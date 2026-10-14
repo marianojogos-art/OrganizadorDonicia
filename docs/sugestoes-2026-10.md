@@ -76,3 +76,13 @@ Listagens de pedidos, fotos e documentos mostram no máximo 500 registros cada. 
 ### Situação da entrega
 
 Preparada em branch local para revisão e coordenação antes de push/publicação. Migrações remotas não executadas. O catálogo foi conferido em fontes oficiais; a verificação funcional usa dados sintéticos na nuvem. Login institucional, leitura SGE autenticada, números WhatsApp definitivos e documentos próprios da escola dependem dos acessos/conteúdos autorizados correspondentes, não de dados inventados.
+
+### Evidência da integração completa
+
+- `npm run validate`: **170 testes da raiz e 14 móveis aprovados**, sintaxe/JSX, tipagem, build e correspondência dos runtimes. Inclui as novas rotas executadas no Workers/Miniflare com D1, isolamento de dois professores, fotos privadas, CAS e auditoria.
+- `npm run check:cloudflare`: dry-run aprovado usando diretório de configuração temporário na nuvem; não é deploy nem migração remota.
+- Chromium headless: Solicitações, Álbum, Biblioteca, Agenda da equipe e Tarefas em 1365×900 e 390×844; nenhuma exceção JS ou transbordamento horizontal. Professor fez dois pedidos próprios; acesso ao álbum negado. Equipe fez upload pelo formulário de um PNG geométrico sintético 2×2, exibido pela rota privada, cadastrou um link fictício sem abri-lo, criou compromisso interno fictício e conferiu tarefa atribuída ao próprio verificador.
+- Supervisão: testes específicos cobrem cancelamento em ping/lista/professores/planejamentos, progresso e erros atrasados, trava de concorrência, fase de salvamento não cancelável, agrupamentos e preservação do auxiliar. Não houve consulta SGE autenticada ou escrita no SGE.
+- Solicitações seguem Pendente → Em análise/Aprovada/Recusada, Em análise → Pendente/Aprovada/Recusada, Aprovada → Concluída/Recusada; Recusada pode voltar a Pendente pela equipe. Concluída não reabre diretamente. Os rótulos são do fluxo interno e não representam entrega externa.
+
+CI remoto e publicação desta etapa **não executados**, conforme coordenação solicitada. Não houve acesso ao computador pessoal, uso de fotos reais, criação de credenciais, alterações nos registros reais de Contribuições ou chamadas pagas. Os canais WhatsApp e documentos próprios continuam dependendo de cadastro institucional autorizado; a funcionalidade para cadastrá-los está pronta localmente.

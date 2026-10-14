@@ -68,6 +68,10 @@ O servidor de demonstração abre `http://127.0.0.1:8787`, usa identidade fictí
 
 A CI valida raiz e aplicativo móvel sem publicar produção. Testes automatizados não substituem login institucional, SGE autenticado, aparelho físico nem ensaio de recuperação D1. Evidências históricas do PR8 incluem 94 testes da raiz, build e emulação de viewport; use a execução do commit revisado para conhecer os resultados atuais.
 
+## Etapa local em revisão — sugestões de 14/10
+
+Doze sugestões foram preparadas e testadas localmente, ainda sem push ou implantação desta etapa. Veja [escopo, evidências e pendências](docs/sugestoes-2026-10.md). A existência do código nesta revisão não comprova atualização da produção.
+
 ## O que funciona
 
 - Supervisão: consulta de turmas pelo conector, resultados compartilhados salvos no D1, seleção por professor, filtros por Situação, trimestres, relatório de ocorrências e reinício da tela sem excluir os dados salvos. Veja [sge-connector/README.md](sge-connector/README.md).

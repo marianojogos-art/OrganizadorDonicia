@@ -2,6 +2,13 @@
 
 Este arquivo registra mudanças verificáveis no Git. Datas são de integração/documentação; não significam release, APK novo ou publicação atual. Não havia tags ou releases publicadas na referência auditada `main` `32b11d8` em 11/10/2026. Versões web, extensão e aplicativo são independentes.
 
+## 14/10/2026 — etapa local de sugestões, pendente de publicação
+
+- Supervisão com cancelamento lógico e descarte de retornos tardios, grupos de turmas e revisão de situações reais; sem escrita no SGE ou alteração da extensão.
+- Solicitações internas de mensagem/materiais, álbum privado com imagens limitadas, biblioteca categorizada de links, agenda derivada e verificador designado nas tarefas.
+- Campos WhatsApp institucionais configuráveis inicialmente vazios; referências oficiais da rede/BNCC, sem inventar documentos ou números da escola.
+- Migrações aditivas 0012/0013 preparadas; dados sintéticos e validações locais documentados em [sugestões](docs/sugestoes-2026-10.md). Push, CI remoto e deploy desta etapa aguardam coordenação; não é release.
+
 ## 12/10/2026 — reservas, xerox, formação e notas pessoais
 
 - `bdae6e1`: turma/disciplina e responsável nas agendas, datas inclusivas com recorrência semanal e conflitos atômicos, mantendo permissão da direção para horários fixos.

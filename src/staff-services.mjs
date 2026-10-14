@@ -10,6 +10,7 @@ const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:
 const failure=(message,status=400)=>{throw new XeroxInputError(message,status)};
 const pedagogical=user=>['direction','supervision','guidance'].includes(user?.role);
 const statuses=['Pendente','Em análise','Aprovada','Recusada','Concluída'];
+const transitions={'Pendente':['Em análise','Aprovada','Recusada'],'Em análise':['Pendente','Aprovada','Recusada'],'Aprovada':['Concluída','Recusada'],'Recusada':['Pendente'],'Concluída':[]};
 const text=(value,label,max,required=true)=>{
  if(typeof value!=='string'||value.length>max||/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(value)||required&&!value.trim())failure('Confira '+label);
  return value.trim();
@@ -80,6 +81,7 @@ export async function handleStaffServices(request,DB,user,data){
    if(id&&previous.status!=='Pendente')failure('Solicitação já está em atendimento',409);
   }
   if(kind==='staff-requests'&&data.status!==undefined&&!statuses.includes(data.status))failure('Situação inválida');
+  if(kind==='staff-requests'&&id&&data.status!==undefined&&data.status!==previous.status&&!transitions[previous.status].includes(data.status))failure('Transição inválida. Analise/aprove antes de concluir a solicitação',409);
   if(method==='POST'&&data.status!==undefined&&data.status!=='Pendente')failure('Novas solicitações começam pendentes');
   const recordId=id||crypto.randomUUID();let statement;
   if(method==='DELETE')statement=DB.prepare('DELETE FROM '+table+' WHERE id=? AND version=?'+visible).bind(id,data.version,...args);

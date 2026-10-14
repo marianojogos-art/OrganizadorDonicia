@@ -89,3 +89,6 @@ test('concurrent updates have one winner; audit logs only metadata and rolls bac
  assert.equal((await send(DB,path,'PATCH',{version:2,title:'Should roll back'})).status,503);
  assert.equal((await send(DB,path)).body.version,2);assert.equal((await send(DB,path)).body.title,requestData.title);
 });
+
+
+test('request completion requires approval and closed requests cannot jump directly to analysis',async()=>{const DB=setup(),created=await send(DB,'staff-requests','POST',requestData,teacher),path='staff-requests/'+created.body.id;assert.equal((await send(DB,path,'PATCH',{version:1,status:'Concluída'})).status,409);assert.equal((await send(DB,path,'PATCH',{version:1,status:'Aprovada'})).status,200);assert.equal((await send(DB,path,'PATCH',{version:2,status:'Concluída'})).status,200);assert.equal((await send(DB,path,'PATCH',{version:3,status:'Em análise'})).status,409)});
