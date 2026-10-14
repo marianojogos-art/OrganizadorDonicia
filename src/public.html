@@ -61,7 +61,8 @@ const verifiedSchool={
  address:'Rodovia Virgílio Várzea, 1264 · Saco Grande\nFlorianópolis/SC · CEP 88032-001',
  phone:'(48) 3238-2299',
  email:'ebm.donicia@sme.pmf.sc.gov.br',
- hours:'Confirme os horários com a secretaria.'
+ hours:'Confirme os horários com a secretaria.',
+ whatsapp_secretaria:'',whatsapp_orientacao:''
 };
 const neutralSchoolIntroduction='Informações e serviços para estudantes, famílias e comunidade escolar.';
 function schoolInformation(profile={}){
@@ -80,6 +81,9 @@ function renderSchool(profile={}){
  document.querySelector('#school-introduction').textContent=school.introduction;
  const entries=[['Endereço',school.address],['Telefone',school.phone],['E-mail',school.email],['Atendimento',school.hours]];
  document.querySelector('#school-contacts').innerHTML='<dl>'+entries.map(([label,value])=>{let content=esc(value);if(label==='E-mail'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))content='<a href="mailto:'+esc(value)+'">'+content+'</a>';if(label==='Telefone'){const phone=value===verifiedSchool.phone?'+554832382299':value.replace(/[^\d+]/g,'');if(phone)content='<a href="tel:'+esc(phone)+'">'+content+'</a>'}return '<div><dt>'+label+'</dt><dd class="copy">'+content+'</dd></div>'}).join('')+'</dl>';
+ const channels=[['WhatsApp da secretaria',school.whatsapp_secretaria],['WhatsApp da orientação',school.whatsapp_orientacao]];
+ const configured=channels.filter(([,value])=>/^[1-9]\d{10,14}$/.test(value));
+ const list=document.querySelector('#school-contacts dl');if(configured.length&&list?.insertAdjacentHTML)list.insertAdjacentHTML('beforeend',configured.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd><a href="https://wa.me/'+esc(value)+'" target="_blank" rel="noopener noreferrer">Abrir conversa ↗</a></dd></div>').join(''));
  document.querySelector('#school-map').setAttribute('href','https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(school.address));
 }
 

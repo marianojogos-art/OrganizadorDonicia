@@ -111,7 +111,7 @@ test('UI shows streamed planning while its request is pending and keeps the prev
  const pending=vm.runInContext('confirmSupervision()',context);await new Promise(resolve=>setImmediate(resolve));
  assert.match(document.querySelector('[data-supervision-preview]').textContent,/Prévia dos planejamentos/);assert.match(document.querySelector('[data-supervision-preview]').textContent,/Ágata Fictícia/);assert.match(document.querySelector('[data-supervision-status]').textContent,/Planejamento 1 de 2 consultado/);assert.match(document.querySelector('[data-supervision-status]').textContent,/Situação: Planejamento finalizado/);assert.equal(vm.runInContext('supervision.preview.size',context),1);assert.equal(document.querySelector('[data-supervision-report]'),null);
  document.querySelector('[data-supervision-cancel]').dispatchEvent(new window.Event('click',{bubbles:true}));release();await pending;
- assert.equal(vm.runInContext('supervision.preview.size',context),1);assert.match(document.querySelector('[data-supervision-preview]').textContent,/Dados já consultados/);assert.match(document.querySelector('#page').textContent,/Falha temporária/);
+ assert.equal(vm.runInContext('supervision.preview.size',context),1);assert.match(document.querySelector('[data-supervision-preview]').textContent,/Dados já consultados/);assert.match(document.querySelector('#page').textContent,/Consulta cancelada/);assert.doesNotMatch(document.querySelector('#page').textContent,/Falha temporária/);
 });
 function filterUi(){
  return readFile(new URL('../src/index.html',import.meta.url),'utf8').then(html=>{

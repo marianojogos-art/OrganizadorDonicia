@@ -49,8 +49,11 @@ export async function collectSupervision(env,input){
  if(input.scope==='school'&&query.length<2)throw new SupervisionError('Informe pelo menos duas letras do professor para buscar em toda a escola.',400);
  const directory=await readSupervisionClasses(env),origin=new URL(directory.sourceUrl).origin;
  if(input.classIds.some(key=>!directory.classes.some(c=>c.id===key)))throw new SupervisionError('A lista de turmas mudou. Atualize e confirme novamente.',409);
- if(input.scope==='school'&&(input.classIds.length!==directory.classes.length||directory.classes.some(c=>!input.classIds.includes(c.id))))throw new SupervisionError('Confirme todas as turmas da escola antes da busca.',409);
- const classes=directory.classes.filter(c=>input.classIds.includes(c.id)),teachers=new Map(),coverage=[];
+ // Ignore support classes only, never auxiliary teachers in ordinary assignments.
+ const eligible=directory.classes.filter(c=>{const name=normalized(c.name);return !/^apoio\b/.test(name)&&!/\bturma\s+apoio\b/.test(name)});
+ if(input.scope==='school'&&eligible.some(c=>!input.classIds.includes(c.id)))throw new SupervisionError('Confirme todas as turmas da escola antes da busca.',409);
+ const classes=eligible.filter(c=>input.classIds.includes(c.id)),teachers=new Map(),coverage=[];
+ if(!classes.length)throw new SupervisionError('Selecione uma turma regular ou AEE; turmas de apoio não entram na consulta.',400);
  for(const c of classes){
   const result={classId:c.id,className:c.name,ok:true,errors:[]};coverage.push(result);
   let assignments;

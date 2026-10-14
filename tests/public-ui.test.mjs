@@ -92,3 +92,8 @@ test('verified school details fill empty fields and neutral introduction without
  assert.match(p.document.querySelector('#school-introduction').textContent,/1º ao 9º ano/);
  assert.equal(p.document.querySelector('#school-title').textContent,custom.name);
 });
+
+
+test('only configured institutional WhatsApp channels appear, without assuming the fixed phone is WhatsApp',async()=>{
+ const p=page({...empty,school:{...empty.school,whatsapp_secretaria:'5511000000000',whatsapp_orientacao:''}});await p.load();assert.equal(p.document.querySelectorAll('a[href^="https://wa.me/"]').length,1);assert.match(p.document.querySelector('#school-contacts').textContent,/WhatsApp da secretaria/);const absent=page(empty);await absent.load();assert.equal(absent.document.querySelector('a[href^="https://wa.me/"]'),null);
+});

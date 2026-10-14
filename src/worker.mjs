@@ -1,3 +1,5 @@
+import {isStaffServicesRoute,handleStaffServices} from './staff-services.mjs';
+import {resourceCatalog,resourceCategories} from './resource-catalog.mjs';
 import {officialTrainingCalendar,officialTrainingSessions} from './official-trainings.mjs';
 import {personalNotes} from './personal-notes.mjs';
 import {submitFeedback,readFeedback,updateFeedback} from './site-feedback.mjs';
@@ -20,6 +22,9 @@ const eventTypes=['Reunião','Dia letivo','Feriado','Recesso','Conselho de class
 const validEvent=data=>text(data.title)&&validDate(data.date)&&eventTypes.includes(data.type)&&['internal','public'].includes(data.visibility)&&(data.formation===undefined||[true,false,0,1].includes(data.formation))&&optionalText(data.area,150);
 const validTraining=data=>text(data.title)&&text(data.area,150)&&validDate(data.date)&&optionalText(data.location,250)&&optionalText(data.notes,4000)&&optionalText(data.start,5)&&optionalText(data.end,5)&&((!data.start&&!data.end)||validTime(data.start)&&validTime(data.end)&&data.end>data.start);
 const schoolFields=['name','introduction','address','phone','email','hours'];
+const whatsappFields=['whatsapp_secretaria','whatsapp_orientacao'];
+const validWhatsapp=value=>typeof value==='string'&&(value===''||/^\+?[1-9]\d{10,14}$/.test(value));
+async function taskVerifier(DB,value){if(typeof value!=='string'||value.length>254)throw new XeroxInputError('Verificador inválido');if(value&&!await DB.prepare("SELECT email FROM users WHERE email=? AND active=1 AND role IN ('direction','supervision','guidance')").bind(value).first())throw new XeroxInputError('Escolha um verificador ativo da equipe pedagógica');return value}
 async function serveAsset(request,env,pathname){
  if(!['GET','HEAD'].includes(request.method))return json({error:'Método indisponível'},405);
  const url=new URL(request.url);url.pathname=pathname;
@@ -38,7 +43,7 @@ async function handleInner(request,env,authenticate=identity){
  if(path==='/public/feedback')return submitFeedback(request,env.DB);
  if(path==='/public/api'||path==='/api/public'){
   if(request.method!=='GET')return json({error:'Método indisponível'},405);
-  const [school,notices,events]=await Promise.all([env.DB.prepare('SELECT name,introduction,address,phone,email,hours FROM school_profile WHERE id=1').first(),env.DB.prepare('SELECT id,title,body,date FROM notices WHERE published=1 ORDER BY date DESC,id').all(),env.DB.prepare("SELECT id,title,date,CASE WHEN formation=1 THEN 'Formação' ELSE type END AS type,start,end,location FROM events WHERE visibility='public' ORDER BY date,title").all()]);
+  const [school,notices,events]=await Promise.all([env.DB.prepare('SELECT name,introduction,address,phone,email,hours,whatsapp_secretaria,whatsapp_orientacao FROM school_profile WHERE id=1').first(),env.DB.prepare('SELECT id,title,body,date FROM notices WHERE published=1 ORDER BY date DESC,id').all(),env.DB.prepare("SELECT id,title,date,CASE WHEN formation=1 THEN 'Formação' ELSE type END AS type,start,end,location FROM events WHERE visibility='public' ORDER BY date,title").all()]);
   return json({school,notices:notices.results,events:events.results});
  }
  const email=await authenticate(request,env);if(!email)return json({error:'Login institucional necessário'},401);
@@ -47,9 +52,9 @@ async function handleInner(request,env,authenticate=identity){
  const pedagogical=isPedagogical(user);
  if(!pedagogical&&user.role!=='teacher')return json({error:'Perfil sem permissão'},403);
  if(!pedagogical&&path.startsWith('/api/')){
-  const read=request.method==='GET'&&(['/api/me','/api/reservations','/api/fixed-occupancy','/api/xerox','/api/events','/api/trainings','/api/official-trainings'].includes(path)||/^\/api\/xerox\/[^/]+\/attachment$/.test(path));
-  const create=request.method==='POST'&&['/api/reservations','/api/xerox'].includes(path);
-  const change=['PATCH','DELETE'].includes(request.method)&&/^\/api\/(reservations|xerox)\/[^/]+$/.test(path);
+  const read=request.method==='GET'&&(['/api/me','/api/reservations','/api/fixed-occupancy','/api/xerox','/api/events','/api/trainings','/api/official-trainings'].includes(path)||/^\/api\/xerox\/[^/]+\/attachment$/.test(path)||/^\/api\/staff-requests(?:\/[^/]+)?$/.test(path));
+  const create=request.method==='POST'&&['/api/reservations','/api/xerox','/api/staff-requests'].includes(path);
+  const change=['PATCH','DELETE'].includes(request.method)&&/^\/api\/(reservations|xerox|staff-requests)\/[^/]+$/.test(path);
   if(!read&&!create&&!change)return json({error:'Acesso exclusivo da equipe pedagógica'},403);
  }
  const preparePlan=async(teacher,date,extraDays)=>{
@@ -66,13 +71,15 @@ async function handleInner(request,env,authenticate=identity){
   return assets[path]?serveAsset(request,env,assets[path]):json({error:'Página não encontrada'},404);
  }
  if(request.method==='GET'){
+  if(isStaffServicesRoute(path))return handleStaffServices(request,env.DB,user);
+  if(path==='/api/resource-catalog')return json({items:resourceCatalog,categories:resourceCategories});
   if(path==='/api/feedback')return readFeedback(request,env.DB);
   if(path==='/api/official-trainings')return json({calendar:officialTrainingCalendar,sessions:officialTrainingSessions});
   if(path==='/api/notes'||/^\/api\/notes\/[^/]+$/.test(path))return personalNotes(request,env.DB,user);
   if(path==='/api/supervision/saved'){return json(await loadSupervision(env.DB))}
   if(path==='/api/supervision/classes'){try{return json(await readSupervisionClasses(env))}catch(e){return json({error:e instanceof SupervisionError?e.message:'Não foi possível consultar o SGE.'},e.status||503)}}
   if(path==='/api/me')return json(user);
-  if(path==='/api/users')return json((await env.DB.prepare('SELECT email,name FROM users WHERE active=1 ORDER BY name').all()).results);
+  if(path==='/api/users')return json((await env.DB.prepare('SELECT email,name,role FROM users WHERE active=1 ORDER BY name').all()).results);
   if(path==='/api/teachers'){try{const {schedule,...directory}=await readTeachers(env.DB);return json(directory)}catch{return json({error:'Não foi possível ler os professores no WebHorário. Tente atualizar a lista.'},503)}}
   if(path==='/api/substitutions/preview'){
    if(!pedagogical)return json({error:'Somente a direção pode organizar substituições'},403);
@@ -103,24 +110,36 @@ async function handleInner(request,env,authenticate=identity){
   if(path==='/api/events')return json((await env.DB.prepare("SELECT id,version,title,date,CASE WHEN formation=1 THEN 'Formação' ELSE type END AS type,"+(pedagogical?'creator,':'')+"formation,area,start,end,location,details,visibility FROM events ORDER BY date,start").all()).results);
   if(path==='/api/trainings')return json((await env.DB.prepare("SELECT id,title,area,date,start,end,location,details AS notes,version FROM events WHERE formation=1 ORDER BY date,start,area,title").all()).results);
   if(path==='/api/notices')return json((await env.DB.prepare('SELECT * FROM notices ORDER BY date DESC,id').all()).results.map(row=>({...row,published:!!row.published})));
-  if(path==='/api/school')return json(await env.DB.prepare('SELECT name,introduction,address,phone,email,hours,version FROM school_profile WHERE id=1').first());
-  if(path==='/api/tasks')return json((await env.DB.prepare('SELECT t.*,u.name AS owner_name FROM tasks t JOIN users u ON u.email=t.owner WHERE t.restricted=0 OR ?=1 OR t.owner=? OR t.creator=? ORDER BY due,created_at').bind(Number(pedagogical),email,email).all()).results);
+  if(path==='/api/school')return json(await env.DB.prepare('SELECT name,introduction,address,phone,email,hours,whatsapp_secretaria,whatsapp_orientacao,version FROM school_profile WHERE id=1').first());
+  if(path==='/api/tasks')return json((await env.DB.prepare('SELECT t.*,u.name AS owner_name,v.name AS verifier_name FROM tasks t JOIN users u ON u.email=t.owner LEFT JOIN users v ON v.email=t.verifier WHERE t.restricted=0 OR ?=1 OR t.owner=? OR t.creator=? ORDER BY due,created_at').bind(Number(pedagogical),email,email).all()).results);
   return json({error:'Rota indisponível'},404);
  }
  if(!['POST','PATCH','DELETE'].includes(request.method))return json({error:'Método indisponível'},405);
  if(request.headers.get('Origin')!==new URL(request.url).origin)return json({error:'Origem inválida'},403);
  if(!request.headers.get('Content-Type')?.startsWith('application/json'))return json({error:'JSON necessário'},415);
- let raw;try{raw=await readLimitedBody(request,['/api/supervision/preview','/api/supervision/save'].includes(path)?16_000_000:path==='/api/substitutions/from-schedule'?65536:/^\/api\/xerox(?:\/[^/]+)?$/.test(path)?360000:/^\/api\/notes(?:\/[^/]+)?$/.test(path)?20000:/^\/api\/(?:trainings|notices|events|school)(?:\/[^/]+)?$/.test(path)?24000:8192)}catch(e){return json({error:e.message},e.status||400)}let data;try{data=JSON.parse(raw)}catch{return json({error:'JSON inválido'},400)}
+ let raw;try{raw=await readLimitedBody(request,['/api/supervision/preview','/api/supervision/save'].includes(path)?16_000_000:path==='/api/substitutions/from-schedule'?65536:/^\/api\/(?:xerox|pedagogical-album)(?:\/[^/]+)?$/.test(path)?380000:/^\/api\/notes(?:\/[^/]+)?$/.test(path)?20000:/^\/api\/(?:trainings|notices|events|school|staff-requests|resource-library)(?:\/[^/]+)?$/.test(path)?24000:8192)}catch(e){return json({error:e.message},e.status||400)}let data;try{data=JSON.parse(raw)}catch{return json({error:'JSON inválido'},400)}
  if(!data||typeof data!=='object'||Array.isArray(data))return json({error:'Dados inválidos'},400);
  const resource=path==='/api/substitutions/from-schedule'?null:/^\/api\/(reservations|tasks|substitutions|auxiliaries|xerox|minutes|events|fixed-occupancy|trainings|notices)\/([^/]+)$/.exec(path);
  if(resource){if(!Number.isInteger(data.version)||data.version<1)return json({error:'Versão do registro necessária. Atualize a tela'},400);const table=resource[1]==='trainings'?'events':resource[1].replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?'+(resource[1]==='trainings'?' AND formation=1':'')).bind(resource[2]).first();if(!row)return json({error:'Registro não encontrado'},404);if(row.version!==data.version)return json({error:'Este registro mudou. Atualize a tela'},409)}
  try{
+  if(isStaffServicesRoute(path))return await handleStaffServices(request,env.DB,user,data);
+  const verifyTask=/^\/api\/tasks\/([^/]+)\/verify$/.exec(path);
+  if(verifyTask){
+   if(request.method!=='POST')return json({error:'Método indisponível'},405);
+   const row=await env.DB.prepare('SELECT * FROM tasks WHERE id=?').bind(verifyTask[1]).first();if(!row)return json({error:'Tarefa não encontrada'},404);
+   if(!row.verifier||row.verifier!==email)return json({error:'Somente o verificador designado pode conferir esta tarefa'},403);
+   if(!Number.isInteger(data.version)||data.version!==row.version)return json({error:'Tarefa mudou. Atualize antes de conferir'},409);
+   if(row.status!=='Concluída'||row.verified_by)return json({error:'Conclua a tarefa antes de verificar, ou ela já foi verificada'},409);
+   const result=await write(env.DB.prepare("UPDATE tasks SET verified_by=?,verified_at=CURRENT_TIMESTAMP,version=version+1 WHERE id=? AND version=? AND verifier=? AND status='Concluída' AND verified_by=''").bind(email,row.id,data.version,email));return result.meta?.changes?json({ok:true}):json({error:'Tarefa mudou. Atualize a tela'},409);
+  }
   if(/^\/api\/feedback\/[^/]+$/.test(path))return await updateFeedback(request,env.DB,user,data);
   if(path==='/api/notes'||/^\/api\/notes\/[^/]+$/.test(path))return await personalNotes(request,env.DB,user,data);
   if(path==='/api/school'&&request.method==='PATCH'){
    if(!Number.isInteger(data.version)||data.version<1)return json({error:'Versão do cadastro necessária'},400);
    if(!text(data.name,150)||schoolFields.slice(1).some(key=>typeof data[key]!=='string'||data[key].length>(key==='introduction'?4000:500))||data.email&& !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email))return json({error:'Informações da escola inválidas'},400);
-   const result=await write(env.DB.prepare('UPDATE school_profile SET '+schoolFields.map(key=>key+'=?').join(',')+',version=version+1 WHERE id=1 AND version=?').bind(...schoolFields.map(key=>data[key].trim()),data.version));
+   const previous=await env.DB.prepare('SELECT whatsapp_secretaria,whatsapp_orientacao FROM school_profile WHERE id=1').first();
+   const contacts=whatsappFields.map(key=>data[key]??previous[key]);if(!contacts.every(validWhatsapp))return json({error:'WhatsApp deve ter DDI e somente dígitos, ou ficar vazio'},400);
+   const result=await write(env.DB.prepare('UPDATE school_profile SET '+[...schoolFields,...whatsappFields].map(key=>key+'=?').join(',')+',version=version+1 WHERE id=1 AND version=?').bind(...schoolFields.map(key=>data[key].trim()),...contacts.map(value=>value.replace(/^\+/,'')),data.version));
    if(!result.meta?.changes)return json({error:'O cadastro mudou. Atualize a tela'},409);return json({ok:true});
   }
   if((path==='/api/trainings'||resource?.[1]==='trainings')&&['POST','PATCH'].includes(request.method)){
@@ -214,7 +233,7 @@ async function handleInner(request,env,authenticate=identity){
    }
    let columns=[],values=[];
    if(table==='reservations'){if(!spaces.includes(data.space)||!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.purpose)||!text(data.responsible)||!contextValid(data))return json({error:'Confira espaço, data, horários, responsável e atividade'},400);columns=['space','date','start','end','purpose','responsible','class','subject','status'];values=[...columns.slice(0,-1).map(k=>(data[k]??row[k]??'').trim()),pedagogical?row.status:'Pendente'];}
-   if(table==='tasks'){if(!text(data.title)||!validDate(data.due)||typeof data.owner!=='string'||typeof data.restricted!=='boolean')return json({error:'Tarefa inválida'},400);if(!pedagogical&&(data.owner!==email||data.restricted!==!!row.restricted))return json({error:'Somente a direção pode delegar ou restringir'},403);if(!await env.DB.prepare('SELECT email FROM users WHERE email=? AND active=1').bind(data.owner).first())return json({error:'Responsável inválido'},400);columns=['title','due','owner','restricted'];values=[data.title,data.due,data.owner,Number(data.restricted)]}
+   if(table==='tasks'){if(!text(data.title)||!validDate(data.due)||typeof data.owner!=='string'||typeof data.restricted!=='boolean')return json({error:'Tarefa inválida'},400);if(!pedagogical&&(data.owner!==email||data.restricted!==!!row.restricted))return json({error:'Somente a direção pode delegar ou restringir'},403);if(!await env.DB.prepare('SELECT email FROM users WHERE email=? AND active=1').bind(data.owner).first())return json({error:'Responsável inválido'},400);columns=['title','due','owner','restricted','verifier','verified_by','verified_at'];values=[data.title,data.due,data.owner,Number(data.restricted),await taskVerifier(env.DB,data.verifier??row.verifier),'','']}
    if(table==='substitutions'){if(!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.class,80)||!text(data.teacher,100))return json({error:'Aula inválida'},400);if(row.completed&&data.date>schoolToday())return json({error:'Aula realizada não pode ter data futura'},400);columns=['date','week','start','end','class','teacher'];values=[data.date,weekOf(data.date),data.start,data.end,data.class,data.teacher]}
    if(table==='auxiliaries'){if(!text(data.name,100))return json({error:'Nome inválido'},400);columns=['name'];values=[data.name]}
    if(table==='xerox'){if(!text(data.title)||!validDate(data.deadline)||!Number.isInteger(data.copies)||data.copies<1||data.copies>10000)return json({error:'Pedido inválido'},400);columns=['title','copies','deadline','professor','class','color','attachment_name','attachment_mime','attachment_data'];values=[data.title.trim(),data.copies,data.deadline,...xeroxFields(data,user,row)]}
@@ -273,10 +292,10 @@ async function handleInner(request,env,authenticate=identity){
    if(!text(data.title)||!validDate(data.due)||typeof data.restricted!=='boolean'||typeof data.owner!=='string')return json({error:'Tarefa inválida'},400);
    if(!pedagogical&&(data.restricted||data.owner!==email))return json({error:'Somente a direção pode restringir ou delegar tarefas'},403);
    if(!await env.DB.prepare('SELECT email FROM users WHERE email=? AND active=1').bind(data.owner).first())return json({error:'Responsável não autorizado'},400);
-   const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO tasks(id,title,owner,due,restricted,creator) VALUES(?,?,?,?,?,?)').bind(id,data.title.trim(),data.owner,data.due,Number(data.restricted),email),path+'/'+id);return json({id},201);
+   const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO tasks(id,title,owner,due,restricted,creator,verifier) VALUES(?,?,?,?,?,?,?)').bind(id,data.title.trim(),data.owner,data.due,Number(data.restricted),email,await taskVerifier(env.DB,data.verifier??'')),path+'/'+id);return json({id},201);
   }
   if(resource&&resource[1]==='tasks'&&request.method==='PATCH'){
-   if(!statuses.includes(data.status))return json({error:'Situação inválida'},400);const id=path.split('/')[3];const row=await env.DB.prepare('SELECT * FROM tasks WHERE id=?').bind(id).first();if(!row)return json({error:'Tarefa não encontrada'},404);if(row.owner!==email&&!pedagogical)return json({error:'Sem permissão'},403);await write(env.DB.prepare('UPDATE tasks SET status=?,version=version+1 WHERE id=? AND version=?').bind(data.status,id,data.version));return json({ok:true});
+   if(!statuses.includes(data.status))return json({error:'Situação inválida'},400);const id=path.split('/')[3];const row=await env.DB.prepare('SELECT * FROM tasks WHERE id=?').bind(id).first();if(!row)return json({error:'Tarefa não encontrada'},404);if(row.owner!==email&&!pedagogical)return json({error:'Sem permissão'},403);await write(env.DB.prepare("UPDATE tasks SET status=?,verified_by='',verified_at='',version=version+1 WHERE id=? AND version=?").bind(data.status,id,data.version));return json({ok:true});
   }
   return json({error:'Rota indisponível'},404);
  }catch(e){if(e instanceof XeroxInputError)return json({error:e.message},e.status);if(String(e.message).includes('auxiliary_inactive'))return json({error:'Auxiliar está desativada'},409);if(String(e.message).includes('version_conflict'))return json({error:'Este registro mudou. Atualize a tela'},409);if(String(e.message).includes('class_conflict'))return json({error:'Esta turma já tem uma aula registrada nesse horário'},409);if(String(e.message).includes('auxiliary_limit'))return json({error:'Limite semanal da auxiliar atingido'},409);if(String(e.message).includes('auxiliary_conflict'))return json({error:'Auxiliar já distribuída nesse horário'},409);if(String(e.message).includes('reservation_conflict'))return json({error:'Este espaço já está reservado nesse horário'},409);return json({error:'Não foi possível salvar o registro'},503)}

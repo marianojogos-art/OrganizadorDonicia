@@ -14,7 +14,7 @@ function page(role='teacher'){
  window.HTMLElement.prototype.scrollIntoView=function(){};
  const Clock=class extends Date{constructor(...args){super(...(args.length?args:['2026-10-13T15:00:00Z']))}};
  const user={...teacher,role};const calls=[];
- const data={me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],'official-trainings':{calendar:null,sessions:[]},tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
+ const data={'staff-requests':[],'pedagogical-album':[],'resource-library':[],'resource-catalog':{items:[],categories:[]},me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],'official-trainings':{calendar:null,sessions:[]},tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
  const context=vm.createContext({document,Date:Clock,Intl,FormData,setTimeout:()=>{},confirm:()=>true});
  const run=code=>vm.runInContext(code,context);
  context.testApi=async(path,method='GET',body)=>{calls.push({path,method,body});if(path.startsWith('auxiliaries/weekly?'))return {week:'2026-10-12',auxiliaries:[]};if(method!=='GET')return {ok:true};assert.ok(Object.hasOwn(data,path),'Unexpected endpoint '+path);return data[path]};
@@ -27,8 +27,8 @@ function page(role='teacher'){
 
 test('teacher boot loads only permitted resources and cannot navigate or open pedagogical actions',async()=>{
  const p=page();await p.run('boot()');
- assert.deepEqual(p.calls.map(x=>x.path).sort(),['me','reservations','xerox','events','fixed-occupancy','trainings','official-trainings'].sort());
- assert.deepEqual([...p.document.querySelectorAll('#nav [data-section]')].map(x=>x.dataset.section),['espacos','xerox','calendario','formacao']);
+ assert.deepEqual(p.calls.map(x=>x.path).sort(),['me','reservations','xerox','events','fixed-occupancy','trainings','official-trainings','staff-requests'].sort());
+ assert.deepEqual([...p.document.querySelectorAll('#nav [data-section]')].map(x=>x.dataset.section),['espacos','xerox','calendario','formacao','solicitacoes']);
  assert.match(p.document.querySelector('#page').textContent,/Meus pedidos de reserva/);
  p.run("setPage('tarefas');setPage('notas');modal('new-task');modal('new-note')");
  assert.equal(p.run('state.section'),'espacos');assert.equal(p.document.querySelector('.modal'),null);
@@ -42,7 +42,7 @@ test('direction, supervision and guidance have the complete workspace and publis
  for(const role of ['direction','supervision','guidance']){
   const p=page(role);await p.run('boot()');
   assert.equal(p.run('state.section'),'inicio');
-  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,12);
+  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,16);
   assert.ok(p.document.querySelector('#nav [data-section="supervisao"]'));
   p.click('[data-section="comunicacao"]');assert.match(p.document.querySelector('#page').textContent,/Escola fictícia/);
   assert.ok(p.document.querySelector('[data-action="new-notice"]'));
@@ -164,4 +164,13 @@ test('official SME formations are shared in Formation and Calendar, with a prote
  assert.equal(p.document.querySelector('[data-edit="events:1"]'),null);
  await p.run('refresh()');
  assert.equal(p.run('state.trainings.filter(x=>x.official).length'),1,'refresh does not duplicate the SME calendar');
+});
+
+
+test('teacher can request a message or materials without any external delivery or pedagogical access',async()=>{
+ const p=page();p.data['staff-requests']=[{id:'own',requester:teacher.email,type:'message',title:'Mensagem fictícia',classes:'Turma fictícia',description:'Texto fictício',deadline:'2026-10-14',status:'Pendente',version:2}];await p.run('boot()');p.click('[data-section="solicitacoes"]');assert.match(p.document.querySelector('#page').textContent,/não envia mensagens externas/);assert.equal(p.document.querySelector('[data-request-status]'),null);assert.ok(p.document.querySelector('[data-edit="staff-requests:0"]'));
+ p.click('[data-action="new-request"]');await p.save('new-request',null,{type:'material',title:'Material fictício',classes:'Turma fictícia',description:'Quantidade fictícia',deadline:'2026-10-15'});const write=p.calls.find(x=>x.method==='POST');assert.equal(write.path,'staff-requests');assert.equal(write.body.type,'material');assert.equal(p.document.querySelector('#nav [data-section="album"]'),null);
+});
+test('team agenda reuses internal events and links library stays within the pedagogical workspace',async()=>{
+ const p=page('guidance');p.data.events=[{id:'a',title:'Interno fictício',date:'2026-10-13',type:'Reunião',visibility:'internal',version:1},{id:'b',title:'Público fictício',date:'2026-10-13',type:'Evento escolar',visibility:'public',version:1}];p.data['resource-catalog'].items=[{id:'bncc',title:'Referência fictícia',category:'bncc',url:'https://example.test/doc',description:'Fonte fictícia'}];await p.run('boot()');p.click('[data-section="agenda-equipe"]');assert.match(p.document.querySelector('#page').textContent,/Interno fictício/);assert.doesNotMatch(p.document.querySelector('#page').textContent,/Público fictício/);p.click('[data-action="new-team-event"]');assert.equal(p.document.querySelector('input[name="visibility"]').value,'internal');await p.save('new-team-event',null,{title:'Reunião fictícia',date:'2026-10-14',type:'Reunião',start:'',end:'',location:'',details:''});assert.equal(p.calls.find(x=>x.method==='POST').body.visibility,'internal');p.click('[data-section="biblioteca"]');assert.ok(p.document.querySelector('a[href="https://example.test/doc"]'));
 });
