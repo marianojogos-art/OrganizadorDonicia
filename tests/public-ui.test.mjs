@@ -95,5 +95,10 @@ test('verified school details fill empty fields and neutral introduction without
 
 
 test('only configured institutional WhatsApp channels appear, without assuming the fixed phone is WhatsApp',async()=>{
- const p=page({...empty,school:{...empty.school,whatsapp_secretaria:'5511000000000',whatsapp_orientacao:''}});await p.load();assert.equal(p.document.querySelectorAll('a[href^="https://wa.me/"]').length,1);assert.match(p.document.querySelector('#school-contacts').textContent,/WhatsApp da secretaria/);const absent=page(empty);await absent.load();assert.equal(absent.document.querySelector('a[href^="https://wa.me/"]'),null);
+ const p=page({...empty,school:{...empty.school,whatsapp_secretaria:'5511000000000',whatsapp_orientacao:''}});await p.load();assert.equal(p.document.querySelectorAll('a[href^="https://wa.me/"]').length,1);assert.match(p.document.querySelector('#school-contacts').textContent,/WhatsApp da secretaria/);const absent=page({...empty,school:{...empty.school,whatsapp_secretaria:'',whatsapp_orientacao:''}});await absent.load();assert.equal(absent.document.querySelector('a[href^="https://wa.me/"]'),null);
+});
+
+
+test('secretary WhatsApp button uses the exact authorized digits, accessible navigation and no call or automatic message',async()=>{
+ const p=page({...empty,school:{...empty.school,whatsapp_secretaria:'554888734629',whatsapp_orientacao:''}});await p.load();const buttons=p.document.querySelectorAll('a[href^="https://wa.me/"]');assert.equal(buttons.length,1);const button=buttons[0];assert.equal(button.getAttribute('href'),'https://wa.me/554888734629');assert.equal(button.getAttribute('target'),'_blank');assert.match(button.getAttribute('rel'),/noopener/);assert.match(button.getAttribute('rel'),/noreferrer/);assert.match(button.getAttribute('aria-label'),/WhatsApp da secretaria.*nova aba/);assert.match(button.textContent,/WhatsApp da secretaria/);assert.ok(button.classList.contains('whatsapp-button'));assert.equal(p.document.querySelector('a[href="tel:+554888734629"]'),null);assert.equal(p.document.querySelector('a[href="https://wa.me/5548988734629"]'),null);assert.equal(button.getAttribute('href').includes('?text='),false);assert.equal(p.calls.length,1,'only the anonymous school endpoint was read');
 });

@@ -17,8 +17,8 @@ test('task verification is assigned, versioned and invalidated by edits or reope
  assert.equal((await send(e,'/api/tasks','POST',{...payload,verifier:email('teacher')})).status,400);
  assert.equal((await send(e,'/api/tasks','POST',{...payload,verifier:'missing@prof.pmf.sc.gov.br'})).status,400);
 });
-test('WhatsApp channels start blank, only pedagogical staff configure, invalid values do not overwrite',async()=>{
- const e=await fixture(),profile=(await send(e,'/api/school')).body;assert.equal(profile.whatsapp_secretaria,'');assert.equal(profile.whatsapp_orientacao,'');
+test('authorized secretary WhatsApp is seeded exactly, guidance stays blank and only pedagogical staff configure',async()=>{
+ const e=await fixture(),profile=(await send(e,'/api/school')).body;assert.equal(profile.whatsapp_secretaria,'554888734629');assert.equal(profile.whatsapp_orientacao,'');
  const p={...profile,whatsapp_secretaria:'5511000000000',whatsapp_orientacao:''};
  assert.equal((await send(e,'/api/school','PATCH',p,'teacher')).status,403);
  assert.equal((await send(e,'/api/school','PATCH',{...p,whatsapp_secretaria:'javascript:alert(1)'})).status,400);

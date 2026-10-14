@@ -25,7 +25,8 @@
     @media(max-width:620px){.wrap{width:calc(100% - 40px)}.brand img{width:50px;height:50px}.brand{flex-basis:190px;gap:11px}.brand strong{font-size:15px}.brand small{font-size:9px;letter-spacing:.07em}.staff{font-size:10px;gap:6px}.staff svg{display:none}.nav{gap:12px 23px}.nav a{font-size:12px;padding-block:6px}.hero{padding:36px 0 40px}.hero-inner{grid-template-columns:1fr;gap:34px}.hero-school{font-size:12px;margin-bottom:14px}h1{font-size:clamp(46px,10.8vw,63px);line-height:1.06;max-width:470px}.hero-copy{font-size:14px;line-height:1.8;max-width:460px;margin-bottom:24px}.hero-actions{gap:12px 22px}.primary{min-height:47px;font-size:11px;padding:12px 18px;gap:18px}.text-link{font-size:11px}.hero-visual{width:min(430px,100%);margin:0 auto;min-height:330px;padding:75px 14px 100px;border-radius:180px 180px 18px 18px}.logo-frame{padding:22px 14px}.visual-note{left:20px;bottom:47px}.visual-caption{bottom:18px}.visual-star{right:21px;top:61px}.quick-links{grid-template-columns:1fr}.quick-links a,.quick-links a:first-child,.quick-links a:last-child{padding:17px 0;border-left:0;border-top:1px solid var(--line)}.quick-links a:first-child{border-top:0}.quick-links strong{font-size:13px}.quick-links small{font-size:11px}.quick-links .number{width:22px}.section{padding:52px 0}.about-grid,.contact-grid,.social-inner{grid-template-columns:1fr;gap:34px}h2{font-size:35px}.kicker,.eyebrow{font-size:9px}.about-copy{font-size:14px}.school-facts div{padding:16px 0}.school-facts dd{font-size:15px}.values-line{font-size:20px;margin-top:25px}.sectionhead{display:block;margin-bottom:26px}.sectionhead .section-lead{margin-top:15px;max-width:100%}.notice-list{grid-template-columns:1fr;gap:5px}.notice-card{padding:23px 0}.notice-card h3{font-size:26px}.empty{padding:24px 22px;font-size:13px}.empty strong{font-size:23px}.calendar-top{align-items:center;gap:12px}.calendar-top h3{font-size:14px;max-width:135px}.month-control input{font-size:12px;width:156px}.event{gap:16px;padding:23px 0}.event h3{font-size:15px}.social-band{padding:42px 0}.social-band h2{font-size:35px}.social-inner{gap:26px}.social-link{padding:18px 0}.social-link small{font-size:10px}.social-link>span:nth-child(2){min-width:0}.contacts dl{gap:20px}.contacts dd{font-size:13px}.faq{padding-top:8px}.faq-note{font-size:20px}.footer-inner{display:block}.footer-place{text-align:left;margin-top:18px}.footer-name{font-size:18px}}
     @media(max-width:380px){.wrap{width:calc(100% - 32px)}.brand{flex-basis:100%}.staff{padding:2px 0 0;margin-left:61px}.nav{margin-top:4px}.hero-actions{gap:5px 20px}.hero-visual{min-height:300px;padding-inline:12px}.logo-frame{padding:20px 12px}.visual-note{font-size:15px}.calendar-top{align-items:flex-start;flex-direction:column}.month-control{width:100%}.month-control input{width:100%}.calendar-top h3{max-width:none}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-  </style>
+  .contacts .whatsapp-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:12px 16px;border:1px solid var(--ink);border-radius:8px;background:var(--ink);color:white;text-decoration:none;font-weight:650;line-height:1.4}.contacts .whatsapp-button:hover{opacity:.9}
+</style>
   <link rel="stylesheet" href="/public-assets/feedback.css">
 </head>
 <body>
@@ -62,14 +63,14 @@ const verifiedSchool={
  phone:'(48) 3238-2299',
  email:'ebm.donicia@sme.pmf.sc.gov.br',
  hours:'Confirme os horários com a secretaria.',
- whatsapp_secretaria:'',whatsapp_orientacao:''
+ whatsapp_secretaria:'554888734629',whatsapp_orientacao:''
 };
 const neutralSchoolIntroduction='Informações e serviços para estudantes, famílias e comunidade escolar.';
 function schoolInformation(profile={}){
  const school={};
  for(const key of Object.keys(verifiedSchool)){
   const value=typeof profile[key]==='string'?profile[key].trim():'';
-  school[key]=value||verifiedSchool[key];
+  school[key]=key.startsWith('whatsapp_')&&typeof profile[key]==='string'?value:value||verifiedSchool[key];
  }
  if(school.introduction===neutralSchoolIntroduction)school.introduction=verifiedSchool.introduction;
  return school;
@@ -83,7 +84,7 @@ function renderSchool(profile={}){
  document.querySelector('#school-contacts').innerHTML='<dl>'+entries.map(([label,value])=>{let content=esc(value);if(label==='E-mail'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))content='<a href="mailto:'+esc(value)+'">'+content+'</a>';if(label==='Telefone'){const phone=value===verifiedSchool.phone?'+554832382299':value.replace(/[^\d+]/g,'');if(phone)content='<a href="tel:'+esc(phone)+'">'+content+'</a>'}return '<div><dt>'+label+'</dt><dd class="copy">'+content+'</dd></div>'}).join('')+'</dl>';
  const channels=[['WhatsApp da secretaria',school.whatsapp_secretaria],['WhatsApp da orientação',school.whatsapp_orientacao]];
  const configured=channels.filter(([,value])=>/^[1-9]\d{10,14}$/.test(value));
- const list=document.querySelector('#school-contacts dl');if(configured.length&&list?.insertAdjacentHTML)list.insertAdjacentHTML('beforeend',configured.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd><a href="https://wa.me/'+esc(value)+'" target="_blank" rel="noopener noreferrer">Abrir conversa ↗</a></dd></div>').join(''));
+ const list=document.querySelector('#school-contacts dl');if(configured.length&&list?.insertAdjacentHTML)list.insertAdjacentHTML('beforeend',configured.map(([label,value])=>'<div><dt>'+esc(label)+'</dt><dd><a class="whatsapp-button" aria-label="Abrir '+esc(label)+' em nova aba" href="https://wa.me/'+esc(value)+'" target="_blank" rel="noopener noreferrer">Abrir '+esc(label)+' ↗</a></dd></div>').join(''));
  document.querySelector('#school-map').setAttribute('href','https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(school.address));
 }
 

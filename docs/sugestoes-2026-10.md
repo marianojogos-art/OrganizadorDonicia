@@ -27,7 +27,7 @@ Busca no código e na documentação da base não encontrou canal WhatsApp insti
 
 O [portal institucional — Quem somos](https://sites.google.com/sme.pmf.sc.gov.br/ebmdoniciamariadacosta/quem-somos) não ofereceu contato WhatsApp na leitura. O [portal histórico de 2020](https://sites.google.com/sme.pmf.sc.gov.br/ebmdoniciamariadacosta2020/p%C3%A1gina-inicial) menciona grupos de professores/famílias no contexto de atividades de 2020, sem comprovar número institucional atual ou autorização para divulgação. Redes Meta não foram usadas para inferir números.
 
-Resultado: deixar vazios os números WhatsApp ainda não comprovados, incluindo contatos setoriais. Faltam números institucionais autorizados, identificação do setor e confirmação de atendimento por WhatsApp. Não incluir números pessoais nem transformar menções históricas a grupos em um botão de contato atual. Configurar um número autorizado pode habilitar o link; o aplicativo não deve enviar mensagens automaticamente.
+Resultado inicial da pesquisa: nenhum número WhatsApp foi inferido. Posteriormente Mariano forneceu e autorizou o canal da secretaria: **+55 48 8873-4629**, usado exatamente como `https://wa.me/554888734629`, sem acrescentar um 9. É somente WhatsApp; não foi cadastrado como telefone de chamadas. Orientação permanece sem número e sem botão ativo. Falta o número institucional autorizado da orientação. O funcionamento do número da secretaria não foi validado por mensagem ou chamada. Não incluir números pessoais nem transformar menções históricas a grupos em um botão de contato atual. Configurar um número autorizado pode habilitar o link; o aplicativo não deve enviar mensagens automaticamente.
 
 ## Reuso das funções existentes
 
@@ -61,13 +61,13 @@ Não executados nesta parcela: validação completa da integração, navegador, 
 | Solicitar materiais | Mesmo fluxo de pedidos, categoria Materiais, descrição de itens/quantidades e prazo. Não faz compra, baixa de estoque ou compromisso financeiro automático. |
 | Matriz e BNCC | Catálogo dos links oficiais acima, categorizado, sem cópias locais e sem declarar matriz própria da escola. |
 | Documentos padrão | Biblioteca categorizada para cadastrar links HTTPS autorizados. Documentos oficiais de referência separados dos cadastros da escola. Formulários locais não fornecidos permanecem para cadastro pela equipe; não foram inventados. |
-| WhatsApp em contatos | Campos institucionais separados para secretaria e orientação, vazios inicialmente. Links no portal apenas quando um número autorizado é configurado. Fixo e e-mail anteriores preservados. |
+| WhatsApp em contatos | Botão de WhatsApp da secretaria com os dígitos exatos informados por Mariano; orientação vazia e sem botão ativo. Links no portal apenas quando um número autorizado é configurado. Fixo e e-mail anteriores preservados. |
 
 ### Permissões, armazenamento e migrações
 
 As permissões pedagógicas existentes são preservadas. O professor ganha somente o fluxo novo de suas próprias solicitações, não acesso ao álbum, biblioteca administrativa, tarefas ou outras áreas pedagógicas. Direção/supervisão/orientação administram os cadastros e pedidos. Álbum e documentos não aparecem no endpoint público. Notas pessoais e contribuições reais não são alteradas.
 
-`0012_staff_services.sql` cria `staff_requests`, `pedagogical_album` e `resource_library` com índices. `0013_task_review_contacts.sql` acrescenta verificador/conferência e WhatsApp; os valores novos começam vazios. Não remove dados ou tabelas, não provisiona serviço/bucket e não altera Access, audiência ou extensão SGE. Os novos campos da escola são públicos apenas como contatos institucionais configurados; sem número confirmado não há link.
+`0012_staff_services.sql` cria `staff_requests`, `pedagogical_album` e `resource_library` com índices. `0013_task_review_contacts.sql` acrescenta verificador/conferência e WhatsApp; a secretaria é inicializada com o número autorizado e orientação fica vazia. Não remove dados ou tabelas, não provisiona serviço/bucket e não altera Access, audiência ou extensão SGE. Os novos campos da escola são públicos apenas como contatos institucionais configurados; sem número confirmado não há link.
 
 Imagens passam por limite real, MIME/extensão e assinatura inicial, com limite adicional no SQL; isso não é antivírus nem análise de identidade. Download exige login e perfil pedagógico, envia `no-store`, `nosniff`, sandbox e disposição de anexo. Arquivos não são copiados ao GitHub. Administradores da infraestrutura continuam administrando o D1; não se promete criptografia de ponta a ponta. Para arquivos maiores ou acesso por novos papéis, é necessária decisão posterior; não há ampliação automática.
 
@@ -79,10 +79,14 @@ Preparada em branch local para revisão e coordenação antes de push/publicaç�
 
 ### Evidência da integração completa
 
-- `npm run validate`: **170 testes da raiz e 14 móveis aprovados**, sintaxe/JSX, tipagem, build e correspondência dos runtimes. Inclui as novas rotas executadas no Workers/Miniflare com D1, isolamento de dois professores, fotos privadas, CAS e auditoria.
+- `npm run validate`: **171 testes da raiz e 14 móveis aprovados**, sintaxe/JSX, tipagem, build e correspondência dos runtimes. Inclui as novas rotas executadas no Workers/Miniflare com D1, isolamento de dois professores, fotos privadas, CAS e auditoria.
 - `npm run check:cloudflare`: dry-run aprovado usando diretório de configuração temporário na nuvem; não é deploy nem migração remota.
 - Chromium headless: Solicitações, Álbum, Biblioteca, Agenda da equipe e Tarefas em 1365×900 e 390×844; nenhuma exceção JS ou transbordamento horizontal. Professor fez dois pedidos próprios; acesso ao álbum negado. Equipe fez upload pelo formulário de um PNG geométrico sintético 2×2, exibido pela rota privada, cadastrou um link fictício sem abri-lo, criou compromisso interno fictício e conferiu tarefa atribuída ao próprio verificador.
 - Supervisão: testes específicos cobrem cancelamento em ping/lista/professores/planejamentos, progresso e erros atrasados, trava de concorrência, fase de salvamento não cancelável, agrupamentos e preservação do auxiliar. Não houve consulta SGE autenticada ou escrita no SGE.
 - Solicitações seguem Pendente → Em análise/Aprovada/Recusada, Em análise → Pendente/Aprovada/Recusada, Aprovada → Concluída/Recusada; Recusada pode voltar a Pendente pela equipe. Concluída não reabre diretamente. Os rótulos são do fluxo interno e não representam entrega externa.
 
-CI remoto e publicação desta etapa **não executados**, conforme coordenação solicitada. Não houve acesso ao computador pessoal, uso de fotos reais, criação de credenciais, alterações nos registros reais de Contribuições ou chamadas pagas. Os canais WhatsApp e documentos próprios continuam dependendo de cadastro institucional autorizado; a funcionalidade para cadastrá-los está pronta localmente.
+CI remoto e publicação desta etapa **não executados**, conforme coordenação solicitada. Não houve acesso ao computador pessoal, uso de fotos reais, criação de credenciais, alterações nos registros reais de Contribuições ou chamadas pagas. O canal da orientação e os documentos próprios continuam dependendo de cadastro institucional autorizado; a funcionalidade para cadastrá-los está pronta localmente.
+
+### Ajuste do contato da secretaria
+
+Botão com nome acessível “Abrir WhatsApp da secretaria em nova aba”, alvo HTTPS `https://wa.me/554888734629`, proteção `noopener noreferrer`, foco visível e altura mínima 44 px. Não há texto de mensagem pré-preenchido, chamada telefônica ou envio automático. A migração ainda local inicializa somente esse contato quando vazio e preserva qualquer valor institucional já configurado. Não foi enviado teste ao número; disponibilidade no WhatsApp não confirmada. Push/deploy continuam pendentes.

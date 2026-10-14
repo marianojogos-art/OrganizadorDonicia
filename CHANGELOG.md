@@ -6,7 +6,7 @@ Este arquivo registra mudanças verificáveis no Git. Datas são de integração
 
 - Supervisão com cancelamento lógico e descarte de retornos tardios, grupos de turmas e revisão de situações reais; sem escrita no SGE ou alteração da extensão.
 - Solicitações internas de mensagem/materiais, álbum privado com imagens limitadas, biblioteca categorizada de links, agenda derivada e verificador designado nas tarefas.
-- Campos WhatsApp institucionais configuráveis inicialmente vazios; referências oficiais da rede/BNCC, sem inventar documentos ou números da escola.
+- Botão WhatsApp da secretaria com número exato autorizado, orientação sem número ativo; referências oficiais da rede/BNCC, sem inventar documentos ou números da escola.
 - Migrações aditivas 0012/0013 preparadas; dados sintéticos e validações locais documentados em [sugestões](docs/sugestoes-2026-10.md). Push, CI remoto e deploy desta etapa aguardam coordenação; não é release.
 
 ## 12/10/2026 — reservas, xerox, formação e notas pessoais
