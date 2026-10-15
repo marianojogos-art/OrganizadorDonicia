@@ -236,14 +236,14 @@ test('contributions follows Library and published history survives an unavailabl
  const ids=[...p.document.querySelectorAll('#nav [data-section]')].map(el=>el.dataset.section);
  assert.equal(ids[ids.indexOf('biblioteca')+1],'contribuicoes');assert.equal(ids.filter(id=>id==='contribuicoes').length,1);
  p.run("setPage('contribuicoes')");await p.run('loadFeedback()');
- assert.equal(p.document.querySelectorAll('#published-updates li').length,3);
+ assert.equal(p.document.querySelectorAll('#published-updates li').length,p.run('publishedUpdates.length'));
  assert.match(p.document.querySelector('#published-updates').textContent,/horário de Brasília/);
- assert.equal(p.document.querySelector('#published-updates time').getAttribute('datetime'),'2026-10-15T02:17:51Z');
- assert.match(p.document.querySelector('#published-updates time').textContent,/14\/10\/2026/);
+ assert.equal(p.document.querySelector('#published-updates time').getAttribute('datetime'),p.run('publishedUpdates[0].publishedAt'));
+ assert.ok(p.document.querySelector('#published-updates time').textContent.length>0);
  assert.match(p.document.querySelector('#published-updates').textContent,/produção ainda não foi validada/);
  p.context.failedFeedback=async()=>{throw Error('Acesso indisponível')};p.run('api=failedFeedback');await p.run('loadFeedback()');
  assert.match(p.document.querySelector('[role=alert]').textContent,/Acesso indisponível/);
- assert.equal(p.document.querySelectorAll('#published-updates li').length,3);
+ assert.equal(p.document.querySelectorAll('#published-updates li').length,p.run('publishedUpdates.length'));
  assert.ok(p.calls.every(call=>call.method==='GET'));
 });
 

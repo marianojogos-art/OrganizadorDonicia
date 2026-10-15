@@ -98,11 +98,11 @@ try{
   assert.equal(ids[ids.indexOf('biblioteca')+1],'contribuicoes');
   const postit=page.locator('.df-toggle');if(await postit.getAttribute('aria-expanded')==='true')await postit.click();
   const history=page.locator('#published-updates');if(!await history.evaluate(node=>node.open))await history.locator('summary').click();
-  assert.equal(await history.locator('li').count(),3);assert.ok(await history.locator('li').first().isVisible());
-  assert.equal(await history.locator('time').first().getAttribute('datetime'),'2026-10-15T02:17:51Z');
+  const publicationCount=await page.evaluate(()=>publishedUpdates.length);assert.equal(await history.locator('li').count(),publicationCount);assert.ok(await history.locator('li').first().isVisible());
+  assert.equal(await history.locator('time').first().getAttribute('datetime'),await page.evaluate(()=>publishedUpdates[0].publishedAt));
   assert.match(await history.innerText(),/recuperação do banco de produção ainda não foi validada/);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'contributions overflow '+width);
-  console.log('CONTRIBUTIONS_HISTORY_QA '+JSON.stringify({width,afterLibrary:true,publications:3,overflow:false}));
+  console.log('CONTRIBUTIONS_HISTORY_QA '+JSON.stringify({width,afterLibrary:true,publications:publicationCount,overflow:false}));
  }
  const afterHistory=await(await context.request.get(staff+'/api/feedback')).json();
  assert.deepEqual(afterHistory.items.map(row=>({id:row.id,message:row.message,contributor:row.contributor,created_at:row.created_at})),originalContributions);

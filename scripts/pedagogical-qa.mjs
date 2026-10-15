@@ -75,5 +75,6 @@ try{
   assert.ok(highlights.items.some(x=>x.title==='Aviso público fictício '+width));
   assert.deepEqual(errors,[]);console.log('PEDAGOGICAL_QA_OK '+width+' central, reason, teacher correction, approvals, weekly conflict, preview and public highlights');
   await context.close();
+  const cleanup=sqlite(database);try{for(const [kind,id]of Object.entries(ids))await cleanup.prepare('DELETE FROM '+(kind==='staff-requests'?'staff_requests':kind)+' WHERE id=?').bind(id).run()}finally{cleanup.close()}
  }
 }finally{await browser?.close();for(const child of servers)child.kill('SIGTERM');await sleep(300);await rm(directory,{recursive:true,force:true})}
