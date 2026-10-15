@@ -25,3 +25,5 @@ Meu dia atualiza pelo botão, ao voltar à aba e a cada cinco minutos enquanto o
 Sem alteração de banco ou permissões de API. Checkpoint anterior: 657c774228a7419f4f04d50ab840c1ea02ab9cc4, Cloudflare 001314f0-b36a-46b9-b9f5-159f73ea6ffc. A reversão é um commit normal dos arquivos desta etapa; o registro local de lembretes pode permanecer sem afetar o banco.
 
 Testes de interface cobrem propriedade, estados reais, cópias, datas, ocupação, persistência de lembretes, passagem de dias e prévia somente leitura. Teacher day QA exercita APIs e formulários com contas/banco fictícios em Chromium 320/390/768/1440 px, incluindo aprovação pendente, cópia sem anexo e mudança de formação após recarregar. Capturas devem ser revisadas antes da publicação. Resultado efetivo registrado no PR da entrega.
+
+Na área do professor, o post-it de contribuições fica temporariamente oculto durante o preenchimento de formulários, para não cobrir os controles. Volta ao fechar, sem alterar sua posição, preferência ou rascunho.
