@@ -21,6 +21,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run validate
+      - name: Ensaio SQLite descartável de recuperação com dados fictícios
+        run: node scripts/recovery-drill.mjs
       - name: Conferir distribuição do conector
         run: |
           cmp dist/sge-connector.zip distributions/sge-connector/organizador-donicia-sge-1.3.1.zip
