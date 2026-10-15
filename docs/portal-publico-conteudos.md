@@ -18,3 +18,5 @@ Migração 0016 é aditiva: acrescenta expires_on com padrão vazio aos avisos e
 ## Validação
 
 Testes de API cobrem papéis, CSRF, confirmação de publicação, links, imagens, retirada de publicação, versões, auditoria e expiração. Testes de interface verificam semana no fuso da escola, escape de texto, agrupamento, datas, estados de erro e formulários. Public design QA usa Chromium na nuvem em 320/390/768/1440 px, com dados sintéticos e captura visual. Resultado efetivo registrado no relatório da entrega.
+
+Na primeira visita pública, o post-it de contribuições começa recolhido no canto inferior para deixar a identidade e os atalhos visíveis. O visitante pode expandir e mover; preferências e rascunhos existentes são preservados. A área da equipe conserva sua abertura padrão.

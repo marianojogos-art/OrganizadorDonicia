@@ -25,12 +25,13 @@ export function mountFeedback(doc=document,win=window){
  doc.body.append(root);
  const grip=root.querySelector('.df-grip'),toggle=root.querySelector('.df-toggle'),body=root.querySelector('.df-body'),form=root.querySelector('form'),message=form.elements.message,kind=form.elements.kind,contributor=form.elements.contributor,status=root.querySelector('.df-status'),usePage=root.querySelector('.df-use-page');
  message.value=draft.message;kind.value=['impression','improvement','feature'].includes(draft.kind)?draft.kind:'improvement';contributor.value=typeof draft.contributor==='string'?draft.contributor.slice(0,80):'';
- let position={x:stored.x,y:stored.y},collapsed=stored.collapsed===true,drag=null,busy=false,layoutFrame=null;
+ const publicPage=!doc.querySelector('#nav');
+ let position={x:stored.x,y:stored.y},collapsed=typeof stored.collapsed==='boolean'?stored.collapsed:publicPage,drag=null,busy=false,layoutFrame=null;
  const viewport=()=>({left:win.visualViewport?.offsetLeft||0,top:win.visualViewport?.offsetTop||0,width:win.visualViewport?.width||win.innerWidth,height:win.visualViewport?.height||win.innerHeight});
  function rememberPosition(){write(positionKey,{...position,collapsed})}
  function layout(){
   const view=viewport();root.style.width=Math.min(collapsed?300:368,Math.max(1,view.width-16))+'px';root.style.maxHeight=Math.max(44,view.height-16)+'px';
-  const box=root.getBoundingClientRect();if(!Number.isFinite(position.x)||!Number.isFinite(position.y))position={x:view.left+view.width-box.width-20,y:view.top+Math.min(100,Math.max(8,(view.height-box.height)/2))};
+  const box=root.getBoundingClientRect();if(!Number.isFinite(position.x)||!Number.isFinite(position.y))position={x:view.left+view.width-box.width-20,y:publicPage&&collapsed?view.top+view.height-box.height-20:view.top+Math.min(100,Math.max(8,(view.height-box.height)/2))};
   position=clampPosition(position,{width:box.width,height:box.height},view);root.style.left=position.x+'px';root.style.top=position.y+'px';
  }
  function scheduleLayout(){if(layoutFrame!==null)return;layoutFrame=win.requestAnimationFrame(()=>{layoutFrame=null;layout();rememberPosition()})}

@@ -155,6 +155,10 @@ async function loadPublic(){
 }
 monthInput.addEventListener('change',()=>{if(/^\d{4}-\d{2}$/.test(monthInput.value))renderCalendar()});
 document.querySelector('#retry').addEventListener('click',loadPublic);
+let publicDay=schoolDate();
+function refreshPublicDay(){const day=schoolDate();if(day!==publicDay){publicDay=day;loadPublic();loadContent()}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPublicDay()});
+if(typeof setInterval!=='undefined')setInterval(refreshPublicDay,60000);
 renderSchool();
 loadContent();
 loadPublic();
