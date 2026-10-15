@@ -352,7 +352,7 @@ test('public saves require a preview of the current form and escape publication 
  const p=page('direction');await p.run('boot()');p.run("modal('new-notice')");
  const f=new FormData();for(const [key,value]of Object.entries({title:'<img src=x>',body:'Texto público',date:'2026-10-13',expires_on:'',published:'true',featured:'true',highlight_from:'',highlight_until:''}))f.append(key,value);p.context.publicForm=f;
  await p.run("save('new-notice',null,publicForm)");assert.equal(p.calls.filter(x=>x.method==='POST').length,0);assert.match(p.document.querySelector('#formerror').textContent,/prévia/);
- p.run("previewPublication('new-notice',null,publicForm)");assert.equal(p.document.querySelector('#publication-preview img'),null);assert.match(p.document.querySelector('#publication-preview').textContent,/<img src=x>/);
+ p.run("previewPublication('new-notice',null,publicForm)");assert.equal(p.document.querySelector('#formerror').classList.contains('hidden'),true);assert.equal(p.document.querySelector('#publication-preview img'),null);assert.match(p.document.querySelector('#publication-preview').textContent,/<img src=x>/);
  f.set('body','Texto alterado');await p.run("save('new-notice',null,publicForm)");assert.equal(p.calls.filter(x=>x.method==='POST').length,0);
  p.run("previewPublication('new-notice',null,publicForm)");await p.run("save('new-notice',null,publicForm)");assert.equal(p.calls.filter(x=>x.method==='POST').length,1);
 });
