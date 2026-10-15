@@ -34,7 +34,8 @@ try{
  const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
  const base='http://127.0.0.1:18790',staff='http://127.0.0.1:18791';
  await page.goto(base+'/',{waitUntil:'networkidle'});await page.locator('#donicia-feedback').waitFor();
- await visible(page);assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'true');
+ await visible(page);assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'false');
+ await page.locator('.df-toggle').click();assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'true');
  await screenshotLog(page,'desktop-postit');
  // Pointer drag reaches both extremes without losing the note.
  const grip=page.locator('.df-grip'),box=await grip.boundingBox();
