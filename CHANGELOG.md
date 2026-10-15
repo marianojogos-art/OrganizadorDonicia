@@ -2,6 +2,12 @@
 
 Este arquivo registra mudanças verificáveis no Git. Datas são de integração/documentação; não significam release, APK novo ou publicação atual. Não havia tags ou releases publicadas na referência auditada `main` `32b11d8` em 11/10/2026. Versões web, extensão e aplicativo são independentes.
 
+## 15/10/2026 — acompanhamento por contribuição
+
+- Formulário de resposta, situação e evidência, com histórico privado por proposta e paginação. Pedidos originais, autores e comentários anteriores são preservados.
+- Migração aditiva 0015, autorização pedagógica, escrita atômica com auditoria/versão e exigência de explicação/evidência para Implementada. Não envia mensagens ao autor nem inventa histórico anterior.
+- [Uso e limites](docs/contribuicoes-acompanhamento.md): suporte testado com dados fictícios; respostas reais continuam dependendo de acesso autenticado e conferência do pedido.
+
 ## 15/10/2026 — organização de Contribuições
 
 - Contribuições movida para imediatamente depois de Biblioteca no menu da equipe.

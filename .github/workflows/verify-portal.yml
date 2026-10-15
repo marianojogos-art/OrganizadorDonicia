@@ -58,6 +58,7 @@ jobs:
             ['/equipe/app.js', 302],
             ['/api/me', 302],
             ['/api/feedback', 302],
+            ['/api/feedback/verification-only/history', 302],
             ['/api/site-metrics', 302],
             ['/api/staff-requests', 302],
             ['/api/pedagogical-album', 302],

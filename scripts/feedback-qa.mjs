@@ -74,10 +74,21 @@ try{
  await page.locator('.df-toggle').click();await page.locator('#nav [data-section="contribuicoes"]').click();
  await page.locator('#page').filter({hasText:'Nova implementação sintética'}).waitFor();await page.locator('#page').filter({hasText:'Ideia sintética da página inicial.'}).waitFor();
  assert.equal(await page.locator('#page a[href="/equipe#calendario"]').count(),1);assert.equal(await page.locator('#page a[href="/#calendario"]').count(),1);
- const triage=page.locator('[data-feedback-status]').first();await triage.selectOption('Planejada');await page.locator('#page .badge').filter({hasText:'Planejada'}).waitFor();
+ const triage=page.locator('[data-feedback-status]').first();await triage.selectOption('Planejada');const followup=page.locator('[data-feedback-followup]').first();await followup.locator('[name=reply]').fill('Atendimento parcial fictício; falta conferir a publicação.');await followup.locator('button[type=submit]').click();await page.locator('#page .badge').filter({hasText:'Planejada'}).waitFor();
  await page.reload({waitUntil:'networkidle'});await page.locator('#nav [aria-current="page"][data-section="contribuicoes"]').waitFor();await page.locator('#page .badge').filter({hasText:'Planejada'}).waitFor();
  assert.equal(await page.locator('#donicia-feedback').count(),1);
  response=await context.request.get(staff+'/api/feedback');data=await response.json();assert.equal(data.total,2);assert.equal(data.items.filter(x=>x.status==='Planejada').length,1);
+ // Failure keeps the draft; explicit retry records a private, persistent followup.
+ const responseForm=page.locator('[data-feedback-followup]').first();
+ await responseForm.locator('[name=reply]').fill('Conferência fictícia: ainda falta uma etapa.');
+ await page.route('**/api/feedback/*',route=>route.request().method()==='PATCH'?route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Falha fictícia no acompanhamento'})}):route.continue(),{times:1});
+ await responseForm.locator('button[type=submit]').click();await page.locator('[role=alert]').filter({hasText:'Falha fictícia'}).waitFor();
+ assert.equal(await responseForm.locator('[name=reply]').inputValue(),'Conferência fictícia: ainda falta uma etapa.');
+ await responseForm.locator('button[type=submit]').click();await page.locator('section[aria-label="Histórico da contribuição"]').first().filter({hasText:'Conferência fictícia'}).waitFor();
+ await page.reload({waitUntil:'networkidle'});await page.locator('[data-feedback-history]').first().waitFor();
+ await page.locator('[data-feedback-history]').first().click();await page.locator('section[aria-label="Histórico da contribuição"]').first().filter({hasText:'Conferência fictícia'}).waitFor();
+ assert.match(await page.locator('section[aria-label="Histórico da contribuição"]').first().innerText(),/Atendimento parcial fictício/);
+ console.log('FEEDBACK_FOLLOWUP_QA '+JSON.stringify({retry:true,reload:true,history:true,partial:true}));
  // Published updates remain accessible at phone and desktop widths, independently of live triage.
  const originalContributions=data.items.map(row=>({id:row.id,message:row.message,contributor:row.contributor,created_at:row.created_at}));
  for(const width of [320,390,1440]){

@@ -79,7 +79,7 @@ test('triage requires the pedagogical role, detects concurrent changes and audit
  assert.equal((await env.DB.prepare('SELECT version FROM site_feedback').first()).version,2);
  assert.equal((await env.DB.prepare("SELECT count(*) AS count FROM audit WHERE target=?").bind(path).first()).count,1);
  env.DB.exec("CREATE TRIGGER reject_feedback_audit BEFORE INSERT ON audit BEGIN SELECT RAISE(ABORT,'test_failure'); END");
- assert.equal((await send(env,path,'PATCH',{status:'Implementada',version:2},'direction')).status,503);
+ assert.equal((await send(env,path,'PATCH',{status:'Implementada',version:2,reply:'Atendido em ambiente fictício',evidence:'Publicação e teste fictícios verificados'},'direction')).status,503);
  assert.equal((await env.DB.prepare('SELECT status FROM site_feedback').first()).status,'Planejada');
  env.DB.close();
 });
@@ -94,4 +94,42 @@ test('page context captures the public anchor, staff section and open form witho
  assert.deepEqual(pageContext(document,{pathname:'/',hash:'#calendario',search:'?token=private'}),{path:'/',section:'calendario',title:'Nosso calendário'});
  ({document}=parseHTML('<h1 id="title">Calendário</h1><nav id="nav"><button data-section="calendario" aria-current="page">Calendário</button></nav><div class="modal" aria-label="Novo evento"></div>'));
  assert.deepEqual(pageContext(document,{pathname:'/equipe',hash:''}),{path:'/equipe',section:'calendario',title:'Calendário · Novo evento'});
+});
+
+
+test('followups preserve source, require implementation evidence, and keep an immutable private history',async()=>{
+ const env=setup(),input=draft({contributor:'Autoria fictícia',message:'<script>Pedido original</script>'});await send(env,'/public/feedback','POST',input);const path='/api/feedback/'+input.id;
+ const original=await env.DB.prepare('SELECT message,contributor,created_at FROM site_feedback WHERE id=?').bind(input.id).first();
+ for(const role of ['anonymous','teacher'])assert.equal((await send(env,path+'/history','GET',undefined,role)).status,role==='anonymous'?401:403);
+ for(const patch of [{status:'Implementada',reply:'Parcial'},{status:'Implementada',evidence:'Teste'},{status:'Nova'},{status:'Nova',reply:42},{status:'Nova',reply:'x'.repeat(2501)},{status:'Nova',evidence:'x'.repeat(1501)}])assert.equal((await send(env,path,'PATCH',{version:1,...patch},'direction')).status,400);
+ assert.equal((await send(env,path,'PATCH',{status:'Em análise',version:1,reply:'Análise inicial <img src=x>',evidence:''},'supervision')).status,200);
+ assert.equal((await send(env,path,'PATCH',{status:'Planejada',version:2,reply:'Atendimento parcial; falta concluir o pedido.'},'guidance')).status,200);
+ assert.equal((await send(env,path,'PATCH',{status:'Implementada',version:3,reply:'Pedido completo verificado com dados fictícios.',evidence:'https://example.invalid/deploy · teste fictício aprovado'},'direction')).status,200);
+ const history=await send(env,path+'/history','GET',undefined,'direction');assert.equal(history.body.total,3);assert.deepEqual(history.body.items.map(item=>item.feedback_version),[4,3,2]);
+ assert.equal(history.body.items[0].from_status,'Planejada');assert.equal(history.body.items[0].actor_name,'Direção fictícia');assert.equal(history.body.items[2].actor,'supervision@prof.pmf.sc.gov.br');
+ assert.deepEqual(await env.DB.prepare('SELECT message,contributor,created_at FROM site_feedback WHERE id=?').bind(input.id).first(),original);
+ assert.throws(()=>env.DB.exec("UPDATE site_feedback_history SET reply='changed'"),/feedback_history_immutable/);
+ assert.throws(()=>env.DB.exec('DELETE FROM site_feedback_history'),/feedback_history_immutable/);
+ assert.equal((await send(env,path,'DELETE',{},'direction')).status,405);
+ assert.equal(JSON.stringify((await send(env,'/public/api')).body).includes('Análise inicial'),false);
+ assert.equal((await send(env,path+'/history?offset=-1','GET',undefined,'direction')).status,400);assert.equal((await send(env,'/api/feedback/missing/history','GET',undefined,'direction')).status,404);
+ env.DB.close();
+});
+
+test('history pagination, concurrency and audit failure do not lose or invent followups',async()=>{
+ const env=setup(),input=draft();await send(env,'/public/feedback','POST',input);const path='/api/feedback/'+input.id;
+ const concurrent=await Promise.all(['direction','guidance'].map(role=>send(env,path,'PATCH',{version:1,status:'Em análise',reply:'Resposta concorrente fictícia'},role)));assert.deepEqual(concurrent.map(r=>r.status).sort(),[200,409]);
+ for(let version=2;version<=33;version++)assert.equal((await send(env,path,'PATCH',{version,status:'Em análise',reply:'Atualização fictícia '+version},'direction')).status,200);
+ const first=await send(env,path+'/history','GET',undefined,'direction'),next=await send(env,path+'/history?offset=30','GET',undefined,'direction');assert.equal(first.body.total,33);assert.equal(first.body.items.length,30);assert.equal(next.body.items.length,3);assert.equal(new Set([...first.body.items,...next.body.items].map(item=>item.id)).size,33);
+ env.DB.exec("CREATE TRIGGER fail_followup_audit BEFORE INSERT ON audit BEGIN SELECT RAISE(ABORT,'test_failure'); END");
+ assert.equal((await send(env,path,'PATCH',{version:34,status:'Planejada',reply:'Deve ser desfeito'},'direction')).status,503);
+ assert.equal((await send(env,path+'/history','GET',undefined,'direction')).body.total,33);assert.equal((await env.DB.prepare('SELECT version FROM site_feedback WHERE id=?').bind(input.id).first()).version,34);
+ env.DB.close();
+});
+
+test('additive followup migration preserves existing authors, status and original dates without fabricated history',async()=>{
+ const DB=sqlite();for(const sql of migrations.slice(0,-1))DB.exec('BEGIN;'+sql+'COMMIT;');
+ DB.exec("INSERT INTO site_feedback(id,visitor_id,kind,message,contributor,page_path,page_title,status,version,created_at,updated_at) VALUES('legacy-fixture','fictitious','improvement','Pedido antigo fictício','Autoria preservada','/','Página fictícia','Planejada',7,'2026-01-01 12:00:00','2026-01-02 12:00:00')");
+ const original=await DB.prepare('SELECT * FROM site_feedback').first();DB.exec('BEGIN;'+migrations.at(-1)+'COMMIT;');
+ assert.deepEqual(await DB.prepare('SELECT * FROM site_feedback').first(),original);assert.equal((await DB.prepare('SELECT count(*) AS n FROM site_feedback_history').first()).n,0);DB.close();
 });

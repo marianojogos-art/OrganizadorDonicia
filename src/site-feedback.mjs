@@ -37,15 +37,30 @@ export async function readFeedback(request,DB){
  ]);
  return reply({items:rows.results,total:total.total,offset,limit:30,pages:pages.results});
 }
+export async function readFeedbackHistory(request,DB,user){
+ if(!['direction','supervision','guidance'].includes(user?.role))return reply({error:'Acesso exclusivo da equipe pedagógica'},403);
+ const id=/^\/api\/feedback\/([^/]+)\/history$/.exec(new URL(request.url).pathname)?.[1];
+ if(!id)return reply({error:'Contribuição não encontrada'},404);
+ const offset=Number(new URL(request.url).searchParams.get('offset')||0);if(!Number.isSafeInteger(offset)||offset<0||offset>100000)return reply({error:'Posição inválida'},400);
+ if(!await DB.prepare('SELECT id FROM site_feedback WHERE id=?').bind(id).first())return reply({error:'Contribuição não encontrada'},404);
+ const [rows,total]=await Promise.all([DB.prepare('SELECT id,feedback_version,actor,actor_name,from_status,to_status,reply,evidence,created_at FROM site_feedback_history WHERE feedback_id=? ORDER BY feedback_version DESC LIMIT 30 OFFSET ?').bind(id,offset).all(),DB.prepare('SELECT count(*) AS total FROM site_feedback_history WHERE feedback_id=?').bind(id).first()]);
+ return reply({items:rows.results,total:total.total,offset,limit:30});
+}
 export async function updateFeedback(request,DB,user,data){
+ if(!['direction','supervision','guidance'].includes(user?.role))return reply({error:'Acesso exclusivo da equipe pedagógica'},403);
  const id=/^\/api\/feedback\/([^/]+)$/.exec(new URL(request.url).pathname)?.[1];
  if(request.method!=='PATCH'||!id)return reply({error:'Método indisponível'},405);
- if(!Number.isInteger(data.version)||data.version<1||!statuses.includes(data.status))return reply({error:'Confira a situação e a versão da contribuição'},400);
- const row=await DB.prepare('SELECT version FROM site_feedback WHERE id=?').bind(id).first();if(!row)return reply({error:'Contribuição não encontrada'},404);
- if(row.version!==data.version)return reply({error:'A contribuição mudou. Atualize a lista.'},409);
+ if(!Number.isInteger(data.version)||data.version<1||!statuses.includes(data.status)||data.reply!==undefined&&typeof data.reply!=='string'||data.evidence!==undefined&&typeof data.evidence!=='string')return reply({error:'Confira a situação, a resposta e a versão da contribuição'},400);
+ const response=(data.reply||'').trim(),evidence=(data.evidence||'').trim();
+ if(response.length>2500||evidence.length>1500)return reply({error:'Resposta até 2500 caracteres e evidência até 1500 caracteres'},400);
+ const row=await DB.prepare('SELECT version,status FROM site_feedback WHERE id=?').bind(id).first();if(!row)return reply({error:'Contribuição não encontrada'},404);
+ if(row.version!==data.version)return reply({error:'A contribuição mudou. Atualize a lista e revise seu acompanhamento.'},409);
+ if(data.status===row.status&&!response&&!evidence)return reply({error:'Escreva um acompanhamento ou altere a situação'},400);
+ if(data.status==='Implementada'&&(!response||!evidence))return reply({error:'Para marcar Implementada, explique o atendimento completo e registre a evidência verificada de publicação e teste'},400);
  const result=await DB.batch([
   DB.prepare('UPDATE site_feedback SET status=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?').bind(data.status,id,data.version),
+  DB.prepare('INSERT INTO site_feedback_history(id,feedback_id,feedback_version,actor,actor_name,from_status,to_status,reply,evidence) SELECT ?,id,version,?,?,?,?,?,? FROM site_feedback WHERE id=? AND version=? AND changes()>0').bind(crypto.randomUUID(),user.email,user.name||user.email,row.status,data.status,response,evidence,id,data.version+1),
   DB.prepare('INSERT INTO audit(id,actor,action,target) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),user.email,'PATCH','/api/feedback/'+id)
  ]);
- return result[0].meta?.changes?reply({ok:true}):reply({error:'A contribuição mudou. Atualize a lista.'},409);
+ return result[0].meta?.changes?reply({ok:true}):reply({error:'A contribuição mudou. Atualize a lista e revise seu acompanhamento.'},409);
 }

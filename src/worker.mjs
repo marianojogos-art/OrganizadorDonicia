@@ -3,7 +3,7 @@ import {isStaffServicesRoute,handleStaffServices} from './staff-services.mjs';
 import {resourceCatalog,resourceCategories} from './resource-catalog.mjs';
 import {officialTrainingCalendar,officialTrainingSessions} from './official-trainings.mjs';
 import {personalNotes} from './personal-notes.mjs';
-import {submitFeedback,readFeedback,updateFeedback} from './site-feedback.mjs';
+import {submitFeedback,readFeedback,readFeedbackHistory,updateFeedback} from './site-feedback.mjs';
 import {xeroxFields,downloadAttachment,readLimitedBody,XeroxInputError} from './xerox.mjs';
 import {identity} from './auth.mjs';
 import {readTeachers} from './teachers.mjs';
@@ -77,6 +77,7 @@ async function handleInner(request,env,authenticate=identity){
   if(isStaffServicesRoute(path))return handleStaffServices(request,env.DB,user);
   if(path==='/api/resource-catalog')return json({items:resourceCatalog,categories:resourceCategories});
   if(path==='/api/feedback')return readFeedback(request,env.DB);
+  if(/^\/api\/feedback\/[^/]+\/history$/.test(path))return readFeedbackHistory(request,env.DB,user);
   if(path==='/api/official-trainings')return json({calendar:officialTrainingCalendar,sessions:officialTrainingSessions});
   if(path==='/api/notes'||/^\/api\/notes\/[^/]+$/.test(path))return personalNotes(request,env.DB,user);
   if(path==='/api/supervision/saved'){return json(await loadSupervision(env.DB))}
