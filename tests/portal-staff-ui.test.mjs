@@ -286,7 +286,7 @@ test('duplicating a closed request creates a new form without date, identity, ap
  p.data.reservations=[{id:'old-booking',owner:teacher.email,space:'Auditório',purpose:'Reunião',date:'2026-10-01',start:'09:00',end:'10:00',class:'Turma A',status:'Aprovada',version:4}];
  p.data['staff-requests']=[{id:'old-material',requester:teacher.email,type:'material',title:'Mais papel',classes:'Turma A',description:'Pacote',deadline:'2026-10-01',status:'Concluída',version:2}];
  await p.run('refresh()');p.run("duplicateRequest('reservations',0)");assert.equal(p.document.querySelector('[name=date]').value,'');assert.equal(p.document.querySelector('[name=space]').value,'Auditório');assert.equal(p.document.querySelector('[name=responsible]').value,teacher.name);
- p.run('closeModal()');p.run("duplicateRequest('staff-requests',0)");assert.equal(p.document.querySelector('[name=type]').value,'material');assert.equal(p.document.querySelector('[name=deadline]').value,'');assert.equal(p.document.querySelector('[name=description]').value,'Pacote');
+ p.run('closeModal()');p.run("duplicateRequest('staff-requests',0)");assert.equal(p.document.querySelector('[name=type]').value,'material');assert.equal(p.document.querySelector('[name=deadline]').value,'');assert.equal(p.document.querySelector('#entryform [name=description]').value,'Pacote');
  p.run("closeModal();state.xerox[0].requesterEmail='other@example.test';duplicateRequest('xerox',0)");assert.equal(p.document.querySelector('.modal'),null);
 });
 test('day and week availability include approved and fixed occupancy, ignore pending orders and retain approval on a free-slot request',async()=>{
