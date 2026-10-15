@@ -315,3 +315,11 @@ test('teacher preview does not write reminder preferences and storage failure ke
  const p=page('direction');await p.run('boot()');await p.run('toggleTeacherPreview()');assert.equal(p.reminderStorage.size,0);assert.equal(p.run('state.section'),'meu-dia');p.run("acknowledgeFormationChanges();duplicateRequest('xerox',0)");assert.equal(p.reminderStorage.size,0);assert.equal(p.document.querySelector('.modal'),null);
  const q=page();q.context.localStorage={getItem(){throw Error('blocked')},setItem(){throw Error('blocked')}};await q.run('boot()');assert.equal(q.run('state.section'),'meu-dia');assert.match(q.document.querySelector('.teacher-reminders').textContent,/apenas nesta sessão/);assert.equal(q.document.querySelector('[data-retry-boot]'),null);
 });
+
+test('automatic dashboard refresh discards its result if an edit form opened while data was loading',async()=>{
+ const p=page();const old={id:'old',requester:teacher.email,title:'Pedido original',copies:3,deadline:'2026-10-14',status:'Aguardando aprovação',version:1};p.data.xerox=[old];await p.run('boot()');
+ p.data.xerox=[{...old,id:'another',title:'Outro pedido'},{...old,version:2}];
+ let release;p.context.refreshGate=new Promise(resolve=>{release=resolve});p.run("api=async(path,...args)=>{const value=await testApi(path,...args);if(path==='trainings')await refreshGate;return value}");
+ const pending=p.run('refreshTeacherDay()');await new Promise(resolve=>setImmediate(resolve));p.run("modal('edit-xerox',0)");release();await pending;
+ assert.equal(p.run('state.xerox[0].id'),'old');assert.equal(p.document.querySelector('#entryform [name=title]').value,'Pedido original');assert.equal(p.run('state.xerox[0].version'),1);
+});
