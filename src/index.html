@@ -134,7 +134,7 @@ function duplicateRequest(kind,index){
  const fields={reservations:['space','start','end','purpose','class','subject'],xerox:['title','copies','class','color'], 'staff-requests':['type','title','classes','description']}[kind];
  modal(type,kind==='reservations'?record.space:undefined);
  const form=document.querySelector('#entryform');if(!form)return;
- for(const key of fields){const input=form.querySelector('[name="'+key+'"]');if(input){if(input.tagName==='SELECT'){for(const option of input.querySelectorAll('option'))option.toggleAttribute('selected',option.value===String(record[key]??''))}else input.value=record[key]??''}}
+ for(const key of fields){const input=form.querySelector('[name="'+key+'"]');if(input){if(input.tagName==='SELECT'){for(const option of input.querySelectorAll('option'))option.toggleAttribute('selected',option.value===String(record[key]??''))}else{input.value=record[key]??'';if(input.tagName==='TEXTAREA')input.textContent=record[key]??''}}}
  const date=form.querySelector('[name="'+(kind==='reservations'?'date':'deadline')+'"]');if(date)date.value='';
  // A copy is a new POST. Never copy identity, approval, version or attachment.
  const note=document.createElement('p');note.className='notice duplicate-notice';note.textContent='Novo pedido a partir do anterior. Escolha uma nova data e confira os campos. Anexos e aprovações não são copiados.';form.prepend(note);
