@@ -23,11 +23,11 @@ try{
   await page.evaluate(()=>setPage('tarefas'));
   const button=page.locator('[data-toggle-teacher-view]');assert.ok(await button.isVisible());
   await button.click();await page.waitForFunction(()=>teacherPreview&&!viewSwitching);
-  assert.equal(await page.locator('#nav [data-section]').count(),5);assert.equal(await page.evaluate(()=>currentUser.role),'direction');
+  assert.equal(await page.locator('#nav [data-section]').count(),6);assert.equal(await page.evaluate(()=>currentUser.role),'direction');
   assert.match(await page.locator('#view-switcher').innerText(),/somente leitura/);
   await page.locator('[data-action="new-booking"]').first().click();assert.equal(await page.locator('#entryform button[type=submit]').isDisabled(),true);await page.locator('[data-close]').first().click();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'overflow '+width);
-  await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>teacherPreview&&document.querySelectorAll('#nav [data-section]').length===5);
+  await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>teacherPreview&&document.querySelectorAll('#nav [data-section]').length===6);
   await button.click();await page.waitForFunction(()=>!teacherPreview&&!viewSwitching);assert.equal(await page.evaluate(()=>state.section),'tarefas');assert.equal(await page.locator('#nav [data-section]').count(),17);
   await page.evaluate(()=>{document.querySelector('[data-toggle-teacher-view]').click();document.querySelector('[data-toggle-teacher-view]').click()});await page.waitForFunction(()=>teacherPreview&&!viewSwitching);
   assert.deepEqual(errors,[]);assert.deepEqual(writes,[]);console.log('TEACHER_PREVIEW_QA '+JSON.stringify({width,returnSection:'tarefas',reload:true,repeatedClicks:true,role:'direction',writes:0,errors}));await context.close();

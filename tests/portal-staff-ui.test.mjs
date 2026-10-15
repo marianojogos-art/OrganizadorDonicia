@@ -8,30 +8,30 @@ const html=await readFile(new URL('../src/index.html',import.meta.url),'utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace(/boot\(\);\s*$/,'');
 const teacher={email:'teacher@example.test',name:'Docente fictício',role:'teacher'};
 const school={name:'Escola fictícia',introduction:'Apresentação',address:'',phone:'',email:'',hours:'',version:2};
-function page(role='teacher',storage=new Map()){
+function page(role='teacher',storage=new Map(),reminderStorage=new Map()){
  const {document,window}=parseHTML(html);
  window.HTMLElement.prototype.focus=function(){};
  window.HTMLElement.prototype.scrollIntoView=function(){};
  const Clock=class extends Date{constructor(...args){super(...(args.length?args:['2026-10-13T15:00:00Z']))}};
  const user={...teacher,role};const calls=[];
  const data={'public-content':[],'staff-requests':[],'pedagogical-album':[],'resource-library':[],'resource-catalog':{items:[],categories:[]},me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],'official-trainings':{calendar:null,sessions:[]},tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
- const context=vm.createContext({sessionStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},document,Date:Clock,Intl,FormData,URLSearchParams,setTimeout:()=>{},confirm:()=>true});
+ const context=vm.createContext({localStorage:{getItem:key=>reminderStorage.get(key)??null,setItem:(key,value)=>reminderStorage.set(key,value)},sessionStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},document,Date:Clock,Intl,FormData,URLSearchParams,setTimeout:()=>{},confirm:()=>true});
  const run=code=>vm.runInContext(code,context);
  context.testApi=async(path,method='GET',body)=>{calls.push({path,method,body});if(path.startsWith('feedback?'))return {items:[],pages:[],total:0,offset:0,limit:30};if(path.startsWith('site-metrics?'))return data['site-metrics'];if(path.startsWith('auxiliaries/weekly?'))return {week:'2026-10-12',auxiliaries:[]};if(method!=='GET')return {ok:true};assert.ok(Object.hasOwn(data,path),'Unexpected endpoint '+path);return data[path]};
  run(script);run('api=testApi');
  const click=selector=>{const el=document.querySelector(selector);assert.ok(el,selector);el.dispatchEvent(new window.Event('click',{bubbles:true}))};
  const change=(selector,value)=>{const el=document.querySelector(selector);assert.ok(el,selector);Object.defineProperty(el,'value',{value,configurable:true});el.dispatchEvent(new window.Event('change',{bubbles:true}))};
  const save=async(type,index,values)=>{context.form=new FormData();for(const [key,value]of Object.entries(values))context.form.append(key,value);await run(`save(${JSON.stringify(type)},${index??'null'},form)`)};
- return {document,context,run,calls,data,click,change,save,storage};
+ return {document,context,run,calls,data,click,change,save,storage,reminderStorage};
 }
 
 test('teacher boot loads only permitted resources and cannot navigate or open pedagogical actions',async()=>{
  const p=page();await p.run('boot()');
  assert.deepEqual(p.calls.map(x=>x.path).sort(),['me','reservations','xerox','events','fixed-occupancy','trainings','official-trainings','staff-requests'].sort());
- assert.deepEqual([...p.document.querySelectorAll('#nav [data-section]')].map(x=>x.dataset.section),['espacos','xerox','calendario','formacao','solicitacoes']);
- assert.match(p.document.querySelector('#page').textContent,/Meus pedidos de reserva/);
+ assert.deepEqual([...p.document.querySelectorAll('#nav [data-section]')].map(x=>x.dataset.section),['meu-dia','espacos','xerox','calendario','formacao','solicitacoes']);
+ assert.equal(p.run('state.section'),'meu-dia');assert.match(p.document.querySelector('#page').textContent,/Seu dia/);
  p.run("setPage('tarefas');setPage('notas');modal('new-task');modal('new-note')");
- assert.equal(p.run('state.section'),'espacos');assert.equal(p.document.querySelector('.modal'),null);
+ assert.equal(p.run('state.section'),'meu-dia');assert.equal(p.document.querySelector('.modal'),null);
  p.run("state.section='supervisao';render()");assert.equal(p.run('state.section'),'espacos');
  p.click('[data-section="formacao"]');assert.match(p.document.querySelector('#page').textContent,/calendário de formação será disponibilizado/);
  assert.equal(p.document.querySelector('[data-action="new-training"]'),null);
@@ -58,7 +58,7 @@ test('teacher requests remain outside occupancy until approved and only own pend
   {id:'approved',owner:'',owner_name:'Outro docente',space:'Biblioteca',date:'2026-10-13',start:'10:00',end:'11:00',purpose:'Reserva confirmada',status:'Aprovada',version:1},
   {id:'own-refused',owner:teacher.email,space:'Biblioteca',date:'2026-10-14',start:'09:00',end:'10:00',purpose:'Pedido recusado',status:'Recusada',version:5}
  ];
- await p.run('boot()');
+ await p.run('boot()');p.click('[data-section="espacos"]');
  assert.equal(p.run("spaceDayEntries('Biblioteca','2026-10-13').length"),1);
  assert.equal(p.run("spaceDayEntries('Biblioteca','2026-10-13')[0].id"),'approved');
  assert.ok(p.document.querySelector('[data-edit="reservations:0"]'));
@@ -184,13 +184,13 @@ test('site metrics panel is pedagogical-only, shows aggregates and sends selecte
 test('opening the metrics hash directly also fetches its initial aggregates',async()=>{const p=page('direction');p.data['site-metrics']={from:'2026-10-07',to:'2026-10-13',totals:{views:0,estimatedVisits:0,sectionClicks:0,whatsappClicks:0},byDay:[],bySection:[]};p.context.window={};p.context.location={hash:'#metricas'};await p.run('boot()');await new Promise(resolve=>setImmediate(resolve));assert.equal(p.run('state.section'),'metricas');assert.ok(p.calls.some(call=>call.path.startsWith('site-metrics?')));assert.match(p.document.querySelector('#page').textContent,/Visitas estimadas/)});
 
 
-test('management can preview the five teacher sections and return without changing identity',async()=>{
+test('management can preview the six teacher sections and return without changing identity',async()=>{
  for(const role of ['direction','supervision','guidance']){
   const p=page(role);await p.run('boot()');p.run("setPage('tarefas')");
   assert.match(p.document.querySelector('[data-toggle-teacher-view]').textContent,/Visão de professor/);
   await p.run('toggleTeacherPreview()');
   assert.equal(p.run('currentUser.role'),role);assert.equal(p.run('hasPedagogicalAccess()'),true);
-  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,5,p.document.querySelector('#page').textContent);
+  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,6,p.document.querySelector('#page').textContent);
   assert.match(p.document.querySelector('#view-switcher').textContent,/somente leitura/);
   assert.equal(p.run("allowedAction('new-task')"),false);
   p.run("modal('new-booking')");assert.equal(p.document.querySelector('#entryform button[type=submit]').disabled,true);
@@ -256,4 +256,62 @@ test('pedagogical publishing tools keep projects separate from private album and
  p.click('[data-section="comunicacao"]');p.click('[data-action="new-notice"]');assert.ok(p.document.querySelector('input[name="expires_on"]'));
  await p.save('new-notice',null,{title:'Aviso fictício',body:'Texto',date:'2026-10-13',expires_on:'2026-10-20',published:'true'});
  assert.equal(p.calls.find(x=>x.path==='notices'&&x.method==='POST').body.expires_on,'2026-10-20');
+});
+
+
+test('Meu dia and the unified tracker show only the teacher own records with true service states',async()=>{
+ const p=page();p.data.reservations=[
+ {id:'mine',owner:teacher.email,space:'Biblioteca',date:'2026-10-14',start:'09:00',end:'10:00',purpose:'Leitura',status:'Aprovada',version:1},
+ {id:'other',owner:'other@example.test',space:'Auditório',date:'2026-10-14',start:'09:00',end:'10:00',purpose:'Atividade de outra pessoa',status:'Aprovada',version:1}];
+ p.data.xerox=[{id:'returned',requester:teacher.email,title:'Material para ajustar',copies:12,deadline:'2026-10-14',status:'Devolvido para ajustes',version:3},{id:'foreign',requester:'other@example.test',title:'Material de outro docente',copies:10,deadline:'2026-10-14',status:'Concluído'}];
+ p.data['staff-requests']=[{id:'request',requester:teacher.email,type:'material',title:'Pedido em análise',classes:'Turma A',description:'Papel',deadline:'2026-10-14',status:'Em análise',version:1}];
+ p.data.trainings=[{id:'future',title:'Formação futura',area:'Ciências',date:'2026-10-14',start:'08:00',end:'10:00'},{id:'past',title:'Formação passada',area:'História',date:'2026-10-12'}];
+ await p.run('boot()');const pageText=p.document.querySelector('#page').textContent;
+ assert.match(pageText,/Reserva próxima: Biblioteca/);assert.match(pageText,/Formação futura/);assert.match(pageText,/Ação necessária/);
+ assert.doesNotMatch(pageText,/Atividade de outra pessoa|Material de outro docente|Formação passada/);
+ p.click('[data-section="solicitacoes"]');assert.match(p.document.querySelector('#title').textContent,/Meus pedidos/);
+ assert.equal(p.document.querySelectorAll('.teacher-order').length,3);
+ p.change('[data-teacher-status]','Em análise');assert.equal(p.document.querySelectorAll('.teacher-order').length,1);assert.match(p.document.querySelector('.teacher-order').textContent,/Pedido em análise/);
+ p.change('[data-teacher-status]','');p.change('[data-teacher-kind]','xerox');assert.equal(p.document.querySelectorAll('.teacher-order').length,1);
+});
+test('duplicating a closed request creates a new form without date, identity, approval or attachment and requires explicit save',async()=>{
+ const p=page();p.data.xerox=[{id:'old',requester:teacher.email,title:'Atividade anterior',copies:15,class:'Turma A',color:'Colorido',professor:'Professor antigo',deadline:'2026-10-01',status:'Concluído',attachment_name:'arquivo.pdf',version:8}];
+ await p.run('boot()');p.click('[data-section="xerox"]');const before=p.calls.filter(x=>x.method!=='GET').length;
+ p.click('[data-duplicate-kind="xerox"]');
+ assert.equal(p.document.querySelector('[name=deadline]').value,'');assert.equal(p.document.querySelector('[name=title]').value,'Atividade anterior');assert.equal(p.document.querySelector('[name=copies]').value,'15');
+ assert.equal(p.document.querySelector('[name=professor]').value,teacher.name);assert.equal(p.document.querySelector('[name=color]').value,'Colorido');assert.equal(p.document.querySelector('[name=remove_attachment]'),null);
+ assert.equal(p.calls.filter(x=>x.method!=='GET').length,before);
+ await p.save('new-xerox',null,{title:'Atividade anterior',copies:'15',class:'Turma A',color:'Colorido',professor:teacher.name,deadline:'2026-10-16'});
+ const sent=p.calls.find(x=>x.method==='POST');assert.equal(sent.path,'xerox');assert.equal(sent.body.id,undefined);assert.equal(sent.body.version,undefined);assert.equal(sent.body.status,undefined);assert.equal(sent.body.attachment,undefined);
+ p.data.reservations=[{id:'old-booking',owner:teacher.email,space:'Auditório',purpose:'Reunião',date:'2026-10-01',start:'09:00',end:'10:00',class:'Turma A',status:'Aprovada',version:4}];
+ p.data['staff-requests']=[{id:'old-material',requester:teacher.email,type:'material',title:'Mais papel',classes:'Turma A',description:'Pacote',deadline:'2026-10-01',status:'Concluída',version:2}];
+ await p.run('refresh()');p.run("duplicateRequest('reservations',0)");assert.equal(p.document.querySelector('[name=date]').value,'');assert.equal(p.document.querySelector('[name=space]').value,'Auditório');assert.equal(p.document.querySelector('[name=responsible]').value,teacher.name);
+ p.run('closeModal()');p.run("duplicateRequest('staff-requests',0)");assert.equal(p.document.querySelector('[name=type]').value,'material');assert.equal(p.document.querySelector('[name=deadline]').value,'');assert.equal(p.document.querySelector('[name=description]').value,'Pacote');
+ p.run("closeModal();state.xerox[0].requesterEmail='other@example.test';duplicateRequest('xerox',0)");assert.equal(p.document.querySelector('.modal'),null);
+});
+test('day and week availability include approved and fixed occupancy, ignore pending orders and retain approval on a free-slot request',async()=>{
+ const p=page();p.data.reservations=[{id:'busy',owner:'other@example.test',space:'Biblioteca',date:'2026-10-13',start:'09:00',end:'10:00',status:'Aprovada'},{id:'pending',owner:teacher.email,space:'Biblioteca',date:'2026-10-13',start:'11:00',end:'12:00',status:'Pendente'}];
+ p.data['fixed-occupancy']=[{id:'fixed',space:'Biblioteca',weekday:2,start:'10:00',end:'11:00',from_date:'2026-10-01',to_date:'2026-10-31',purpose:'Uso fixo'}];
+ await p.run('boot()');p.click('[data-section="espacos"]');p.click('[data-agenda-view="day"]');assert.match(p.document.querySelector('#space-agenda').getAttribute('aria-label'),/diária/);
+ p.change('[data-availability-start]','09:30');p.change('[data-availability-end]','10:30');p.click('[data-availability-check]');assert.match(p.document.querySelector('.availability-result').textContent,/Ocupado/);assert.match(p.document.querySelector('.availability-result').textContent,/Horário fixo/);assert.equal(p.document.querySelector('[data-availability-book]'),null);
+ p.change('[data-availability-start]','11:00');p.change('[data-availability-end]','12:00');p.click('[data-availability-check]');assert.match(p.document.querySelector('.availability-result').textContent,/Livre/);
+ const before=p.calls.filter(x=>x.method!=='GET').length;p.click('[data-availability-book]');assert.equal(p.document.querySelector('[name=start]').value,'11:00');assert.equal(p.document.querySelector('[name=date]').value,'2026-10-13');assert.match(p.document.querySelector('#entryform').textContent,/aprovação/);assert.equal(p.calls.filter(x=>x.method!=='GET').length,before);
+ p.run('closeModal()');p.click('[data-agenda-view="week"]');assert.equal(p.document.querySelectorAll('.agenda-day-detail').length,7);
+ p.change('[data-availability-date]','2026-02-30');assert.match(p.document.querySelector('#space-agenda').textContent,/data válida/);
+});
+test('formation reminders survive reload per account, compare official and local changes, and do not mark natural aging as a change',async()=>{
+ const p=page();const local={id:'local',title:'Encontro da escola',area:'Ciências',date:'2026-10-14',start:'08:00',end:'10:00',location:'Sala A',notes:''};
+ p.data.trainings=[local,{id:'past',title:'Já passou',date:'2026-10-12',area:'História'}];p.data['official-trainings'].sessions=[{...local,id:'sme',official:true,title:'Encontro SME'}];
+ await p.run('boot()');assert.equal(p.run('formationChanges.length'),0);
+ p.data.trainings=[{...local,start:'09:00'}];p.data['official-trainings'].sessions=[{...local,id:'sme',official:true,title:'Encontro SME',location:'Sala B'}];await p.run('refresh()');
+ assert.equal(p.run('formationChanges.length'),2);assert.match(p.document.querySelector('.teacher-reminders').textContent,/Alterada: Encontro SME/);
+ const reload=page('teacher',new Map(),p.reminderStorage);reload.data.trainings=p.data.trainings;reload.data['official-trainings']=p.data['official-trainings'];await reload.run('boot()');assert.equal(reload.run('formationChanges.length'),2);
+ reload.click('[data-formation-seen]');assert.equal(reload.run('formationChanges.length'),0);
+ reload.data.trainings=[];reload.data['official-trainings'].sessions=[];await reload.run('refresh()');assert.equal(reload.run('formationChanges.length'),2);assert.match(reload.document.querySelector('.teacher-reminders').textContent,/Retirada da agenda/);
+ reload.context.Date=class extends Date{constructor(...args){super(...(args.length?args:['2026-10-16T15:00:00Z']))}};await reload.run('refresh()');assert.equal(reload.run('formationChanges.length'),0,'past formations roll off without spurious alerts');
+ reload.run("currentUser.email='other@example.test';updateFormationReminders()");assert.equal(reload.run('formationChanges.length'),0);
+});
+test('teacher preview does not write reminder preferences and storage failure keeps the current session usable',async()=>{
+ const p=page('direction');await p.run('boot()');await p.run('toggleTeacherPreview()');assert.equal(p.reminderStorage.size,0);assert.equal(p.run('state.section'),'meu-dia');p.run("acknowledgeFormationChanges();duplicateRequest('xerox',0)");assert.equal(p.reminderStorage.size,0);assert.equal(p.document.querySelector('.modal'),null);
+ const q=page();q.context.localStorage={getItem(){throw Error('blocked')},setItem(){throw Error('blocked')}};await q.run('boot()');assert.equal(q.run('state.section'),'meu-dia');assert.match(q.document.querySelector('.teacher-reminders').textContent,/apenas nesta sessão/);assert.equal(q.document.querySelector('[data-retry-boot]'),null);
 });
