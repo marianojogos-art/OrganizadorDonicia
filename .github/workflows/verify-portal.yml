@@ -9,6 +9,7 @@ on:
     paths:
       - '.github/workflows/verify-portal.yml'
       - 'src/public.html'
+      - 'src/index.html'
       - 'src/public-assets/**'
       - 'src/worker.mjs'
       - 'scripts/build.mjs'

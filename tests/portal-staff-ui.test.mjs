@@ -8,21 +8,21 @@ const html=await readFile(new URL('../src/index.html',import.meta.url),'utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace(/boot\(\);\s*$/,'');
 const teacher={email:'teacher@example.test',name:'Docente fictício',role:'teacher'};
 const school={name:'Escola fictícia',introduction:'Apresentação',address:'',phone:'',email:'',hours:'',version:2};
-function page(role='teacher'){
+function page(role='teacher',storage=new Map()){
  const {document,window}=parseHTML(html);
  window.HTMLElement.prototype.focus=function(){};
  window.HTMLElement.prototype.scrollIntoView=function(){};
  const Clock=class extends Date{constructor(...args){super(...(args.length?args:['2026-10-13T15:00:00Z']))}};
  const user={...teacher,role};const calls=[];
  const data={'staff-requests':[],'pedagogical-album':[],'resource-library':[],'resource-catalog':{items:[],categories:[]},me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],'official-trainings':{calendar:null,sessions:[]},tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
- const context=vm.createContext({document,Date:Clock,Intl,FormData,URLSearchParams,setTimeout:()=>{},confirm:()=>true});
+ const context=vm.createContext({sessionStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},document,Date:Clock,Intl,FormData,URLSearchParams,setTimeout:()=>{},confirm:()=>true});
  const run=code=>vm.runInContext(code,context);
  context.testApi=async(path,method='GET',body)=>{calls.push({path,method,body});if(path.startsWith('site-metrics?'))return data['site-metrics'];if(path.startsWith('auxiliaries/weekly?'))return {week:'2026-10-12',auxiliaries:[]};if(method!=='GET')return {ok:true};assert.ok(Object.hasOwn(data,path),'Unexpected endpoint '+path);return data[path]};
  run(script);run('api=testApi');
  const click=selector=>{const el=document.querySelector(selector);assert.ok(el,selector);el.dispatchEvent(new window.Event('click',{bubbles:true}))};
  const change=(selector,value)=>{const el=document.querySelector(selector);assert.ok(el,selector);Object.defineProperty(el,'value',{value,configurable:true});el.dispatchEvent(new window.Event('change',{bubbles:true}))};
  const save=async(type,index,values)=>{context.form=new FormData();for(const [key,value]of Object.entries(values))context.form.append(key,value);await run(`save(${JSON.stringify(type)},${index??'null'},form)`)};
- return {document,context,run,calls,data,click,change,save};
+ return {document,context,run,calls,data,click,change,save,storage};
 }
 
 test('teacher boot loads only permitted resources and cannot navigate or open pedagogical actions',async()=>{
@@ -182,3 +182,50 @@ test('site metrics panel is pedagogical-only, shows aggregates and sends selecte
 
 
 test('opening the metrics hash directly also fetches its initial aggregates',async()=>{const p=page('direction');p.data['site-metrics']={from:'2026-10-07',to:'2026-10-13',totals:{views:0,estimatedVisits:0,sectionClicks:0,whatsappClicks:0},byDay:[],bySection:[]};p.context.window={};p.context.location={hash:'#metricas'};await p.run('boot()');await new Promise(resolve=>setImmediate(resolve));assert.equal(p.run('state.section'),'metricas');assert.ok(p.calls.some(call=>call.path.startsWith('site-metrics?')));assert.match(p.document.querySelector('#page').textContent,/Visitas estimadas/)});
+
+
+test('management can preview the five teacher sections and return without changing identity',async()=>{
+ for(const role of ['direction','supervision','guidance']){
+  const p=page(role);await p.run('boot()');p.run("setPage('tarefas')");
+  assert.match(p.document.querySelector('[data-toggle-teacher-view]').textContent,/Visão de professor/);
+  await p.run('toggleTeacherPreview()');
+  assert.equal(p.run('currentUser.role'),role);assert.equal(p.run('hasPedagogicalAccess()'),true);
+  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,5,p.document.querySelector('#page').textContent);
+  assert.match(p.document.querySelector('#view-switcher').textContent,/somente leitura/);
+  assert.equal(p.run("allowedAction('new-task')"),false);
+  p.run("modal('new-booking')");assert.equal(p.document.querySelector('#entryform button[type=submit]').disabled,true);
+  const before=p.calls.length;await p.save('new-booking',null,{});assert.equal(p.calls.length,before);
+  await p.run('toggleTeacherPreview()');assert.equal(p.run('state.section'),'tarefas');
+  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,17);
+  assert.equal(p.run('currentUser.role'),role);
+ }
+ const teacherPage=page();await teacherPage.run('boot()');assert.equal(teacherPage.document.querySelector('[data-toggle-teacher-view]'),null);
+});
+
+test('preview projects management-wide lists onto own requests and approved occupancy',async()=>{
+ const p=page('direction');p.data.reservations=[{id:'own',owner:teacher.email,status:'Pendente'},{id:'hidden',owner:'other@example.test',status:'Pendente'},{id:'public-occupancy',owner:'other@example.test',status:'Aprovada'}];
+ p.data.xerox=[{id:'mine',requester:teacher.email},{id:'other',requester:'other@example.test'}];p.data['staff-requests']=[{id:'mine',requester:teacher.email},{id:'other',requester:'other@example.test'}];
+ await p.run('boot()');await p.run('toggleTeacherPreview()');
+ assert.equal(p.run('state.bookings.length'),2);assert.equal(p.run('state.bookings[1].ownerEmail'),'');
+ assert.equal(p.run('state.xerox.length'),1);assert.equal(p.run('state.requests.length'),1);
+ assert.equal(p.document.querySelector('[data-cancel-booking]'),null);
+ assert.equal(p.run("canEditRecord('reservations',state.bookings[0])"),false);
+ await p.run("cancelBooking('own')");assert.ok(p.calls.every(c=>c.method==='GET'));
+});
+
+test('preview survives reload in the same tab and cannot be restored for a teacher',async()=>{
+ const p=page('direction');await p.run('boot()');p.run("setPage('calendario')");await p.run('toggleTeacherPreview()');
+ const reload=page('direction',p.storage);await reload.run('boot()');assert.equal(reload.run('teacherPreview'),true);assert.equal(reload.run('currentUser.role'),'direction');
+ await reload.run('toggleTeacherPreview()');assert.equal(reload.run('state.section'),'calendario');assert.equal(reload.storage.size,0);
+ const forbidden=page('teacher',new Map([['staff-teacher-preview','{"section":"tarefas"}']]));await forbidden.run('boot()');assert.equal(forbidden.run('teacherPreview'),false);assert.equal(forbidden.storage.size,0);
+});
+
+test('repeated clicks cannot race a view transition and busy operations block switching',async()=>{
+ const p=page('direction');await p.run('boot()');
+ p.run('setBusy(true)');await p.run('toggleTeacherPreview()');assert.equal(p.run('teacherPreview'),false);assert.equal(p.document.querySelector('[data-toggle-teacher-view]').disabled,true);p.run('setBusy(false)');
+ let release;const gate=new Promise(resolve=>{release=resolve});const original=p.context.testApi;
+ p.context.gatedApi=async(...args)=>{if(args[0]==='reservations')await gate;return original(...args)};p.run('api=gatedApi');
+ const first=p.run('toggleTeacherPreview()');await p.run('toggleTeacherPreview()');assert.equal(p.run('teacherPreview'),true);assert.equal(p.run('viewSwitching'),true);
+ release();await first;assert.equal(p.run('viewSwitching'),false);assert.equal(p.calls.filter(c=>c.path==='reservations').length,2);
+ await p.run('toggleTeacherPreview()');assert.equal(p.run('teacherPreview'),false);
+});

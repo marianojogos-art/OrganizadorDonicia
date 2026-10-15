@@ -2,6 +2,12 @@
 
 Este arquivo registra mudanças verificáveis no Git. Datas são de integração/documentação; não significam release, APK novo ou publicação atual. Não havia tags ou releases publicadas na referência auditada `main` `32b11d8` em 11/10/2026. Versões web, extensão e aplicativo são independentes.
 
+## 15/10/2026 — prévia de professor para a gestão
+
+- Botão visível para direção, supervisão e orientação alternarem a interface para professor e voltarem à seção de gestão anterior, mantendo a identidade real.
+- Prévia somente leitura, com registros próprios e ocupações aprovadas; preferência por aba e proteção contra cliques concorrentes.
+- Testes automatizados e QA em Chromium descritos em [Visão de professor](docs/visao-professor.md). Não representa teste de login institucional de professor ou release do aplicativo.
+
 ## 14/10/2026 — sugestões da equipe e métricas do portal
 
 - Supervisão com cancelamento lógico e descarte de retornos tardios, grupos de turmas e revisão de situações reais; sem escrita no SGE ou alteração da extensão.
