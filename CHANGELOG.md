@@ -2,6 +2,8 @@
 
 ## Área pedagógica — 15/10/2026
 
+Publicado no Worker existente em 15/10/2026, 13:39 (Brasília): commit `3e2349e19e1be0c22967ef2dd18104f41caeeb56`, build `a43eb73c-51b1-4bbc-b6bb-145489d3341a`, versão `459e3771-d94f-4231-9a65-ad420ea211a6`. Histórico do site atualizado em Contribuições com esta publicação e as melhorias anteriores da página pública e da área dos professores.
+
 - Central de aprovações reúne reservas, xerox, mensagens e materiais por data ou prazo, com filtros de serviço e situação.
 - Devolução exige justificativa; o professor corrige e reenvia o próprio pedido antes da aprovação. Controle de versão e auditoria preservados.
 - Visão semanal cruza reservas aprovadas, horários fixos, eventos públicos/internos e formações. Sinaliza sobreposições no mesmo espaço reconhecido; atividades externas ou sem horário exigem conferência manual.

@@ -17,6 +17,8 @@ async function server(port,role){
 }
 let browser;
 async function visible(page){
+ // Resize/visualViewport events schedule clamping on the next animation frame.
+ await page.waitForFunction(()=>{const root=document.querySelector('#donicia-feedback');if(!root)return false;const r=root.getBoundingClientRect(),v=visualViewport;return r.x>=v.offsetLeft+7&&r.y>=v.offsetTop+7&&r.right<=v.offsetLeft+v.width-7&&r.bottom<=v.offsetTop+v.height-7},{},{timeout:5000});
  const bounds=await page.locator('#donicia-feedback').evaluate(root=>{const r=root.getBoundingClientRect(),v=visualViewport;return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height,left:v.offsetLeft,top:v.offsetTop,viewWidth:v.width,viewHeight:v.height,z:getComputedStyle(root).zIndex}});
  assert.ok(bounds.x>=bounds.left+7&&bounds.y>=bounds.top+7,JSON.stringify(bounds));assert.ok(bounds.right<=bounds.left+bounds.viewWidth-7&&bounds.bottom<=bounds.top+bounds.viewHeight-7,JSON.stringify(bounds));assert.equal(bounds.z,'2147483640');
  return bounds;
