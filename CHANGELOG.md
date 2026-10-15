@@ -1,5 +1,13 @@
 # Histórico de mudanças
 
+## Área pedagógica — 15/10/2026
+
+- Central de aprovações reúne reservas, xerox, mensagens e materiais por data ou prazo, com filtros de serviço e situação.
+- Devolução exige justificativa; o professor corrige e reenvia o próprio pedido antes da aprovação. Controle de versão e auditoria preservados.
+- Visão semanal cruza reservas aprovadas, horários fixos, eventos públicos/internos e formações. Sinaliza sobreposições no mesmo espaço reconhecido; atividades externas ou sem horário exigem conferência manual.
+- Destaques públicos possuem período próprio de exibição, sem retirar projetos e documentos de suas seções. A interface exige prévia atualizada antes de salvar publicação pública.
+- Migração aditiva, sem apagar registros. Verificações automatizadas e visuais executadas em ambiente descartável na nuvem.
+
 Este arquivo registra mudanças verificáveis no Git. Datas são de integração/documentação; não significam release, APK novo ou publicação atual. Não havia tags ou releases publicadas na referência auditada `main` `32b11d8` em 11/10/2026. Versões web, extensão e aplicativo são independentes.
 
 ## 15/10/2026 — seleção e bloqueio da Supervisão

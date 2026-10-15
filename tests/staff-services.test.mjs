@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import {readFile,readdir} from 'node:fs/promises';
 import {sqlite} from '../scripts/sqlite-adapter.mjs';
 import {handleStaffServices,isStaffServicesRoute} from '../src/staff-services.mjs';
-const initial=await readFile(new URL('../migrations/0001_initial.sql',import.meta.url),'utf8');
-const migration=await readFile(new URL('../migrations/0012_staff_services.sql',import.meta.url),'utf8');
+const initial=(await Promise.all((await readdir(new URL('../migrations/',import.meta.url))).filter(x=>x.endsWith('.sql')).sort().map(x=>readFile(new URL('../migrations/'+x,import.meta.url),'utf8')))).join('\n');
+const migration='';
 const teacher={email:'one@example.test',name:'Professor fictício',role:'teacher'},other={email:'two@example.test',name:'Outra pessoa fictícia',role:'teacher'},direction={email:'direction@example.test',name:'Direção fictícia',role:'direction'};
 function setup(){const DB=sqlite();DB.exec(initial+migration);for(const u of [teacher,other,direction])DB.exec(`INSERT INTO users VALUES('${u.email}','${u.name}','${u.role}',1)`);return DB}
 async function send(DB,path,method='GET',data,user=direction){const response=await handleStaffServices(new Request('https://school.example/api/'+path,{method}),DB,user,data);return response?{status:response.status,body:response.headers.get('Content-Type')?.includes('application/json')?await response.json():new Uint8Array(await response.arrayBuffer()),headers:response.headers}:null}

@@ -1,3 +1,4 @@
+import {projectReview,returnedStatus,validReason,highlightFields} from './pedagogical-workflows.mjs';
 import {isPublicContentRoute,publicContent,managePublicContent} from './public-content.mjs';
 import {ingestMetrics,readMetrics} from './site-metrics.mjs';
 import {isStaffServicesRoute,handleStaffServices} from './staff-services.mjs';
@@ -30,7 +31,7 @@ async function taskVerifier(DB,value){if(typeof value!=='string'||value.length>2
 async function serveAsset(request,env,pathname){
  if(!['GET','HEAD'].includes(request.method))return json({error:'Método indisponível'},405);
  const url=new URL(request.url);url.pathname=pathname;
- const asset=await env.ASSETS.fetch(new Request(url,request));const out=new Response(asset.body,asset);out.headers.set('Cache-Control','no-store');out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");return out;
+ const asset=await env.ASSETS.fetch(new Request(url,request));const out=new Response(asset.body,asset);out.headers.set('Cache-Control','no-store');out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");return out;
 }
 const eventDetails=(d,old={})=>{const start=d.start??old.start??'',end=d.end??old.end??'',location=d.location??old.location??'',details=d.details??old.details??'';if((start!==''||end!=='')&&(!validTime(start)||!validTime(end)||end<=start))throw new XeroxInputError('Confira início e término do evento');if(typeof location!=='string'||location.length>250||typeof details!=='string'||details.length>4000)throw new XeroxInputError('Local ou informações do evento inválidos');return [d.type==='Formação'||d.formation===true||d.formation===1?1:0,start,end,location.trim(),details.trim()]};
 const contextValid=d=>['class','subject'].every(k=>d[k]===undefined||(typeof d[k]==='string'&&d[k].length<=100));
@@ -42,7 +43,7 @@ async function handleInner(request,env,authenticate=identity){
  if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg'||path==='/public-assets/donicia-2026.png'||path==='/public-assets/feedback.js'||path==='/public-assets/site-metrics.js'||path==='/public-assets/feedback.css')return serveAsset(request,env,path==='/'?'/public.html':path);
  if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy','trainings','notices','notes'],studentData:false});
  if(!env.DB)return json({error:'Persistência não configurada'},503);
- if(path==='/public/content'||/^\/public\/projects\/[A-Za-z0-9_-]{1,100}\/image$/.test(path))return publicContent(request,env.DB);
+ if(path==='/public/content'||path==='/public/highlights'||/^\/public\/projects\/[A-Za-z0-9_-]{1,100}\/image$/.test(path))return publicContent(request,env.DB);
  if(path==='/public/metrics')return ingestMetrics(request,env.DB);
  if(path==='/public/feedback')return submitFeedback(request,env.DB);
  if(path==='/public/api'||path==='/api/public'){
@@ -103,7 +104,7 @@ async function handleInner(request,env,authenticate=identity){
   }
   if(path==='/api/reservations'){
    const rows=(await env.DB.prepare("SELECT r.*,u.name AS owner_name FROM reservations r JOIN users u ON u.email=r.owner WHERE ?=1 OR r.owner=? OR r.status='Aprovada' ORDER BY date,start").bind(Number(pedagogical),email).all()).results;
-   return json(rows.map(row=>pedagogical||row.owner===email?row:{...row,owner:''}));
+   return json(rows.map(row=>pedagogical||row.owner===email?projectReview(row):{...row,owner:'',review_reason:''}));
   }
   if(path==='/api/settings')return json(await env.DB.prepare("SELECT value AS auxiliaryWeeklyLimit FROM settings WHERE key='auxiliary_weekly_limit'").first());
   if(path==='/api/fixed-occupancy')return json((await env.DB.prepare('SELECT '+(pedagogical?'*':'id,space,weekday,start,end,from_date,to_date,purpose,version,class,subject,responsible')+' FROM fixed_occupancy ORDER BY space,weekday,start').all()).results);
@@ -112,7 +113,7 @@ async function handleInner(request,env,authenticate=identity){
   if(path==='/api/substitutions')return json((await env.DB.prepare('SELECT s.*,a.name AS aux FROM substitutions s LEFT JOIN auxiliaries a ON a.id=s.auxiliary ORDER BY date,start').all()).results);
   const attachmentPath=/^\/api\/xerox\/([^/]+)\/attachment$/.exec(path);
   if(attachmentPath){const row=await env.DB.prepare('SELECT attachment_name,attachment_mime,attachment_data FROM xerox WHERE id=? AND (?=1 OR requester=?)').bind(attachmentPath[1],Number(pedagogical),email).first();if(!row||!row.attachment_data)return json({error:'Anexo não encontrado'},404);return downloadAttachment(row)}
-  if(path==='/api/xerox')return json((await env.DB.prepare('SELECT x.id,x.version,x.title,x.copies,x.deadline,x.requester,x.status,x.professor,x.class,x.color,x.attachment_name,x.attachment_mime,u.name AS requester_name FROM xerox x JOIN users u ON u.email=x.requester WHERE ?=1 OR x.requester=? ORDER BY deadline').bind(Number(pedagogical),email).all()).results);
+  if(path==='/api/xerox')return json((await env.DB.prepare('SELECT x.id,x.version,x.title,x.copies,x.deadline,x.requester,x.status,x.professor,x.class,x.color,x.attachment_name,x.attachment_mime,x.review_reason,u.name AS requester_name FROM xerox x JOIN users u ON u.email=x.requester WHERE ?=1 OR x.requester=? ORDER BY deadline').bind(Number(pedagogical),email).all()).results);
   if(path==='/api/minutes')return json((await env.DB.prepare('SELECT * FROM minutes ORDER BY date DESC').all()).results);
   if(path==='/api/events')return json((await env.DB.prepare("SELECT id,version,title,date,CASE WHEN formation=1 THEN 'Formação' ELSE type END AS type,"+(pedagogical?'creator,':'')+"formation,area,start,end,location,details,visibility FROM events ORDER BY date,start").all()).results);
   if(path==='/api/trainings')return json((await env.DB.prepare("SELECT id,title,area,date,start,end,location,details AS notes,version FROM events WHERE formation=1 ORDER BY date,start,area,title").all()).results);
@@ -162,16 +163,18 @@ async function handleInner(request,env,authenticate=identity){
    if(!text(data.title)||!text(data.body,4000)||!validDate(data.date)||typeof data.published!=='boolean')return json({error:'Aviso inválido'},400);
    const expires=data.expires_on??(resource?(await env.DB.prepare('SELECT expires_on FROM notices WHERE id=?').bind(resource[2]).first()).expires_on:'');
    if(expires!==''&&(!validDate(expires)||expires<data.date))return json({error:'A validade deve ser igual ou posterior à data do aviso'},400);
-   const values=[data.title.trim(),data.body.trim(),data.date,Number(data.published),expires];
-   if(resource){await write(env.DB.prepare('UPDATE notices SET title=?,body=?,date=?,published=?,expires_on=?,version=version+1 WHERE id=? AND version=?').bind(...values,resource[2],data.version));return json({ok:true})}
-   const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO notices(id,title,body,date,published,expires_on,creator) VALUES(?,?,?,?,?,?,?)').bind(id,...values,email),path+'/'+id);return json({id},201);
+   let highlight;try{highlight=highlightFields(data,resource?await env.DB.prepare('SELECT featured,highlight_from,highlight_until FROM notices WHERE id=?').bind(resource[2]).first():{},true)}catch(e){return json({error:e.message},400)}
+   const values=[data.title.trim(),data.body.trim(),data.date,Number(data.published),expires,...highlight];
+   if(resource){await write(env.DB.prepare('UPDATE notices SET title=?,body=?,date=?,published=?,expires_on=?,featured=?,highlight_from=?,highlight_until=?,version=version+1 WHERE id=? AND version=?').bind(...values,resource[2],data.version));return json({ok:true})}
+   const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO notices(id,title,body,date,published,expires_on,featured,highlight_from,highlight_until,creator) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(id,...values,email),path+'/'+id);return json({id},201);
   }
   if(resource?.[1]==='reservations'&&request.method==='PATCH'&&data.edit!==true){
    if(!pedagogical)return json({error:'Somente a equipe pedagógica pode decidir reservas'},403);
-   if(!['Aprovada','Recusada'].includes(data.status))return json({error:'Decisão de reserva inválida'},400);
-   const row=await env.DB.prepare('SELECT status FROM reservations WHERE id=?').bind(resource[2]).first();
-   if(row.status!=='Pendente')return json({error:'Somente pedidos pendentes podem ser avaliados'},409);
-   await write(env.DB.prepare("UPDATE reservations SET status=?,version=version+1 WHERE id=? AND version=? AND status='Pendente'").bind(data.status,resource[2],data.version));return json({ok:true});
+   if(!['Aprovada','Recusada',returnedStatus].includes(data.status))return json({error:'Decisão de reserva inválida'},400);
+   const row=await env.DB.prepare('SELECT status,needs_adjustment FROM reservations WHERE id=?').bind(resource[2]).first();
+   if(row.status!=='Pendente'||row.needs_adjustment)return json({error:'Somente pedidos pendentes e reenviados podem ser avaliados'},409);
+   if(data.status===returnedStatus){if(!validReason(data.review_reason))return json({error:'Informe a justificativa da devolução (até 2000 caracteres)'},400);await write(env.DB.prepare("UPDATE reservations SET needs_adjustment=1,review_reason=?,version=version+1 WHERE id=? AND version=? AND status='Pendente' AND needs_adjustment=0").bind(data.review_reason.trim(),resource[2],data.version));return json({ok:true})}
+   await write(env.DB.prepare("UPDATE reservations SET status=?,version=version+1 WHERE id=? AND version=? AND status='Pendente' AND needs_adjustment=0").bind(data.status,resource[2],data.version));return json({ok:true});
   }
   if(path==='/api/supervision/save'&&request.method==='POST'){
    try{
@@ -242,7 +245,7 @@ async function handleInner(request,env,authenticate=identity){
     else await write(env.DB.prepare('DELETE FROM '+table+' WHERE id=? AND version=?').bind(id,data.version));return json({ok:true});
    }
    let columns=[],values=[];
-   if(table==='reservations'){if(!spaces.includes(data.space)||!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.purpose)||!text(data.responsible)||!contextValid(data))return json({error:'Confira espaço, data, horários, responsável e atividade'},400);columns=['space','date','start','end','purpose','responsible','class','subject','status'];values=[...columns.slice(0,-1).map(k=>(data[k]??row[k]??'').trim()),pedagogical?row.status:'Pendente'];}
+   if(table==='reservations'){if(!spaces.includes(data.space)||!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.purpose)||!text(data.responsible)||!contextValid(data))return json({error:'Confira espaço, data, horários, responsável e atividade'},400);columns=['space','date','start','end','purpose','responsible','class','subject','status','needs_adjustment'];values=[...columns.slice(0,-2).map(k=>(data[k]??row[k]??'').trim()),pedagogical?row.status:'Pendente',0];}
    if(table==='tasks'){if(!text(data.title)||!validDate(data.due)||typeof data.owner!=='string'||typeof data.restricted!=='boolean')return json({error:'Tarefa inválida'},400);if(!pedagogical&&(data.owner!==email||data.restricted!==!!row.restricted))return json({error:'Somente a direção pode delegar ou restringir'},403);if(!await env.DB.prepare('SELECT email FROM users WHERE email=? AND active=1').bind(data.owner).first())return json({error:'Responsável inválido'},400);columns=['title','due','owner','restricted','verifier','verified_by','verified_at'];values=[data.title,data.due,data.owner,Number(data.restricted),await taskVerifier(env.DB,data.verifier??row.verifier),'','']}
    if(table==='substitutions'){if(!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.class,80)||!text(data.teacher,100))return json({error:'Aula inválida'},400);if(row.completed&&data.date>schoolToday())return json({error:'Aula realizada não pode ter data futura'},400);columns=['date','week','start','end','class','teacher'];values=[data.date,weekOf(data.date),data.start,data.end,data.class,data.teacher]}
    if(table==='auxiliaries'){if(!text(data.name,100))return json({error:'Nome inválido'},400);columns=['name'];values=[data.name]}
@@ -286,7 +289,7 @@ async function handleInner(request,env,authenticate=identity){
    const id=path.split('/')[3];const row=await env.DB.prepare('SELECT * FROM xerox WHERE id=?').bind(id).first();if(!row)return json({error:'Pedido não encontrado'},404);
    if(data.resubmit===true){if(row.requester!==email&&!pedagogical)return json({error:'Sem permissão'},403);if(row.status!=='Devolvido para ajustes')return json({error:'Pedido não está em ajustes'},409);if(!text(data.title)||!validDate(data.deadline)||!Number.isInteger(data.copies)||data.copies<1||data.copies>10000)return json({error:'Pedido inválido'},400);const result=await write(env.DB.prepare("UPDATE xerox SET title=?,copies=?,deadline=?,professor=?,class=?,color=?,attachment_name=?,attachment_mime=?,attachment_data=?,status='Aguardando aprovação',version=version+1 WHERE id=? AND status='Devolvido para ajustes' AND version=?").bind(data.title.trim(),data.copies,data.deadline,...xeroxFields(data,user,row),id,data.version));if(!result.meta?.changes)return json({error:'Pedido mudou. Atualize a tela e tente de novo'},409);return json({ok:true})}
    if(!pedagogical)return json({error:'Somente a direção pode aprovar ou atualizar a produção'},403);
-   const transitions={'Aguardando aprovação':['Aprovado','Devolvido para ajustes','Recusado'],'Devolvido para ajustes':['Aguardando aprovação'],'Aprovado':['Em produção'],'Em produção':['Concluído'],'Recusado':[],'Concluído':[]};if(!transitions[row.status].includes(data.status))return json({error:'Transição de aprovação inválida'},400);const result=await write(env.DB.prepare('UPDATE xerox SET status=?,version=version+1 WHERE id=? AND status=? AND version=?').bind(data.status,id,row.status,data.version));if(!result.meta?.changes)return json({error:'Pedido mudou. Atualize a tela e tente de novo'},409);return json({ok:true});
+   const transitions={'Aguardando aprovação':['Aprovado','Devolvido para ajustes','Recusado'],'Devolvido para ajustes':['Aguardando aprovação'],'Aprovado':['Em produção'],'Em produção':['Concluído'],'Recusado':[],'Concluído':[]};if(!transitions[row.status].includes(data.status))return json({error:'Transição de aprovação inválida'},400);if(data.status==='Devolvido para ajustes'&&!validReason(data.review_reason))return json({error:'Informe a justificativa da devolução (até 2000 caracteres)'},400);const result=await write(env.DB.prepare('UPDATE xerox SET status=?,review_reason=?,version=version+1 WHERE id=? AND status=? AND version=?').bind(data.status,data.status==='Devolvido para ajustes'?data.review_reason.trim():row.review_reason,id,row.status,data.version));if(!result.meta?.changes)return json({error:'Pedido mudou. Atualize a tela e tente de novo'},409);return json({ok:true});
   }
   if(path==='/api/minutes'&&request.method==='POST'){
    if(!pedagogical)return json({error:'Somente a direção pode registrar atas'},403);if(!text(data.title)||!validDate(data.date)||!text(data.participants,2000)||!text(data.decisions,4000))return json({error:'Ata inválida'},400);const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO minutes(id,title,date,participants,decisions,creator) VALUES(?,?,?,?,?,?)').bind(id,data.title.trim(),data.date,data.participants.trim(),data.decisions.trim(),email),path+'/'+id);return json({id},201);
