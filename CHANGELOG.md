@@ -2,6 +2,12 @@
 
 Este arquivo registra mudanças verificáveis no Git. Datas são de integração/documentação; não significam release, APK novo ou publicação atual. Não havia tags ou releases publicadas na referência auditada `main` `32b11d8` em 11/10/2026. Versões web, extensão e aplicativo são independentes.
 
+## 15/10/2026 — organização de Contribuições
+
+- Contribuições movida para imediatamente depois de Biblioteca no menu da equipe.
+- Histórico com datas em Brasília, resumos e evidências de três etapas previamente publicadas com sucesso na Cloudflare; disponível mesmo se a consulta de sugestões falhar.
+- [Verificações e limite do acompanhamento real](docs/contribuicoes-acompanhamento.md): nenhum registro de produção foi alterado sem acesso autenticado e análise da contribuição.
+
 ## 15/10/2026 — prévia de professor para a gestão
 
 - Botão visível para direção, supervisão e orientação alternarem a interface para professor e voltarem à seção de gestão anterior, mantendo a identidade real.

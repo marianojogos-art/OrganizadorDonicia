@@ -17,7 +17,7 @@ function page(role='teacher',storage=new Map()){
  const data={'staff-requests':[],'pedagogical-album':[],'resource-library':[],'resource-catalog':{items:[],categories:[]},me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],'official-trainings':{calendar:null,sessions:[]},tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
  const context=vm.createContext({sessionStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},document,Date:Clock,Intl,FormData,URLSearchParams,setTimeout:()=>{},confirm:()=>true});
  const run=code=>vm.runInContext(code,context);
- context.testApi=async(path,method='GET',body)=>{calls.push({path,method,body});if(path.startsWith('site-metrics?'))return data['site-metrics'];if(path.startsWith('auxiliaries/weekly?'))return {week:'2026-10-12',auxiliaries:[]};if(method!=='GET')return {ok:true};assert.ok(Object.hasOwn(data,path),'Unexpected endpoint '+path);return data[path]};
+ context.testApi=async(path,method='GET',body)=>{calls.push({path,method,body});if(path.startsWith('feedback?'))return {items:[],pages:[],total:0,offset:0,limit:30};if(path.startsWith('site-metrics?'))return data['site-metrics'];if(path.startsWith('auxiliaries/weekly?'))return {week:'2026-10-12',auxiliaries:[]};if(method!=='GET')return {ok:true};assert.ok(Object.hasOwn(data,path),'Unexpected endpoint '+path);return data[path]};
  run(script);run('api=testApi');
  const click=selector=>{const el=document.querySelector(selector);assert.ok(el,selector);el.dispatchEvent(new window.Event('click',{bubbles:true}))};
  const change=(selector,value)=>{const el=document.querySelector(selector);assert.ok(el,selector);Object.defineProperty(el,'value',{value,configurable:true});el.dispatchEvent(new window.Event('change',{bubbles:true}))};
@@ -228,4 +228,21 @@ test('repeated clicks cannot race a view transition and busy operations block sw
  const first=p.run('toggleTeacherPreview()');await p.run('toggleTeacherPreview()');assert.equal(p.run('teacherPreview'),true);assert.equal(p.run('viewSwitching'),true);
  release();await first;assert.equal(p.run('viewSwitching'),false);assert.equal(p.calls.filter(c=>c.path==='reservations').length,2);
  await p.run('toggleTeacherPreview()');assert.equal(p.run('teacherPreview'),false);
+});
+
+
+test('contributions follows Library and published history survives an unavailable feedback service',async()=>{
+ const p=page('direction');await p.run('boot()');
+ const ids=[...p.document.querySelectorAll('#nav [data-section]')].map(el=>el.dataset.section);
+ assert.equal(ids[ids.indexOf('biblioteca')+1],'contribuicoes');assert.equal(ids.filter(id=>id==='contribuicoes').length,1);
+ p.run("setPage('contribuicoes')");await p.run('loadFeedback()');
+ assert.equal(p.document.querySelectorAll('#published-updates li').length,3);
+ assert.match(p.document.querySelector('#published-updates').textContent,/horário de Brasília/);
+ assert.equal(p.document.querySelector('#published-updates time').getAttribute('datetime'),'2026-10-15T02:17:51Z');
+ assert.match(p.document.querySelector('#published-updates time').textContent,/14\/10\/2026/);
+ assert.match(p.document.querySelector('#published-updates').textContent,/produção ainda não foi validada/);
+ p.context.failedFeedback=async()=>{throw Error('Acesso indisponível')};p.run('api=failedFeedback');await p.run('loadFeedback()');
+ assert.match(p.document.querySelector('[role=alert]').textContent,/Acesso indisponível/);
+ assert.equal(p.document.querySelectorAll('#published-updates li').length,3);
+ assert.ok(p.calls.every(call=>call.method==='GET'));
 });

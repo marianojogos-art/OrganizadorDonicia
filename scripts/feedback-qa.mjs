@@ -28,7 +28,7 @@ async function screenshotLog(page,name){
 }
 try{
  await server(18790,'anonymous');await server(18791,'direction');await server(18792,'teacher');
- browser=await chromium.launch({headless:true});
+ browser=await chromium.launch({headless:true,...(process.env.QA_CHROMIUM_PATH?{executablePath:process.env.QA_CHROMIUM_PATH}:{})});
  const context=await browser.newContext({viewport:{width:1440,height:1000},locale:'pt-BR',timezoneId:'America/Sao_Paulo',reducedMotion:'reduce'});
  await context.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort('blockedbyclient'));
  const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -78,6 +78,22 @@ try{
  await page.reload({waitUntil:'networkidle'});await page.locator('#nav [aria-current="page"][data-section="contribuicoes"]').waitFor();await page.locator('#page .badge').filter({hasText:'Planejada'}).waitFor();
  assert.equal(await page.locator('#donicia-feedback').count(),1);
  response=await context.request.get(staff+'/api/feedback');data=await response.json();assert.equal(data.total,2);assert.equal(data.items.filter(x=>x.status==='Planejada').length,1);
+ // Published updates remain accessible at phone and desktop widths, independently of live triage.
+ const originalContributions=data.items.map(row=>({id:row.id,message:row.message,contributor:row.contributor,created_at:row.created_at}));
+ for(const width of [320,390,1440]){
+  await page.setViewportSize({width,height:1000});
+  const ids=await page.locator('#nav [data-section]').evaluateAll(nodes=>nodes.map(node=>node.dataset.section));
+  assert.equal(ids[ids.indexOf('biblioteca')+1],'contribuicoes');
+  const postit=page.locator('.df-toggle');if(await postit.getAttribute('aria-expanded')==='true')await postit.click();
+  const history=page.locator('#published-updates');if(!await history.evaluate(node=>node.open))await history.locator('summary').click();
+  assert.equal(await history.locator('li').count(),3);assert.ok(await history.locator('li').first().isVisible());
+  assert.equal(await history.locator('time').first().getAttribute('datetime'),'2026-10-15T02:17:51Z');
+  assert.match(await history.innerText(),/recuperação do banco de produção ainda não foi validada/);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'contributions overflow '+width);
+  console.log('CONTRIBUTIONS_HISTORY_QA '+JSON.stringify({width,afterLibrary:true,publications:3,overflow:false}));
+ }
+ const afterHistory=await(await context.request.get(staff+'/api/feedback')).json();
+ assert.deepEqual(afterHistory.items.map(row=>({id:row.id,message:row.message,contributor:row.contributor,created_at:row.created_at})),originalContributions);
  await screenshotLog(page,'team-contributions');
  await page.goto('http://127.0.0.1:18792/equipe',{waitUntil:'networkidle'});await page.locator('#nav button').first().waitFor();assert.equal(await page.locator('#nav [data-section="contribuicoes"]').count(),0);assert.equal(await page.locator('#donicia-feedback').count(),1);
  assert.deepEqual(errors,[]);console.log('FEEDBACK_QA_COMPLETE '+JSON.stringify({public:true,staff:true,teacher:true,mouseDrag:true,touchDrag:true,keyboardDrag:true,resize:true,reload:true,draft:true,pageOrigin:true,retry:true,triage:true,anonymousIsolation:true,screenshots:3,errors}));
