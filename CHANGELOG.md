@@ -2,6 +2,12 @@
 
 Este arquivo registra mudanças verificáveis no Git. Datas são de integração/documentação; não significam release, APK novo ou publicação atual. Não havia tags ou releases publicadas na referência auditada `main` `32b11d8` em 11/10/2026. Versões web, extensão e aplicativo são independentes.
 
+## 15/10/2026 — seleção e bloqueio da Supervisão
+
+- Primeiro trimestre como padrão inicial/reinício, seleção de todas as turmas por categoria e rótulos curtos que preservam IDs e distinções.
+- AEE e apoio excluídos da oferta e da consulta de professores/planejamentos, mantendo auxiliares de turmas regulares e os dados salvos anteriores.
+- Modal com progresso, bloqueio da página, cancelamento das leituras e descarte de retornos tardios; [limites do conector e de gravações já enviadas](docs/supervisao-selecao-cancelamento.md).
+
 ## 15/10/2026 — acompanhamento por contribuição
 
 - Formulário de resposta, situação e evidência, com histórico privado por proposta e paginação. Pedidos originais, autores e comentários anteriores são preservados.

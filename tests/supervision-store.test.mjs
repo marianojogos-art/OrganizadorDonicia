@@ -81,9 +81,9 @@ test('query UI includes trimester in request and formats class names without cha
  const f=fixture(),html=await readFile(new URL('../src/index.html',import.meta.url),'utf8'),{document,window}=parseHTML(html),context=vm.createContext({document,window,URL,Date,Intl,setTimeout:()=>{},FormData});
  vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1].replace('});boot();','});'),context);context.directory=f.snapshot.directory;
  vm.runInContext("currentUser={role:'direction'};state.section='supervisao';supervision.directory=directory;supervision.directory.classes[0].name='6º ano - 61-TURMA 61 - Matutino';supervision.selected.add(directory.classes[0].id);render()",context);
- assert.equal(document.querySelector('[data-supervision-class]').textContent,'6º ano · Turma 61 · Matutino');assert.equal(document.querySelector('[data-supervision-class]').dataset.supervisionClass,classId);
+ assert.equal(document.querySelector('[data-supervision-class]').textContent,'6º · 61 · Manhã');assert.equal(document.querySelector('[data-supervision-class]').dataset.supervisionClass,classId);
  const picker=document.querySelector('[data-supervision-trimester]');picker.querySelector('[value="2"]').selected=true;picker.dispatchEvent(new window.Event('change',{bubbles:true}));
  vm.runInContext("api=async()=>({classes:[],teachers:[],coverage:[],updatedAt:new Date().toISOString(),complete:true});supervisionBridge=async()=>({});collectSupervisionSnapshot=async input=>{globalThis.sent=input;return {}}",context);await vm.runInContext('confirmSupervision()',context);assert.equal(context.sent.trimester,2);
- assert.equal(vm.runInContext("supervisionClassName('Apoio - 2-TURMA APOIO - Vespertino')",context),'Apoio · Turma 2 · Vespertino');assert.equal(vm.runInContext("supervisionClassName('AEE - 1 - Matutino')",context),'AEE · Turma 1 · Matutino');
- vm.runInContext('resetSupervision()',context);assert.equal(vm.runInContext('supervision.trimester',context),'');
+ assert.equal(vm.runInContext("supervisionClassName('Apoio - 2-TURMA APOIO - Vespertino')",context),'Apoio · 2 · Tarde');assert.equal(vm.runInContext("supervisionClassName('AEE - 1 - Matutino')",context),'AEE · 1 · Manhã');
+ vm.runInContext('resetSupervision()',context);assert.equal(vm.runInContext('supervision.trimester',context),1);
 });

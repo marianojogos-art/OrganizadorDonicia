@@ -232,7 +232,7 @@ test('restart clears supervision screen state without API mutations or losing th
 test('restart ignores saved results arriving late, while explicit reload opens the professor workspace',async()=>{
  const {document,context}=await filterUi();context.report=await collectSupervision({SGE:snapshotAdapter(fixture().snapshot)},fixture().input);
  let release;context.gate=new Promise(resolve=>{release=resolve});vm.runInContext('api=()=>gate;render()',context);
- const pending=vm.runInContext('loadSavedSupervision()',context);vm.runInContext('resetSupervision()',context);release(context.report);await pending;
+ const pending=vm.runInContext('loadSavedSupervision()',context);vm.runInContext('resetSupervision();cancelSupervision()',context);release(context.report);await pending;vm.runInContext('resetSupervision()',context);
  assert.equal(vm.runInContext('supervision.report',context),null);assert.equal(vm.runInContext('supervision.view',context),'classes');
  await vm.runInContext('loadSavedSupervision()',context);
  assert.equal(vm.runInContext('supervision.view',context),'teachers');assert.equal(document.querySelector('[data-supervision-panel="teachers"]').hasAttribute('hidden'),false);
