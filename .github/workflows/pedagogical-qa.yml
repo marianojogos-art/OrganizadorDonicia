@@ -11,6 +11,11 @@ on:
       - 'src/official-trainings.mjs'
       - 'src/staff-assets/**'
       - 'src/worker.mjs'
+      - 'src/staff-services.mjs'
+      - 'src/pedagogical-workflows.mjs'
+      - 'src/public-content.mjs'
+      - 'src/public.html'
+      - 'migrations/**'
       - 'scripts/build.mjs'
       - 'scripts/dev.mjs'
   workflow_dispatch:

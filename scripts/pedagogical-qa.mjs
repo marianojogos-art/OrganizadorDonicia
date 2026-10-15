@@ -65,7 +65,7 @@ try{
   await page.locator('#entryform [name=title]').fill('Aviso público fictício '+width);await page.locator('#entryform [name=body]').fill('Comunicado sintético para conferir a prévia.');await page.locator('#entryform [name=published]').selectOption('true');await page.locator('#entryform [name=highlight_from]').fill(today);await page.locator('#entryform [name=highlight_until]').fill(today);
   await page.locator('#entryform button[type=submit]').click();await page.waitForFunction(()=>document.querySelector('#formerror').textContent.includes('prévia'));
   await page.locator('[data-publication-preview]').click();await page.waitForSelector('#publication-preview article');
-  if(width===390)await imageLog(page,'publication-preview-mobile');
+  if(width===390){await page.locator('#publication-preview article').scrollIntoViewIfNeeded();await imageLog(page,'publication-preview-mobile')}
   await page.locator('#entryform [name=body]').fill('Comunicado sintético revisado.');
   await page.locator('#entryform button[type=submit]').click();await page.waitForFunction(()=>document.querySelector('#formerror').textContent.includes('prévia'));
   await page.locator('[data-publication-preview]').click();await submit(page);
