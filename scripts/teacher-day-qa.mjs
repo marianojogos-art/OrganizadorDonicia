@@ -64,6 +64,7 @@ try{
   if(width===390||width===1440){await imageLog(page,'teacher-'+width+'-top',false);await imageLog(page,'teacher-'+width+'-full',true)}
   console.log('TEACHER_DAY_QA '+JSON.stringify({width,ownRecords:true,duplicateWithoutAttachment:true,newApprovalRequired:true,dayWeekAvailability:true,formationChangeAfterReload:true,errors}));
   await context.close();
+  const cleanup=sqlite(database);try{cleanup.exec("DELETE FROM xerox WHERE id<>'old-xerox'; DELETE FROM reservations WHERE id NOT IN ('own-approved','own-pending','foreign')")}finally{cleanup.close()}
  }
 }finally{
  if(browser)await browser.close();for(const child of servers)if(child.exitCode===null){const exit=once(child,'exit');child.kill('SIGTERM');await Promise.race([exit,sleep(3000)]);if(child.exitCode===null)child.kill('SIGKILL')}await rm(directory,{recursive:true,force:true});

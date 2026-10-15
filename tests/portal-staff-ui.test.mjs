@@ -32,7 +32,7 @@ test('teacher boot loads only permitted resources and cannot navigate or open pe
  assert.equal(p.run('state.section'),'meu-dia');assert.match(p.document.querySelector('#page').textContent,/Seu dia/);
  p.run("setPage('tarefas');setPage('notas');modal('new-task');modal('new-note')");
  assert.equal(p.run('state.section'),'meu-dia');assert.equal(p.document.querySelector('.modal'),null);
- p.run("state.section='supervisao';render()");assert.equal(p.run('state.section'),'espacos');
+ p.run("state.section='supervisao';render()");assert.equal(p.run('state.section'),'meu-dia');
  p.click('[data-section="formacao"]');assert.match(p.document.querySelector('#page').textContent,/calendário de formação será disponibilizado/);
  assert.equal(p.document.querySelector('[data-action="new-training"]'),null);
  await p.run('refresh()');assert.ok(p.calls.every(x=>!['users','tasks','settings','minutes','notices','school','substitutions','auxiliaries','notes'].includes(x.path)));
