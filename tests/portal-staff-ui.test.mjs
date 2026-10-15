@@ -15,13 +15,13 @@ function page(role='teacher',storage=new Map(),reminderStorage=new Map()){
  const Clock=class extends Date{constructor(...args){super(...(args.length?args:['2026-10-13T15:00:00Z']))}};
  const user={...teacher,role};const calls=[];
  const data={'public-content':[],'staff-requests':[],'pedagogical-album':[],'resource-library':[],'resource-catalog':{items:[],categories:[]},me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],'official-trainings':{calendar:null,sessions:[]},tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
- const context=vm.createContext({localStorage:{getItem:key=>reminderStorage.get(key)??null,setItem:(key,value)=>reminderStorage.set(key,value)},sessionStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},document,Date:Clock,Intl,FormData,URLSearchParams,setTimeout:()=>{},confirm:()=>true});
+ const context=vm.createContext({localStorage:{getItem:key=>reminderStorage.get(key)??null,setItem:(key,value)=>reminderStorage.set(key,value)},sessionStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},document,Date:Clock,Intl,FormData,URL,URLSearchParams,setTimeout:()=>{},confirm:()=>true});
  const run=code=>vm.runInContext(code,context);
  context.testApi=async(path,method='GET',body)=>{calls.push({path,method,body});if(path.startsWith('feedback?'))return {items:[],pages:[],total:0,offset:0,limit:30};if(path.startsWith('site-metrics?'))return data['site-metrics'];if(path.startsWith('auxiliaries/weekly?'))return {week:'2026-10-12',auxiliaries:[]};if(method!=='GET')return {ok:true};assert.ok(Object.hasOwn(data,path),'Unexpected endpoint '+path);return data[path]};
  run(script);run('api=testApi');
  const click=selector=>{const el=document.querySelector(selector);assert.ok(el,selector);el.dispatchEvent(new window.Event('click',{bubbles:true}))};
  const change=(selector,value)=>{const el=document.querySelector(selector);assert.ok(el,selector);Object.defineProperty(el,'value',{value,configurable:true});el.dispatchEvent(new window.Event('change',{bubbles:true}))};
- const save=async(type,index,values)=>{context.form=new FormData();for(const [key,value]of Object.entries(values))context.form.append(key,value);await run(`save(${JSON.stringify(type)},${index??'null'},form)`)};
+ const save=async(type,index,values)=>{context.form=new FormData();for(const [key,value]of Object.entries(values))context.form.append(key,value);if(['new-notice','edit-notices','new-public-project','new-public-document','edit-public-content'].includes(type)&&values.published==='true')run(`previewPublication(${JSON.stringify(type)},${index??'null'},form)`);await run(`save(${JSON.stringify(type)},${index??'null'},form)`)};
  return {document,context,run,calls,data,click,change,save,storage,reminderStorage};
 }
 
@@ -322,4 +322,46 @@ test('automatic dashboard refresh discards its result if an edit form opened whi
  let release;p.context.refreshGate=new Promise(resolve=>{release=resolve});p.run("api=async(path,...args)=>{const value=await testApi(path,...args);if(path==='trainings')await refreshGate;return value}");
  const pending=p.run('refreshTeacherDay()');await new Promise(resolve=>setImmediate(resolve));p.run("modal('edit-xerox',0)");release();await pending;
  assert.equal(p.run('state.xerox[0].id'),'old');assert.equal(p.document.querySelector('#entryform [name=title]').value,'Pedido original');assert.equal(p.run('state.xerox[0].version'),1);
+});
+
+test('pedagogical queue combines services by ascending date and excludes returned requests from pending approvals',async()=>{
+ const p=page('direction');
+ p.data.reservations=[{id:'room',owner:teacher.email,space:'Biblioteca',date:'2026-10-16',start:'09:00',end:'10:00',purpose:'Leitura',status:'Pendente',version:1}];
+ p.data.xerox=[{id:'copy',requester:teacher.email,title:'Cópias',deadline:'2026-10-14',copies:10,status:'Aguardando aprovação',version:1}];
+ p.data['staff-requests']=[{id:'material',requester:teacher.email,title:'Papel',classes:'61',deadline:'2026-10-15',status:'Devolvida para ajustes',needs_adjustment:1,review_reason:'Informe a quantidade',version:2}];
+ await p.run('boot()');p.click('[data-section="solicitacoes"]');
+ assert.equal(p.document.querySelector('#title').textContent,'Central de aprovações');
+ assert.deepEqual(Array.from(p.document.querySelectorAll('[data-return-kind]')).map(x=>x.dataset.returnKind),['xerox','reservations']);
+ assert.doesNotMatch(p.document.querySelector('#page').textContent,/Informe a quantidade/);
+ p.change('[data-approval-view]','returned');assert.match(p.document.querySelector('#page').textContent,/Informe a quantidade/);assert.equal(p.document.querySelector('[data-approval-kind-action]'),null);
+ p.change('[data-approval-view]','pending');p.click('[data-return-kind="xerox"]');
+ assert.ok(p.document.querySelector('[name="review_reason"][required]'));
+ const f=new FormData();f.append('review_reason','Informe as páginas');p.context.returnForm=f;
+ await p.run("save('return-request',{kind:'xerox',index:0},returnForm)");
+ assert.deepEqual(p.calls.find(x=>x.method==='PATCH').body,{status:'Devolvido para ajustes',review_reason:'Informe as páginas',version:1});
+});
+test('school week matches rooms, expands fixed occupancy, ignores adjacent times and marks manual review',async()=>{
+ const p=page('direction');p.data.reservations=[{id:'approved',owner:teacher.email,space:'Biblioteca',date:'2026-10-13',start:'09:00',end:'10:00',purpose:'Reserva',status:'Aprovada'}];
+ p.data.events=[{id:'overlap',title:'Formação',type:'Formação',date:'2026-10-13',start:'09:30',end:'10:30',location:'bibliotéca',visibility:'internal'},{id:'adjacent',title:'Reunião',date:'2026-10-13',start:'10:30',end:'11:00',location:'Biblioteca',visibility:'public'},{id:'external',title:'Encontro externo',date:'2026-10-13',start:'09:30',end:'10:30',location:'SME'}];
+ await p.run('boot()');p.click('[data-section="agenda-equipe"]');
+ assert.equal(p.run('schoolWeekEntries().length'),4);assert.equal(p.run('schoolWeekConflicts(schoolWeekEntries()).length'),1);
+ assert.match(p.document.querySelector('#page').textContent,/Conflito no espaço/);assert.match(p.document.querySelector('#page').textContent,/Conferir manualmente/);
+ p.change('[data-school-week]','2026-10-20');assert.equal(p.run('schoolWeekEntries().length'),0);
+});
+test('public saves require a preview of the current form and escape publication text',async()=>{
+ const p=page('direction');await p.run('boot()');p.run("modal('new-notice')");
+ const f=new FormData();for(const [key,value]of Object.entries({title:'<img src=x>',body:'Texto público',date:'2026-10-13',expires_on:'',published:'true',featured:'true',highlight_from:'',highlight_until:''}))f.append(key,value);p.context.publicForm=f;
+ await p.run("save('new-notice',null,publicForm)");assert.equal(p.calls.filter(x=>x.method==='POST').length,0);assert.match(p.document.querySelector('#formerror').textContent,/prévia/);
+ p.run("previewPublication('new-notice',null,publicForm)");assert.equal(p.document.querySelector('#publication-preview img'),null);assert.match(p.document.querySelector('#publication-preview').textContent,/<img src=x>/);
+ f.set('body','Texto alterado');await p.run("save('new-notice',null,publicForm)");assert.equal(p.calls.filter(x=>x.method==='POST').length,0);
+ p.run("previewPublication('new-notice',null,publicForm)");await p.run("save('new-notice',null,publicForm)");assert.equal(p.calls.filter(x=>x.method==='POST').length,1);
+});
+test('returned reservations and material requests show feedback and allow only owner correction and resubmission',async()=>{
+ const p=page();p.data.reservations=[{id:'returned',owner:teacher.email,space:'Biblioteca',date:'2026-10-14',start:'09:00',end:'10:00',purpose:'Leitura',status:'Devolvida para ajustes',needs_adjustment:1,review_reason:'Ajuste o horário',version:2}];
+ p.data['staff-requests']=[{id:'material',requester:teacher.email,type:'material',title:'Papel',classes:'61',description:'Folhas',deadline:'2026-10-14',status:'Devolvida para ajustes',needs_adjustment:1,review_reason:'Informe a quantidade',version:2}];
+ await p.run('boot()');p.click('[data-section="solicitacoes"]');
+ assert.match(p.document.querySelector('#page').textContent,/Ajuste o horário/);assert.match(p.document.querySelector('#page').textContent,/Informe a quantidade/);
+ assert.ok(p.document.querySelector('[data-edit="reservations:0"]'));p.click('[data-edit="staff-requests:0"]');
+ await p.save('edit-staff-requests',0,{type:'material',title:'Papel',classes:'61',description:'Dez folhas',deadline:'2026-10-14'});
+ const change=p.calls.find(x=>x.method==='PATCH');assert.equal(change.body.resubmit,true);assert.equal(change.body.version,2);
 });

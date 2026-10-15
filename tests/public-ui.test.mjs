@@ -111,6 +111,7 @@ test('this week uses the school timezone, upcoming events through Sunday, and cu
  {title:'Outra semana',date:'2026-10-19',type:'Evento escolar'}],
  notices:[{title:'Vigente',date:'2026-10-12',body:'Mensagem atual'},{title:'Futuro',date:'2026-10-15',body:'Ainda não'}]});
  p.context.Date=class extends Date{constructor(...args){super(...(args.length?args:['2026-10-15T01:00:00Z']))}};
+ vm.runInContext("publicHighlights=[{kind:'notice',title:'Vigente',description:'Mensagem atual'}]",p.context);
  await p.load();const text=p.document.querySelector('#week-items').textContent;
  assert.match(text,/Hoje/);assert.match(text,/Domingo/);assert.match(text,/Vigente/);assert.doesNotMatch(text,/Ontem|Outra semana|Futuro/);
  assert.match(p.document.querySelector('#week-range').textContent,/12 de outubro.*18 de outubro/);

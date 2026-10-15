@@ -1,3 +1,4 @@
+import {projectReview,returnedStatus,validReason} from './pedagogical-workflows.mjs';
 import {xeroxFields,downloadAttachment,XeroxInputError} from './xerox.mjs';
 
 const resources={
@@ -61,34 +62,42 @@ export async function handleStaffServices(request,DB,user,data){
   // Lists return at most 500 records; attachments are never included in album lists.
   if(method==='GET'&&!id){
    const selection=kind==='pedagogical-album'?'id,creator,title,description,date,attachment_name,attachment_mime,version,created_at':'*';
-   return json((await DB.prepare('SELECT '+selection+' FROM '+table+' WHERE 1=1'+visible+' ORDER BY '+(kind==='staff-requests'?'deadline':kind==='pedagogical-album'?'date DESC':'category,title')+' LIMIT 500').bind(...args).all()).results);
+   return json((await DB.prepare('SELECT '+selection+' FROM '+table+' WHERE 1=1'+visible+' ORDER BY '+(kind==='staff-requests'?'deadline':kind==='pedagogical-album'?'date DESC':'category,title')+' LIMIT 500').bind(...args).all()).results.map(row=>kind==='staff-requests'?projectReview(row):row));
   }
   let previous;
   if(id){previous=await DB.prepare('SELECT * FROM '+table+' WHERE id=?'+visible).bind(id,...args).first();if(!previous)return json({error:'Registro não encontrado'},404)}
   if(method==='GET'){
    if(attachment)return downloadAttachment(previous);
    if(kind==='pedagogical-album'){const {attachment_data,...metadata}=previous;return json(metadata)}
-   return json(previous);
+   return json(kind==='staff-requests'?projectReview(previous):previous);
   }
   if(!data||typeof data!=='object'||Array.isArray(data))failure('Dados inválidos');
   // Reject attempts to change identity or smuggle fields into a different resource.
-  const allowed=new Set(['version',...config.columns.filter(key=>!key.startsWith('attachment_')),...(kind==='pedagogical-album'?['attachment','remove_attachment','authorization_confirmed']:[]),...(kind==='staff-requests'?['status']:[])]);
+  const allowed=new Set(['version',...config.columns.filter(key=>!key.startsWith('attachment_')),...(kind==='pedagogical-album'?['attachment','remove_attachment','authorization_confirmed']:[]),...(kind==='staff-requests'?['status','review_reason','resubmit']:[])]);
   if(Object.keys(data).some(key=>!allowed.has(key)))failure('Campo não permitido');
   if(id&&(!Number.isInteger(data.version)||data.version<1))failure('Versão do registro necessária');
   if(id&&data.version!==previous.version)failure('Este registro mudou. Atualize a tela',409);
   if(kind==='staff-requests'&&!team){
+   if(data.review_reason!==undefined)failure('Somente a equipe pode justificar devoluções',403);
    if(data.status!==undefined&&data.status!=='Pendente')failure('Sem permissão para alterar a situação',403);
+   if(id&&previous.needs_adjustment&&data.resubmit!==true&&method!=='DELETE')failure('Corrija e reenvie o pedido',409);
    if(id&&previous.status!=='Pendente')failure('Solicitação já está em atendimento',409);
   }
-  if(kind==='staff-requests'&&data.status!==undefined&&!statuses.includes(data.status))failure('Situação inválida');
-  if(kind==='staff-requests'&&id&&data.status!==undefined&&data.status!==previous.status&&!transitions[previous.status].includes(data.status))failure('Transição inválida. Analise/aprove antes de concluir a solicitação',409);
+  const returning=kind==='staff-requests'&&data.status===returnedStatus;
+  if(kind==='staff-requests'&&data.resubmit!==undefined&&(data.resubmit!==true||!id||!previous.needs_adjustment))failure('Pedido não está em ajustes',409);
+  if(returning&&(!team||!id||previous.needs_adjustment||!['Pendente','Em análise'].includes(previous.status)))failure('Somente pedidos em análise podem ser devolvidos',409);
+  if(returning&&!validReason(data.review_reason))failure('Informe a justificativa da devolução (até 2000 caracteres)');
+  if(kind==='staff-requests'&&data.review_reason!==undefined&&!returning)failure('A justificativa acompanha uma devolução');
+  if(kind==='staff-requests'&&id&&previous.needs_adjustment&&data.resubmit!==true&&data.status!==undefined&&method!=='DELETE')failure('Aguarde a correção e o reenvio',409);
+  if(kind==='staff-requests'&&data.status!==undefined&&!returning&&!statuses.includes(data.status))failure('Situação inválida');
+  if(kind==='staff-requests'&&id&&!returning&&data.status!==undefined&&data.status!==previous.status&&!transitions[previous.status].includes(data.status))failure('Transição inválida. Analise/aprove antes de concluir a solicitação',409);
   if(method==='POST'&&data.status!==undefined&&data.status!=='Pendente')failure('Novas solicitações começam pendentes');
   const recordId=id||crypto.randomUUID();let statement;
   if(method==='DELETE')statement=DB.prepare('DELETE FROM '+table+' WHERE id=? AND version=?'+visible).bind(id,data.version,...args);
   else{
    const values=fields(kind,data,user,previous);
    const columns=[...config.columns];
-   if(kind==='staff-requests'){columns.push('status');values.push(data.status??previous?.status??'Pendente')}
+   if(kind==='staff-requests'){columns.push('status','needs_adjustment','review_reason');values.push(returning||data.resubmit?'Pendente':data.status??previous?.status??'Pendente',returning?1:data.resubmit?0:previous?.needs_adjustment??0,returning?data.review_reason.trim():previous?.review_reason??'')}
    statement=id?DB.prepare('UPDATE '+table+' SET '+columns.map(key=>key+'=?').join(',')+',version=version+1 WHERE id=? AND version=?'+visible).bind(...values,id,data.version,...args):DB.prepare('INSERT INTO '+table+'(id,'+(kind==='staff-requests'?'requester':'creator')+','+columns.join(',')+') VALUES('+Array(columns.length+2).fill('?').join(',')+')').bind(recordId,user.email,...values);
   }
   const results=await DB.batch([statement,DB.prepare('INSERT INTO audit(id,actor,action,target) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),user.email,method,'/api/'+kind+'/'+recordId)]);
