@@ -24,6 +24,8 @@ try{
  for(const [id,title,date,visibility] of [['qa-current','Encontro de demonstração',today,'public'],['qa-next','Atividade de demonstração',nextDate,'public'],['qa-private','Registro interno não publicável',today,'internal']]){
   await DB.prepare('INSERT INTO events(id,title,date,type,creator,start,end,location,details,visibility) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(id,title,date,'Evento escolar','qa@prof.pmf.sc.gov.br','14:00','16:00','Espaço fictício','Detalhe interno não publicável',visibility).run();
  }
+ await DB.prepare("INSERT INTO public_content(id,kind,title,description,category,url,published,creator) VALUES('qa-project','project','Projeto público de demonstração','Texto sintético','Cultura','',1,'qa@prof.pmf.sc.gov.br'),('qa-document','document','Documento de demonstração','Orientação sintética','Famílias','https://example.invalid/documento',1,'qa@prof.pmf.sc.gov.br'),('qa-draft','project','Projeto privado não publicável','Rascunho','Geral','',0,'qa@prof.pmf.sc.gov.br')").run();
+ await DB.prepare("INSERT INTO notices(id,title,body,date,published,expires_on,creator) VALUES('qa-expired','Aviso vencido não publicável','Texto expirado','2020-01-01',1,'2020-01-02','qa@prof.pmf.sc.gov.br')").run();
 }finally{DB.close()}
 let browser,server,serverLog='';
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -51,6 +53,14 @@ try{
   await page.waitForFunction(()=>document.querySelector('#load-status')?.classList.contains('hidden'));
   assert.equal(await page.locator('#load-error').isVisible(),false);
   await page.waitForFunction(()=>Array.from(document.images).length>0&&Array.from(document.images).every(image=>image.complete&&image.naturalWidth>0));
+  await page.waitForFunction(()=>document.querySelector('#projects')?.textContent.includes('Projeto público de demonstração'));
+  assert.match(await page.locator('#documents').innerText(),/Famílias.*Documento de demonstração/s);
+  assert.match(await page.locator('#documents').innerText(),/Atualizado em/);
+  assert.equal(await page.locator('.footer-staff').getAttribute('href'),'/equipe');
+  assert.ok(!(await page.locator('body').innerText()).includes('Projeto privado não publicável'));
+  assert.ok(!(await page.locator('body').innerText()).includes('Aviso vencido não publicável'));
+  assert.match(await page.locator('#week-items').innerText(),/Encontro de demonstração/);
+  if(width<=620){const quick=await page.locator('.quick-links').boundingBox();const hero=await page.locator('.hero').boundingBox();assert.ok(quick.y<hero.y,'Mobile shortcuts must precede hero')}
   const dimensions=await page.evaluate(()=>({viewport:window.innerWidth,content:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),logos:[...document.images].filter(image=>image.getAttribute('src')==='/public-assets/logo.jpg').map(image=>({width:image.naturalWidth,height:image.naturalHeight}))}));
   assert.ok(dimensions.content<=width+1,'Horizontal overflow at '+width+': '+JSON.stringify(dimensions));assert.ok(dimensions.logos.length>=1,'School logo must be loaded');
   const identity=page.locator('.hero-visual img');

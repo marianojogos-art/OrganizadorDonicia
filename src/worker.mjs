@@ -1,3 +1,4 @@
+import {isPublicContentRoute,publicContent,managePublicContent} from './public-content.mjs';
 import {ingestMetrics,readMetrics} from './site-metrics.mjs';
 import {isStaffServicesRoute,handleStaffServices} from './staff-services.mjs';
 import {resourceCatalog,resourceCategories} from './resource-catalog.mjs';
@@ -41,11 +42,12 @@ async function handleInner(request,env,authenticate=identity){
  if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg'||path==='/public-assets/donicia-2026.png'||path==='/public-assets/feedback.js'||path==='/public-assets/site-metrics.js'||path==='/public-assets/feedback.css')return serveAsset(request,env,path==='/'?'/public.html':path);
  if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy','trainings','notices','notes'],studentData:false});
  if(!env.DB)return json({error:'Persistência não configurada'},503);
+ if(path==='/public/content'||/^\/public\/projects\/[A-Za-z0-9_-]{1,100}\/image$/.test(path))return publicContent(request,env.DB);
  if(path==='/public/metrics')return ingestMetrics(request,env.DB);
  if(path==='/public/feedback')return submitFeedback(request,env.DB);
  if(path==='/public/api'||path==='/api/public'){
   if(request.method!=='GET')return json({error:'Método indisponível'},405);
-  const [school,notices,events]=await Promise.all([env.DB.prepare('SELECT name,introduction,address,phone,email,hours,whatsapp_secretaria,whatsapp_orientacao FROM school_profile WHERE id=1').first(),env.DB.prepare('SELECT id,title,body,date FROM notices WHERE published=1 ORDER BY date DESC,id').all(),env.DB.prepare("SELECT id,title,date,CASE WHEN formation=1 THEN 'Formação' ELSE type END AS type,start,end,location FROM events WHERE visibility='public' ORDER BY date,title").all()]);
+  const [school,notices,events]=await Promise.all([env.DB.prepare('SELECT name,introduction,address,phone,email,hours,whatsapp_secretaria,whatsapp_orientacao FROM school_profile WHERE id=1').first(),env.DB.prepare('SELECT id,title,body,date FROM notices WHERE published=1 AND (expires_on=\'\' OR expires_on>=?) ORDER BY date DESC,id').bind(schoolToday()).all(),env.DB.prepare("SELECT id,title,date,CASE WHEN formation=1 THEN 'Formação' ELSE type END AS type,start,end,location FROM events WHERE visibility='public' ORDER BY date,title").all()]);
   return json({school,notices:notices.results,events:events.results});
  }
  const email=await authenticate(request,env);if(!email)return json({error:'Login institucional necessário'},401);
@@ -73,6 +75,7 @@ async function handleInner(request,env,authenticate=identity){
   return assets[path]?serveAsset(request,env,assets[path]):json({error:'Página não encontrada'},404);
  }
  if(request.method==='GET'){
+  if(isPublicContentRoute(path))return managePublicContent(request,env.DB,user);
   if(path==='/api/site-metrics')return readMetrics(request,env.DB,user);
   if(isStaffServicesRoute(path))return handleStaffServices(request,env.DB,user);
   if(path==='/api/resource-catalog')return json({items:resourceCatalog,categories:resourceCategories});
@@ -121,11 +124,12 @@ async function handleInner(request,env,authenticate=identity){
  if(!['POST','PATCH','DELETE'].includes(request.method))return json({error:'Método indisponível'},405);
  if(request.headers.get('Origin')!==new URL(request.url).origin)return json({error:'Origem inválida'},403);
  if(!request.headers.get('Content-Type')?.startsWith('application/json'))return json({error:'JSON necessário'},415);
- let raw;try{raw=await readLimitedBody(request,['/api/supervision/preview','/api/supervision/save'].includes(path)?16_000_000:path==='/api/substitutions/from-schedule'?65536:/^\/api\/(?:xerox|pedagogical-album)(?:\/[^/]+)?$/.test(path)?380000:/^\/api\/notes(?:\/[^/]+)?$/.test(path)?20000:/^\/api\/(?:trainings|notices|events|school|staff-requests|resource-library)(?:\/[^/]+)?$/.test(path)?24000:8192)}catch(e){return json({error:e.message},e.status||400)}let data;try{data=JSON.parse(raw)}catch{return json({error:'JSON inválido'},400)}
+ let raw;try{raw=await readLimitedBody(request,['/api/supervision/preview','/api/supervision/save'].includes(path)?16_000_000:path==='/api/substitutions/from-schedule'?65536:/^\/api\/(?:xerox|pedagogical-album)(?:\/[^/]+)?$/.test(path)?380000:isPublicContentRoute(path)?380000:/^\/api\/notes(?:\/[^/]+)?$/.test(path)?20000:/^\/api\/(?:trainings|notices|events|school|staff-requests|resource-library)(?:\/[^/]+)?$/.test(path)?24000:8192)}catch(e){return json({error:e.message},e.status||400)}let data;try{data=JSON.parse(raw)}catch{return json({error:'JSON inválido'},400)}
  if(!data||typeof data!=='object'||Array.isArray(data))return json({error:'Dados inválidos'},400);
  const resource=path==='/api/substitutions/from-schedule'?null:/^\/api\/(reservations|tasks|substitutions|auxiliaries|xerox|minutes|events|fixed-occupancy|trainings|notices)\/([^/]+)$/.exec(path);
  if(resource){if(!Number.isInteger(data.version)||data.version<1)return json({error:'Versão do registro necessária. Atualize a tela'},400);const table=resource[1]==='trainings'?'events':resource[1].replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?'+(resource[1]==='trainings'?' AND formation=1':'')).bind(resource[2]).first();if(!row)return json({error:'Registro não encontrado'},404);if(row.version!==data.version)return json({error:'Este registro mudou. Atualize a tela'},409)}
  try{
+  if(isPublicContentRoute(path))return await managePublicContent(request,env.DB,user,data);
   if(isStaffServicesRoute(path))return await handleStaffServices(request,env.DB,user,data);
   const verifyTask=/^\/api\/tasks\/([^/]+)\/verify$/.exec(path);
   if(verifyTask){
@@ -156,9 +160,11 @@ async function handleInner(request,env,authenticate=identity){
   if((path==='/api/notices'||resource?.[1]==='notices')&&['POST','PATCH'].includes(request.method)){
    if(path==='/api/notices'&&request.method!=='POST'||resource&&request.method!=='PATCH')return json({error:'Método indisponível'},405);
    if(!text(data.title)||!text(data.body,4000)||!validDate(data.date)||typeof data.published!=='boolean')return json({error:'Aviso inválido'},400);
-   const values=[data.title.trim(),data.body.trim(),data.date,Number(data.published)];
-   if(resource){await write(env.DB.prepare('UPDATE notices SET title=?,body=?,date=?,published=?,version=version+1 WHERE id=? AND version=?').bind(...values,resource[2],data.version));return json({ok:true})}
-   const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO notices(id,title,body,date,published,creator) VALUES(?,?,?,?,?,?)').bind(id,...values,email),path+'/'+id);return json({id},201);
+   const expires=data.expires_on??(resource?(await env.DB.prepare('SELECT expires_on FROM notices WHERE id=?').bind(resource[2]).first()).expires_on:'');
+   if(expires!==''&&(!validDate(expires)||expires<data.date))return json({error:'A validade deve ser igual ou posterior à data do aviso'},400);
+   const values=[data.title.trim(),data.body.trim(),data.date,Number(data.published),expires];
+   if(resource){await write(env.DB.prepare('UPDATE notices SET title=?,body=?,date=?,published=?,expires_on=?,version=version+1 WHERE id=? AND version=?').bind(...values,resource[2],data.version));return json({ok:true})}
+   const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO notices(id,title,body,date,published,expires_on,creator) VALUES(?,?,?,?,?,?,?)').bind(id,...values,email),path+'/'+id);return json({id},201);
   }
   if(resource?.[1]==='reservations'&&request.method==='PATCH'&&data.edit!==true){
    if(!pedagogical)return json({error:'Somente a equipe pedagógica pode decidir reservas'},403);

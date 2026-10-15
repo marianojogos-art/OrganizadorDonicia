@@ -14,7 +14,7 @@ function page(role='teacher',storage=new Map()){
  window.HTMLElement.prototype.scrollIntoView=function(){};
  const Clock=class extends Date{constructor(...args){super(...(args.length?args:['2026-10-13T15:00:00Z']))}};
  const user={...teacher,role};const calls=[];
- const data={'staff-requests':[],'pedagogical-album':[],'resource-library':[],'resource-catalog':{items:[],categories:[]},me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],'official-trainings':{calendar:null,sessions:[]},tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
+ const data={'public-content':[],'staff-requests':[],'pedagogical-album':[],'resource-library':[],'resource-catalog':{items:[],categories:[]},me:user,users:[user],reservations:[],xerox:[],events:[],'fixed-occupancy':[],trainings:[],'official-trainings':{calendar:null,sessions:[]},tasks:[],substitutions:[],auxiliaries:[],minutes:[],settings:{auxiliaryWeeklyLimit:32},notices:[],school,notes:[]};
  const context=vm.createContext({sessionStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},document,Date:Clock,Intl,FormData,URLSearchParams,setTimeout:()=>{},confirm:()=>true});
  const run=code=>vm.runInContext(code,context);
  context.testApi=async(path,method='GET',body)=>{calls.push({path,method,body});if(path.startsWith('feedback?'))return {items:[],pages:[],total:0,offset:0,limit:30};if(path.startsWith('site-metrics?'))return data['site-metrics'];if(path.startsWith('auxiliaries/weekly?'))return {week:'2026-10-12',auxiliaries:[]};if(method!=='GET')return {ok:true};assert.ok(Object.hasOwn(data,path),'Unexpected endpoint '+path);return data[path]};
@@ -245,4 +245,15 @@ test('contributions follows Library and published history survives an unavailabl
  assert.match(p.document.querySelector('[role=alert]').textContent,/Acesso indisponível/);
  assert.equal(p.document.querySelectorAll('#published-updates li').length,3);
  assert.ok(p.calls.every(call=>call.method==='GET'));
+});
+
+test('pedagogical publishing tools keep projects separate from private album and send expiry and publication confirmation',async()=>{
+ const p=page('direction');await p.run('boot()');p.click('[data-section="comunicacao"]');
+ assert.ok(p.document.querySelector('[data-action="new-public-project"]'));assert.ok(p.document.querySelector('[data-action="new-public-document"]'));
+ p.click('[data-action="new-public-project"]');assert.ok(p.document.querySelector('input[name="authorization_confirmed"]'));assert.ok(p.document.querySelector('input[name="image_alt"]'));
+ await p.save('new-public-project',null,{kind:'project',title:'Projeto fictício',description:'Texto público',category:'Cultura',url:'',image_alt:'',published:'true',authorization_confirmed:'on'});
+ const sent=p.calls.find(x=>x.path==='public-content'&&x.method==='POST');assert.equal(sent.body.published,true);assert.equal(sent.body.authorization_confirmed,true);assert.equal(sent.body.remove_attachment,false);
+ p.click('[data-section="comunicacao"]');p.click('[data-action="new-notice"]');assert.ok(p.document.querySelector('input[name="expires_on"]'));
+ await p.save('new-notice',null,{title:'Aviso fictício',body:'Texto',date:'2026-10-13',expires_on:'2026-10-20',published:'true'});
+ assert.equal(p.calls.find(x=>x.path==='notices'&&x.method==='POST').body.expires_on,'2026-10-20');
 });
