@@ -113,3 +113,11 @@ test('saved-data read is locally abortable and late results cannot replace an ex
  const pending=u.run('loadSavedSupervision()');assert.ok(u.document.querySelector('[data-supervision-cancel]'));click(u,'[data-supervision-cancel]');assert.equal(u.context.signal.aborted,true);
  g.resolve();await pending;assert.equal(u.run('supervision.saved.version'),42);assert.equal(u.document.querySelector('#supervision-operation-root'),null);assert.equal(u.run('supervision.loading'),false);
 });
+
+
+test('supervision setup uses the verified public store listing without manual installation steps',()=>{
+ const u=ui();const help=u.document.querySelector('.supervision-setup'),link=help.querySelector('[data-sge-store]');
+ assert.equal(link.getAttribute('href'),'https://chromewebstore.google.com/detail/organizador-don%C3%ADcia-%E2%80%94-sup/pdkbopdpbenpapkdfkpffnfdaeccmbjf');assert.equal(link.getAttribute('target'),'_blank');assert.match(link.getAttribute('rel'),/noopener/);
+ assert.match(help.textContent,/Assistente SGE/);assert.match(help.textContent,/mesmo perfil/);assert.doesNotMatch(help.textContent,/ZIP|descompact|modo de desenvolvedor|substituir a pasta|extrair/i);assert.equal(help.querySelector('[download]'),null);
+ u.run("supervision.connectorVersion='1.3.1';render()");assert.match(u.document.querySelector('.supervision-setup').textContent,/Versão detectada: 1.3.1/);
+});

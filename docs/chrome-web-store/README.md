@@ -1,6 +1,6 @@
-# Preparação Chrome Web Store — 1.3.1
+# Materiais históricos de preparação Chrome Web Store — 1.3.1
 
-Pacote destinado a **novo item Organizador Donícia — Supervisão SGE**. Não atualizar outro Assistente SGE da conta. Este diretório contém materiais revisáveis; não registra submissão, aprovação ou publicação na loja.
+Este diretório preserva os materiais de preparação do item Organizador Donícia — Supervisão SGE. A [listagem pública](https://chromewebstore.google.com/detail/organizador-don%C3%ADcia-%E2%80%94-sup/pdkbopdpbenpapkdfkpffnfdaeccmbjf) foi conferida em 17/10/2026, disponível como versão 1.3.1, oferecida por Assistente SGE. Para instalar, use a loja; os comandos abaixo documentam somente a geração técnica do pacote. Não atualizar outro Assistente SGE da conta.
 
 ## Arquivos e reprodução
 

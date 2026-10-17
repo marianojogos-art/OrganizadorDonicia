@@ -1,5 +1,11 @@
 # Histórico de mudanças
 
+## 17/10/2026 — instalação do conector pela Chrome Web Store
+
+- Ajuda da Supervisão e mensagem de conector ausente orientam a instalação pela listagem pública correta; retirados os passos antigos de ZIP/pasta/modo de desenvolvedor.
+- Documentação de instalação alinhada à loja, com materiais de preparação identificados como históricos. Código, permissões e versão da extensão não foram alterados.
+- [Listagem conferida e verificações](docs/conector-instalacao-loja.md).
+
 ## Área pedagógica — 15/10/2026
 
 Publicado no Worker existente em 15/10/2026, 13:39 (Brasília): commit `3e2349e19e1be0c22967ef2dd18104f41caeeb56`, build `a43eb73c-51b1-4bbc-b6bb-145489d3341a`, versão `459e3771-d94f-4231-9a65-ad420ea211a6`. Histórico do site atualizado em Contribuições com esta publicação e as melhorias anteriores da página pública e da área dos professores.

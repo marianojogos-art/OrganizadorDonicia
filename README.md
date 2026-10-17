@@ -43,6 +43,10 @@ O PR11 registra publicação Cloudflare `d777092a-f6b0-4564-bac5-8b940b03d10d`, 
 
 A branch `app-android-1-0-1` deve ser preservada. Sua compatibilidade com a web atual foi conciliada nesta branch por merges e regeneração dos runtimes; isso não equivale a compilar, assinar, instalar ou testar um APK `1.0.1`.
 
+## Instalar o conector SGE no navegador
+
+Use [Organizador Donícia — Supervisão SGE na Chrome Web Store](https://chromewebstore.google.com/detail/organizador-don%C3%ADcia-%E2%80%94-sup/pdkbopdpbenpapkdfkpffnfdaeccmbjf), oferecido por Assistente SGE. Após confirmar a instalação, entre no SGE no mesmo perfil do Chrome e recarregue o Organizador. A ajuda da Supervisão apresenta esse fluxo; o aplicativo Android mantém sua conexão integrada. [Verificação da listagem e orientações](docs/conector-instalacao-loja.md).
+
 ## Começar e encontrar a documentação
 
 Requer Node.js 24, npm e dependências fixadas nos dois lockfiles:
