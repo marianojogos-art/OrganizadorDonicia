@@ -1,5 +1,11 @@
 # Histórico de mudanças
 
+## 22/10/2026 — revisão da área pública
+
+Página pública revisada com calendário mais confiável, recuperação de falhas em cada seção, melhor contraste e navegação por teclado. O logo carrega em versões leves e a apresentação foi compactada no celular. O post-it provisório continua disponível para opiniões, com tamanho e controles adaptados ao celular. Foram cadastrados três projetos históricos identificados por ano, três documentos oficiais, seis datas do calendário da rede e um aviso de orientação com validade.
+
+Publicação confirmada às 00:48 (Brasília), commit `acbc5d5cbe29c3a90004e1431b4a3938e341a448`, build `302bc4c9-b10d-4790-9dfd-e290cf7ac27d`. Notas disponíveis em **Contribuições → Histórico de atualizações publicadas**. [Correções e verificações](docs/audits/public-fixes-2026-10-22.md).
+
 ## 17/10/2026 — instalação do conector pela Chrome Web Store
 
 - Ajuda da Supervisão e mensagem de conector ausente orientam a instalação pela listagem pública correta; retirados os passos antigos de ZIP/pasta/modo de desenvolvedor.
