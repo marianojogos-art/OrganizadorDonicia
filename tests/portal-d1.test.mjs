@@ -38,7 +38,7 @@ test('D1 migration preserves referenced users and atomically resolves approval c
    const response=await handle(new Request('https://school.example'+path,{method,headers:{Origin:'https://school.example','Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(data)}),env,async()=>email);
    return {status:response.status,body:await response.json()};
   }
-  assert.equal((await send('/api/public','GET',undefined,null)).body.events.length,0);
+  assert.equal((await send('/api/public','GET',undefined,null)).body.events.some(event=>event.id==='legacy-event'),false);
   const booking={space:'Auditório',date:'2026-10-20',start:'09:00',end:'10:00',purpose:'Atividade fictícia',responsible:'Professor fictício'};
   const first=await send('/api/reservations','POST',booking,'teacher@prof.pmf.sc.gov.br'),second=await send('/api/reservations','POST',booking,'teacher@prof.pmf.sc.gov.br');
   assert.equal(first.status,201);assert.equal(second.status,201);

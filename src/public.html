@@ -32,6 +32,30 @@
     @media(max-width:850px){.community-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.brand img{width:64px;height:64px}.hero-visual{min-height:370px}}
     @media(max-width:620px){main{display:flex;flex-direction:column}main>.hero{order:1}main>.quick-wrap{order:0;margin-top:20px}main>.week-section{order:2}main>#escola{order:3}main>#avisos{order:4}main>#projetos{order:5}main>#documentos{order:6}main>#calendario{order:7}main>#redes{order:8}main>#contatos{order:9}.quick-links{grid-template-columns:repeat(3,minmax(0,1fr));padding:0;border:1px solid var(--line);gap:0}.quick-links a,.quick-links a:first-child,.quick-links a:last-child{padding:14px 9px;border-top:0;border-left:1px solid var(--line);display:block;text-align:center}.quick-links a:first-child{border-left:0}.quick-links .number,.quick-links .arrow,.quick-links small{display:none}.quick-links strong{font-size:11px;line-height:1.5}.hero{padding-top:26px}.hero-inner{gap:25px}.hero-visual{min-height:300px;padding:70px 14px 95px}.hero-school{margin-bottom:12px}.hero-copy{margin-bottom:18px}.brand img{width:60px;height:60px}.brand strong{font-size:14px}.community-grid{grid-template-columns:1fr}.community-card .card-copy{padding:22px}.week-section{padding-block:36px}.community-card img{height:210px}.nav{gap:6px 18px}.content-error button{display:block;margin:12px 0 0}.sectionhead .section-lead{max-width:100%}}
 
+
+/* Public review: legibility, touch controls and matching visual/keyboard order. */
+.kicker{color:#705a30}.eyebrow,.kicker,.brand small,.school-facts dt,.notice-meta,.contacts dt,.month-control label,.community-card .card-label{font-size:12px}
+.visual-edition,.visual-caption{font-size:11px}.date-tile span,.tag{font-size:11px}
+.staff,.footer-staff{min-height:44px;display:inline-flex;align-items:center;font-size:12px}.staff{padding-block:10px}
+.quick-links small,.social-link small,.calendar-note,.community-card time,.footer p,.contact-links a{font-size:12px}
+.text-link,.primary{font-size:13px;min-height:44px}.contacts dd{font-size:14px}
+.contacts a[href^="mailto:"],.contacts a[href^="tel:"],.contact-links a{display:inline-flex;align-items:center;min-height:44px}
+.month-control input{font-size:16px;min-height:44px;border:2px solid #657c85}
+.social-band :focus-visible{outline-color:#ffe4a3}
+.community-card h4{font-family:var(--serif);font-size:27px;line-height:1.2;font-weight:400;margin:10px 0 14px;overflow-wrap:anywhere}
+.section-status{font-size:14px;color:var(--muted);margin:14px 0}.section-status:empty{display:none}
+.error button{min-height:44px;display:block}.error{line-height:1.7}
+@media(max-width:850px){.nav{order:initial}.visual-edition,.visual-caption{font-size:11px}.quick-links small{font-size:12px}}
+@media(max-width:620px){
+ main{display:block}.hero{padding:24px 0 26px}.hero-inner{gap:20px}.hero h1{font-size:clamp(35px,9vw,44px);margin-bottom:16px}.hero-copy{font-size:15px;line-height:1.6;margin-bottom:14px}
+ .hero-visual{min-height:0;width:260px;max-width:100%;padding:12px;border-radius:16px}.logo-frame{padding:10px;transform:none;box-shadow:none}.logo-frame:before{inset:4px}
+ .hero-visual:before,.hero-visual:after,.visual-edition,.visual-caption,.visual-note,.visual-star{display:none}
+ .quick-links a,.quick-links a:first-child,.quick-links a:last-child{padding:12px 9px}.quick-links strong{font-size:12px}
+ .brand small,.kicker,.eyebrow,.social-link small{font-size:12px}.staff,.footer-staff{font-size:12px;min-height:44px}
+ .nav a{font-size:13px;min-height:44px;display:inline-flex;align-items:center}.calendar-top{flex-direction:column;align-items:flex-start}.calendar-top h3{max-width:none}.month-control,.month-control input{width:100%}.month-control input{font-size:16px}
+ .footer{padding-bottom:35px}.metrics-disclosure{padding-bottom:90px}
+}
+
 </style>
   <link rel="stylesheet" href="/public-assets/feedback.css">
 </head>
@@ -45,20 +69,20 @@
 <main id="conteudo" tabindex="-1">
   <section class="hero" aria-labelledby="welcome-title"><div class="wrap hero-inner">
     <div><p class="eyebrow">Escola pública · Florianópolis</p><p class="hero-school">EBM Donícia Maria da Costa</p><h1 id="welcome-title">Aprender <em>juntos.</em><br>Crescer em<br>comunidade.</h1><p class="hero-copy">Avisos, encontros e descobertas da nossa escola. Um espaço para estudantes, famílias e comunidade acompanharem a Donícia.</p><div class="hero-actions"><a class="primary" data-site-metric="calendario" href="#calendario">Acompanhe o calendário <span class="arrow" aria-hidden="true">↗</span></a><a class="text-link" data-site-metric="escola" href="#escola">Conheça nossa escola <span aria-hidden="true">→</span></a></div></div>
-    <div class="hero-visual"><span class="visual-edition">Nossa escola, nossa identidade</span><span class="visual-star" aria-hidden="true">✳</span><div class="logo-frame"><img src="/public-assets/donicia-2026.png" width="1976" height="796" fetchpriority="high" decoding="async" alt="Donícia 2026 — brasão da Escola Básica Municipal Donícia Maria da Costa"></div><p class="visual-note">Uma escola.<br>Muitas possibilidades.</p><span class="visual-caption">Saco Grande · Florianópolis, SC</span></div>
+    <div class="hero-visual"><span class="visual-edition">Nossa escola, nossa identidade</span><span class="visual-star" aria-hidden="true">✳</span><div class="logo-frame"><img src="/public-assets/donicia-2026-960.707952f5d28c.webp" srcset="/public-assets/donicia-2026-480.c67023d134b5.webp 480w, /public-assets/donicia-2026-960.707952f5d28c.webp 960w, /public-assets/donicia-2026-1440.f4d9f138aee3.webp 1440w" sizes="(max-width:620px) 220px, (max-width:850px) 40vw, (max-width:1100px) 42vw, 520px" width="1976" height="796" fetchpriority="high" decoding="async" alt="Donícia 2026 — brasão da Escola Básica Municipal Donícia Maria da Costa"></div><p class="visual-note">Uma escola.<br>Muitas possibilidades.</p><span class="visual-caption">Saco Grande · Florianópolis, SC</span></div>
   </div></section>
   <div class="wrap quick-wrap"><nav class="quick-links" aria-label="Acesso rápido"><a data-site-metric="calendario" href="#calendario"><span class="number" aria-hidden="true">01</span><span><strong>Calendário escolar</strong><small>Datas para acompanhar</small></span><span class="arrow" aria-hidden="true">↗</span></a><a data-site-metric="contatos" href="#contatos"><span class="number" aria-hidden="true">02</span><span><strong>Fale com a secretaria</strong><small>Informações e atendimento</small></span><span class="arrow" aria-hidden="true">↗</span></a><a href="#documentos"><span class="number" aria-hidden="true">03</span><span><strong>Documentos úteis</strong><small>Orientações e referências</small></span><span class="arrow" aria-hidden="true">↗</span></a></nav></div>
-  <section class="section week-section" id="semana" aria-labelledby="week-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Perto de você</p><h2 id="week-title">Nesta semana.</h2><p class="week-range" id="week-range"></p></div><a class="text-link" href="#calendario">Ver calendário completo <span aria-hidden="true">→</span></a></div><div class="community-grid" id="week-items" aria-live="polite"><p class="empty">Carregando a agenda pública da semana…</p></div></div></section>
+  <section class="section week-section" id="semana" aria-labelledby="week-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Perto de você</p><h2 id="week-title">Nesta semana.</h2><p class="week-range" id="week-range"></p></div><a class="text-link" href="#calendario">Ver calendário completo <span aria-hidden="true">→</span></a></div><p id="week-status" class="section-status" role="status"></p><div id="week-agenda-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar a agenda da semana.</span><button data-retry-public type="button">Tentar novamente</button></div><div id="week-highlights-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar os destaques da semana.</span><button data-retry-highlights type="button">Tentar novamente</button></div><div class="community-grid" id="week-items" aria-live="polite"><p class="empty">Carregando a agenda pública da semana…</p></div></div></section>
   <section class="section" id="escola" aria-labelledby="about-heading"><div class="wrap about-grid">
     <div><p class="kicker">Nossa escola, nossa comunidade</p><h2 id="about-heading">Um lugar de aprender.<br>Um espaço de pertencer.</h2><p class="school-name" id="school-title">EBM Donícia Maria da Costa</p><p class="about-copy copy" id="school-introduction">Somos uma escola da rede municipal de Florianópolis, no bairro Saco Grande. Atendemos estudantes do 1º ao 9º ano do Ensino Fundamental e compartilhamos com as famílias a caminhada de aprender e conviver.</p><p class="values-line">Curiosidade para aprender. Respeito para conviver. Espaço para fazer parte.</p></div>
     <dl class="school-facts"><div><span class="fact-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M4 7c5-2 8-1 12 1v19c-4-2-7-3-12-1V7Zm24 0c-5-2-8-1-12 1v19c4-2 7-3 12-1V7Z"/><path d="M8 12h4m-4 5h4m8-5h4m-4 5h4"/></svg></span><dt>Ensino Fundamental</dt><dd>Do 1º ao 9º ano</dd></div><div><span class="fact-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M24 13c0 6-8 14-8 14S8 19 8 13a8 8 0 1 1 16 0Z"/><circle cx="16" cy="13" r="3"/></svg></span><dt>Nosso bairro</dt><dd>Saco Grande, Florianópolis</dd></div><div><span class="fact-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m3 12 13-7 13 7-13 7-13-7Zm6 4v7c4 4 10 4 14 0v-7m6-4v10"/></svg></span><dt>Educação pública</dt><dd>Rede municipal de ensino</dd></div></dl>
   </div></section>
-  <section class="section notices-section" id="avisos" aria-labelledby="notices-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Da escola para você</p><h2 id="notices-title">Acontece na Donícia.</h2></div><p class="section-lead">Os comunicados para acompanhar nossa rotina e estar mais perto da escola.</p></div><div id="load-status" role="status">Carregando avisos e calendário…</div><div id="load-error" class="error hidden" role="alert"><div>Não foi possível carregar os avisos e o calendário. As informações de contato continuam disponíveis abaixo.</div><button id="retry" type="button">Tentar novamente</button></div><div class="notice-list" id="notices"></div></div></section>
-  <section class="section" id="projetos" aria-labelledby="projects-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Aprendizagens que ganham vida</p><h2 id="projects-title">Projetos da escola.</h2></div><p class="section-lead">Conheça as experiências e iniciativas compartilhadas pela Donícia.</p></div><div class="content-error hidden" id="content-error" role="alert">Não foi possível carregar projetos e documentos.<button type="button" id="retry-content">Tentar novamente</button></div><div class="community-grid" id="projects" aria-live="polite"><p class="empty">Carregando projetos…</p></div></div></section>
-  <section class="section documents-section" id="documentos" aria-labelledby="documents-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Encontre com facilidade</p><h2 id="documents-title">Documentos úteis.</h2></div><p class="section-lead">Links e orientações organizados por assunto, com a data da última atualização.</p></div><div id="documents" aria-live="polite"><p class="empty">Carregando documentos…</p></div></div></section>
-  <section class="section" id="calendario" aria-labelledby="calendar-title"><div class="wrap calendar-layout"><div class="calendar-aside"><p class="kicker">Anote na agenda</p><h2 id="calendar-title">Nosso próximo<br>encontro.</h2><p class="section-lead">Consulte as datas e os eventos compartilhados com estudantes, famílias e comunidade.</p><p class="calendar-note">Para orientações sobre uma atividade, fale com a secretaria da escola.</p></div><div class="calendar-board"><div class="calendar-top"><h3 id="calendar-period">Calendário da escola</h3><div class="month-control"><label for="calendar-month">Escolha um mês</label><input id="calendar-month" type="month"></div></div><div id="events" aria-live="polite"></div></div></div></section>
+  <section class="section notices-section" id="avisos" aria-labelledby="notices-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Da escola para você</p><h2 id="notices-title">Acontece na Donícia.</h2></div><p class="section-lead">Os comunicados para acompanhar nossa rotina e estar mais perto da escola.</p></div><div id="load-status" role="status">Carregando avisos e calendário…</div><div id="load-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar os avisos.</span><button data-retry-public id="retry" type="button">Tentar novamente</button></div><div class="notice-list" id="notices" aria-live="polite"><p class="empty">Carregando avisos…</p></div></div></section>
+  <section class="section" id="projetos" aria-labelledby="projects-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Aprendizagens que ganham vida</p><h2 id="projects-title">Projetos da escola.</h2></div><p class="section-lead">Conheça as experiências e iniciativas compartilhadas pela Donícia.</p></div><div id="content-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar projetos e documentos.</span><button data-retry-content id="retry-content" type="button">Tentar novamente</button></div><div class="community-grid" id="projects" aria-live="polite"><p class="empty">Carregando projetos…</p></div></div></section>
+  <section class="section documents-section" id="documentos" aria-labelledby="documents-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Encontre com facilidade</p><h2 id="documents-title">Documentos úteis.</h2></div><p class="section-lead">Links e orientações organizados por assunto, com a data da última atualização.</p></div><div id="documents-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar os documentos.</span><button data-retry-content type="button">Tentar novamente</button></div><div id="documents" aria-live="polite"><p class="empty">Carregando documentos…</p></div></div></section>
+  <section class="section" id="calendario" aria-labelledby="calendar-title"><div class="wrap calendar-layout"><div class="calendar-aside"><p class="kicker">Anote na agenda</p><h2 id="calendar-title">Nosso próximo<br>encontro.</h2><p class="section-lead">Consulte as datas e os eventos compartilhados com estudantes, famílias e comunidade.</p><p class="calendar-note">Para orientações sobre uma atividade, fale com a secretaria da escola.</p></div><div class="calendar-board"><div class="calendar-top"><h3 id="calendar-period">Calendário da escola</h3><div class="month-control"><label for="calendar-month">Escolha um mês</label><input id="calendar-month" type="month"></div></div><p id="calendar-status" class="section-status" role="status"></p><div id="calendar-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar o calendário.</span><button data-retry-public type="button">Tentar novamente</button></div><div id="events" aria-live="polite"><p class="empty">Carregando eventos…</p></div></div></div></section>
   <section class="social-band" id="redes" aria-labelledby="social-title"><div class="wrap social-inner"><div><p class="kicker">Conecte-se com a Donícia</p><h2 id="social-title">A escola também<br>acontece por aqui.</h2><p>Conheça nossos canais e acompanhe as publicações da escola.</p></div><div class="social-links"><a class="social-link" href="https://www.instagram.com/escoladoniciamariadacosta/" target="_blank" rel="noopener noreferrer" aria-label="Instagram da escola (abre em nova aba)"><span class="social-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="16" height="16" rx="5"/><circle cx="10" cy="10" r="3.5"/><circle cx="15" cy="5" r=".8" fill="currentColor" stroke="none"/></svg></span><span><strong>Instagram</strong><small>@escoladoniciamariadacosta</small></span><span class="arrow" aria-hidden="true">↗</span></a><a class="social-link" href="https://www.facebook.com/escoladonicia/" target="_blank" rel="noopener noreferrer" aria-label="Facebook da escola (abre em nova aba)"><span class="social-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M11.5 18v-7h2.4l.4-3h-2.8V6.4c0-.9.3-1.5 1.6-1.5H14V2.2c-.3 0-1.2-.2-2.2-.2C9.6 2 8.2 3.3 8.2 5.8V8H6v3h2.2v7h3.3Z"/></svg></span><span><strong>Facebook</strong><small>Escola Donícia</small></span><span class="arrow" aria-hidden="true">↗</span></a></div></div></section>
-  <section class="section" id="contatos" aria-labelledby="contact-title"><div class="wrap contact-grid"><div class="contacts"><p class="kicker">Estamos por perto</p><h2 id="contact-title">Vamos conversar?</h2><p class="section-lead">Para orientações sobre a vida escolar, entre em contato com a nossa secretaria.</p><div id="school-contacts"><dl><div><dt>Endereço</dt><dd class="copy">Rodovia Virgílio Várzea, 1264 · Saco Grande<br>Florianópolis/SC · CEP 88032-001</dd></div><div><dt>Telefone</dt><dd><a href="tel:+554832382299">(48) 3238-2299</a></dd></div><div><dt>E-mail</dt><dd><a href="mailto:ebm.donicia@sme.pmf.sc.gov.br">ebm.donicia@sme.pmf.sc.gov.br</a></dd></div><div><dt>Atendimento</dt><dd>Confirme os horários com a secretaria.</dd></div></dl></div><div class="contact-links"><a id="school-map" href="https://www.google.com/maps/search/?api=1&amp;query=Rodovia%20Virg%C3%ADlio%20V%C3%A1rzea%201264%20Saco%20Grande%20Florian%C3%B3polis" target="_blank" rel="noopener noreferrer">Ver localização no mapa <span aria-hidden="true">↗</span></a><a href="https://servicos.floripa.sc.gov.br/atendimento/servico-info/659" target="_blank" rel="noopener noreferrer">Informações na Prefeitura <span aria-hidden="true">↗</span></a></div></div><div class="faq" aria-labelledby="faq-title"><h3 id="faq-title">Antes de falar com a gente</h3><details><summary>Como solicitar matrícula ou transferência?</summary><p>Entre em contato com a secretaria para consultar vagas, etapas de atendimento e orientações atualizadas da rede municipal.</p></details><details><summary>Quais documentos devo apresentar?</summary><p>A relação de documentos pode variar conforme o atendimento. Consulte a secretaria antes de ir à escola.</p></details><details><summary>Como confirmar datas e horários?</summary><p>Confira o calendário e os avisos deste portal. Para atendimento presencial, confirme o horário com a secretaria.</p></details><p class="faq-note">Família e escola, lado a lado.</p></div></div></section>
+  <section class="section" id="contatos" aria-labelledby="contact-title"><div class="wrap contact-grid"><div class="contacts"><p class="kicker">Estamos por perto</p><h2 id="contact-title">Vamos conversar?</h2><p class="section-lead">Para orientações sobre a vida escolar, entre em contato com a nossa secretaria.</p><div id="school-contacts"><dl><div><dt>Endereço</dt><dd class="copy">Rodovia Virgílio Várzea, 1264 · Saco Grande<br>Florianópolis/SC · CEP 88032-001</dd></div><div><dt>Telefone</dt><dd><a href="tel:+554832382299">(48) 3238-2299</a></dd></div><div><dt>E-mail</dt><dd><a href="mailto:ebm.donicia@sme.pmf.sc.gov.br">ebm.donicia@sme.pmf.sc.gov.br</a></dd></div><div><dt>Atendimento</dt><dd>Confirme os horários com a secretaria.</dd></div></dl></div><div class="contact-links"><a id="school-map" href="https://www.google.com/maps/search/?api=1&amp;query=Rodovia%20Virg%C3%ADlio%20V%C3%A1rzea%201264%20Saco%20Grande%20Florian%C3%B3polis" target="_blank" rel="noopener noreferrer">Ver localização no mapa <span aria-hidden="true">↗</span><span class="sr-only"> (abre em nova aba)</span></a><a href="https://servicos.floripa.sc.gov.br/atendimento/servico-info/659" target="_blank" rel="noopener noreferrer">Informações na Prefeitura <span aria-hidden="true">↗</span><span class="sr-only"> (abre em nova aba)</span></a></div></div><div class="faq" aria-labelledby="faq-title"><h3 id="faq-title">Antes de falar com a gente</h3><details><summary>Como solicitar matrícula ou transferência?</summary><p>Entre em contato com a secretaria para consultar vagas, etapas de atendimento e orientações atualizadas da rede municipal.</p></details><details><summary>Quais documentos devo apresentar?</summary><p>A relação de documentos pode variar conforme o atendimento. Consulte a secretaria antes de ir à escola.</p></details><details><summary>Como confirmar datas e horários?</summary><p>Confira o calendário e os avisos deste portal. Para atendimento presencial, confirme o horário com a secretaria.</p></details><p class="faq-note">Família e escola, lado a lado.</p></div></div></section>
 </main>
 <footer class="footer"><div class="wrap footer-inner"><div><div class="footer-name">Donícia Maria da Costa</div><p>Escola Básica Municipal · Portal da comunidade</p></div><div class="footer-place"><p>Saco Grande · Florianópolis, Santa Catarina</p><p>Educação pública. Comunidade presente.</p><a class="footer-staff" href="/equipe">Acesso de funcionários ↗</a></div></div></footer>
 <noscript>Ative o JavaScript para consultar avisos e calendário atualizados. Os contatos da secretaria estão disponíveis nesta página.</noscript>
@@ -98,14 +122,38 @@ function renderSchool(profile={}){
 }
 
 const formatDate=date=>new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
-let publicData=null;
+
+let publicData=null,publicHighlights=null,publicContentData=null;
+let publicStatus='loading',highlightsStatus='loading',contentStatus='loading';
+let publicLoading=false,highlightsLoading=false,contentLoading=false;
 const monthInput=document.querySelector('#calendar-month');
-monthInput.value=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit'}).format(new Date()).slice(0,7);
+function schoolDate(){return new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())}
+monthInput.value=schoolDate().slice(0,7);
+const eventOrder=(a,b)=>a.date.localeCompare(b.date)||String(a.start||'').localeCompare(String(b.start||''))||a.title.localeCompare(b.title,'pt-BR');
+function showError(selector,visible,message){
+ const element=document.querySelector(selector);
+ element.classList.toggle('hidden',!visible);
+ if(message)element.querySelector('[data-error-message]').textContent=message;
+}
+function setBusy(selector,busy){for(const button of document.querySelectorAll(selector))button.disabled=busy}
+async function publicJson(path){
+ const controller=typeof AbortController==='function'?new AbortController():null;
+ const timeout=controller?setTimeout(()=>controller.abort(),12000):null;
+ try{
+  const response=await fetch(path,{credentials:'omit',headers:{Accept:'application/json'},...(controller?{signal:controller.signal}:{})});
+  if(!response.ok)throw Error('unavailable');
+  return await response.json();
+ }finally{if(timeout!==null)clearTimeout(timeout)}
+}
 function renderCalendar(){
- if(!publicData)return;
+ if(!/^[1-9]\d{3}-(0[1-9]|1[0-2])$/.test(monthInput.value))monthInput.value=schoolDate().slice(0,7);
  const month=monthInput.value;
  document.querySelector('#calendar-period').textContent=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(month+'-01T12:00:00Z'));
- const events=publicData.events.filter(event=>event.date.slice(0,7)===month).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
+ if(!publicData){
+  document.querySelector('#events').innerHTML='<p class="empty">'+(publicStatus==='error'?'O calendário está temporariamente indisponível. Use o botão acima para tentar novamente.':'Carregando os eventos deste mês…')+'</p>';
+  return;
+ }
+ const events=publicData.events.filter(event=>event.date.slice(0,7)===month).sort(eventOrder);
  document.querySelector('#events').innerHTML=events.length?'<div class="calendar">'+events.map(event=>{const date=new Date(event.date+'T12:00:00Z');return `<article class="event"><time class="date-tile" datetime="${esc(event.date)}" aria-label="${esc(formatDate(event.date))}"><strong>${esc(event.date.slice(8))}</strong><span>${esc(new Intl.DateTimeFormat('pt-BR',{month:'short',timeZone:'UTC'}).format(date))}</span></time><div><h3>${esc(event.title)}</h3><p>${esc(new Intl.DateTimeFormat('pt-BR',{weekday:'long',timeZone:'UTC'}).format(date))}<span class="tag">${esc(event.type)}</span></p>${event.start?`<p>Horário: ${esc(String(event.start).replace(':','h'))}${event.end?' às '+esc(String(event.end).replace(':','h')):''}</p>`:''}${event.location?`<p>Local: ${esc(event.location)}</p>`:''}</div></article>`}).join('')+'</div>':'<div class="empty"><strong>Um mês para acompanhar.</strong><p>Nenhum evento divulgado para este mês. Consulte novamente em breve.</p></div>';
 }
 function renderPublic(){
@@ -116,19 +164,26 @@ function renderPublic(){
  renderWeek();
 }
 
-function schoolDate(){return new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())}
-let publicHighlights=[];
+
 function renderWeek(){
- if(!publicData)return;
  const today=schoolDate(),date=new Date(today+'T12:00:00Z'),start=new Date(date);
  start.setUTCDate(start.getUTCDate()-(start.getUTCDay()+6)%7);
  const end=new Date(start);end.setUTCDate(end.getUTCDate()+6);
  const first=start.toISOString().slice(0,10),last=end.toISOString().slice(0,10);
  document.querySelector('#week-range').textContent=formatDate(first)+' a '+formatDate(last);
- const events=publicData.events.filter(item=>item.date>=today&&item.date<=last).sort((a,b)=>a.date.localeCompare(b.date)||String(a.start||'').localeCompare(String(b.start||'')));
- const notices=publicHighlights;
- const cards=[...events.slice(0,3).map(item=>'<article class="community-card week-card event-card"><div class="card-copy"><span class="card-label">Agenda pública · '+esc(formatDate(item.date))+'</span><h3>'+esc(item.title)+'</h3><p>'+esc(item.location||'')+'</p>'+(item.start?'<p class="week-detail">'+esc(String(item.start).replace(':','h'))+(item.end?' às '+esc(String(item.end).replace(':','h')):'')+'</p>':'')+'</div></article>'),...notices.slice(0,2).map(item=>'<article class="community-card week-card"><div class="card-copy"><span class="card-label">'+esc(item.kind==='notice'?'Aviso vigente':item.kind==='project'?'Projeto da escola':'Documento útil')+'</span><h3>'+esc(item.title)+'</h3><p>'+esc(item.description.length>180?item.description.slice(0,180)+'…':item.description)+'</p><a class="text-link" href="'+(item.kind==='project'?'#projetos':item.kind==='document'?'#documentos':'#avisos')+'">Ver conteúdo →</a></div></article>')];
- document.querySelector('#week-items').innerHTML=cards.join('')||'<div class="empty"><strong>Vamos acompanhar juntos.</strong><p>Sem próximos eventos públicos ou avisos vigentes nesta semana. Consulte o calendário completo.</p></div>';
+ const events=(publicData?.events||[]).filter(item=>item.date>=today&&item.date<=last).sort(eventOrder);
+ const notices=publicHighlights||[];
+ const cards=[...events.slice(0,3).map(item=>'<article class="community-card week-card event-card"><div class="card-copy"><span class="card-label">Agenda pública · '+esc(formatDate(item.date))+'</span><h3>'+esc(item.title)+'</h3><p>'+esc(item.location||'')+'</p>'+(item.start?'<p class="week-detail">'+esc(String(item.start).replace(':','h'))+(item.end?' às '+esc(String(item.end).replace(':','h')):'')+'</p>':'')+'</div></article>'),...notices.slice(0,2).map(item=>{
+ const kind=item.kind==='project'?'projeto':item.kind==='document'?'documento':'aviso';
+ const description=String(item.description||'');
+ return '<article class="community-card week-card"><div class="card-copy"><span class="card-label">'+esc(item.kind==='notice'?'Aviso vigente':item.kind==='project'?'Projeto da escola':'Documento útil')+'</span><h3>'+esc(item.title)+'</h3><p>'+esc(description.length>180?description.slice(0,180)+'…':description)+'</p><a class="text-link" href="'+(item.kind==='project'?'#projetos':item.kind==='document'?'#documentos':'#avisos')+'">Ver '+kind+'<span class="sr-only">: '+esc(item.title)+'</span> <span aria-hidden="true">→</span></a></div></article>';
+ })];
+ const pending=publicStatus==='loading'||highlightsStatus==='loading';
+ const failed=publicStatus==='error'||highlightsStatus==='error';
+ document.querySelector('#week-status').textContent=pending?'Atualizando agenda e destaques…':'';
+ showError('#week-agenda-error',publicStatus==='error',publicData?'Não foi possível atualizar a agenda. Os eventos da última consulta continuam abaixo.':'Não foi possível carregar a agenda da semana.');
+ showError('#week-highlights-error',highlightsStatus==='error',publicHighlights?'Não foi possível atualizar os destaques. Os itens da última consulta continuam abaixo.':'Não foi possível carregar os destaques da semana.');
+ document.querySelector('#week-items').innerHTML=cards.join('')||'<div class="empty"><strong>Vamos acompanhar juntos.</strong><p>'+(pending?'Carregando a agenda e os destaques da semana…':failed?'Parte das informações está temporariamente indisponível. Tente novamente pelos botões acima.':'Nenhum próximo evento público ou destaque publicado para o restante desta semana. Consulte também todos os avisos e o calendário completo.')+'</p></div>';
 }
 function safePublicLink(value){try{const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password?url.href:''}catch{return ''}}
 function renderContent(items){
@@ -137,31 +192,76 @@ function renderContent(items){
  const openLink=item=>{const url=safePublicLink(item.url);return url?'<a class="text-link" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+(item.kind==='document'?'Abrir documento':'Conhecer o projeto')+' <span aria-hidden="true">↗</span><span class="sr-only"> (abre em nova aba)</span></a>':''};
  document.querySelector('#projects').innerHTML=projects.length?projects.map(item=>{const image='/public/projects/'+encodeURIComponent(item.id)+'/image';return '<article class="community-card">'+(item.image===image?'<img src="'+esc(image)+'" alt="'+esc(item.image_alt)+'" loading="lazy" width="600" height="400">':'')+'<div class="card-copy"><span class="card-label">'+esc(item.category)+'</span><h3>'+esc(item.title)+'</h3><p>'+esc(item.description)+'</p>'+openLink(item)+updated(item)+'</div></article>'}).join(''):'<div class="empty"><strong>Histórias para compartilhar.</strong><p>Os projetos aparecerão aqui quando forem publicados pela escola.</p></div>';
  const groups=[...new Set(documents.map(item=>item.category))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
- document.querySelector('#documents').innerHTML=groups.length?groups.map(category=>'<section class="document-group"><h3>'+esc(category)+'</h3><div class="community-grid">'+documents.filter(item=>item.category===category).map(item=>'<article class="community-card"><div class="card-copy"><h3>'+esc(item.title)+'</h3><p>'+esc(item.description)+'</p>'+openLink(item)+updated(item)+'</div></article>').join('')+'</div></section>').join(''):'<div class="empty"><strong>Informação ao seu alcance.</strong><p>A escola ainda não publicou documentos nesta área. Para orientações, fale com a secretaria.</p></div>';
+ document.querySelector('#documents').innerHTML=groups.length?groups.map(category=>'<section class="document-group"><h3>'+esc(category)+'</h3><div class="community-grid">'+documents.filter(item=>item.category===category).map(item=>'<article class="community-card"><div class="card-copy"><h4>'+esc(item.title)+'</h4><p>'+esc(item.description)+'</p>'+openLink(item)+updated(item)+'</div></article>').join('')+'</div></section>').join(''):'<div class="empty"><strong>Informação ao seu alcance.</strong><p>A escola ainda não publicou documentos nesta área. Para orientações, fale com a secretaria.</p></div>';
 }
-async function loadContent(){
- const error=document.querySelector('#content-error'),button=document.querySelector('#retry-content');button.disabled=true;error.classList.add('hidden');
- try{const responses=await Promise.all(['/public/content','/public/highlights'].map(path=>fetch(path,{credentials:'omit',headers:{Accept:'application/json'}})));if(responses.some(r=>!r.ok))throw Error('unavailable');const [data,highlights]=await Promise.all(responses.map(r=>r.json()));if(!Array.isArray(data.items)||!Array.isArray(highlights.items))throw Error('invalid');publicHighlights=highlights.items;renderContent(data.items);renderWeek()}
- catch{error.classList.remove('hidden');for(const id of ['projects','documents'])document.querySelector('#'+id).innerHTML='<p class="empty">Conteúdo temporariamente indisponível. Tente novamente.</p>'}
- finally{button.disabled=false}
-}
-document.querySelector('#retry-content').addEventListener('click',loadContent);
 
-async function loadPublic(){
- const status=document.querySelector('#load-status'),error=document.querySelector('#load-error'),retry=document.querySelector('#retry');
- retry.disabled=true;status.textContent='Carregando avisos e calendário…';status.classList.remove('hidden');error.classList.add('hidden');
- try{const response=await fetch('/public/api',{credentials:'omit',headers:{Accept:'application/json'}});if(!response.ok)throw Error('unavailable');const data=await response.json();if(!data.school||!Array.isArray(data.notices)||!Array.isArray(data.events))throw Error('invalid');publicData=data;renderPublic();status.textContent='';status.classList.add('hidden')}
- catch{status.textContent='';status.classList.add('hidden');error.classList.remove('hidden');document.querySelector('#week-items').innerHTML='<p class="empty">Agenda temporariamente indisponível. Tente novamente nos avisos.</p>'}
- finally{retry.disabled=false}
+async function loadContent(){
+ if(contentLoading)return;
+ contentLoading=true;contentStatus='loading';setBusy('[data-retry-content]',true);
+ showError('#content-error',false);showError('#documents-error',false);
+ try{
+  const data=await publicJson('/public/content');
+  if(!Array.isArray(data.items))throw Error('invalid');
+  publicContentData=data.items;contentStatus='ready';renderContent(publicContentData);
+ }catch{
+  contentStatus='error';
+  const message=publicContentData?'Não foi possível atualizar projetos e documentos. O conteúdo da última consulta continua disponível.':'Não foi possível carregar projetos e documentos.';
+  showError('#content-error',true,message);showError('#documents-error',true,message);
+  if(!publicContentData)for(const id of ['projects','documents'])document.querySelector('#'+id).innerHTML='<p class="empty">Conteúdo temporariamente indisponível. Tente novamente pelo botão acima.</p>';
+ }finally{contentLoading=false;setBusy('[data-retry-content]',false)}
 }
-monthInput.addEventListener('change',()=>{if(/^\d{4}-\d{2}$/.test(monthInput.value))renderCalendar()});
-document.querySelector('#retry').addEventListener('click',loadPublic);
+async function loadHighlights(){
+ if(highlightsLoading)return;
+ highlightsLoading=true;highlightsStatus='loading';setBusy('[data-retry-highlights]',true);renderWeek();
+ try{
+  const data=await publicJson('/public/highlights');
+  if(!Array.isArray(data.items))throw Error('invalid');
+  publicHighlights=data.items;highlightsStatus='ready';
+ }catch{highlightsStatus='error'}
+ finally{highlightsLoading=false;setBusy('[data-retry-highlights]',false);renderWeek()}
+}
+async function loadPublic(){
+ if(publicLoading)return;
+ publicLoading=true;publicStatus='loading';setBusy('[data-retry-public]',true);
+ const status=document.querySelector('#load-status'),calendarStatus=document.querySelector('#calendar-status');
+ status.textContent='Carregando avisos e calendário…';status.classList.remove('hidden');
+ calendarStatus.textContent='Atualizando calendário…';
+ showError('#load-error',false);showError('#calendar-error',false);renderCalendar();renderWeek();
+ try{
+  const data=await publicJson('/public/api');
+  if(!data.school||!Array.isArray(data.notices)||!Array.isArray(data.events))throw Error('invalid');
+  publicData=data;publicStatus='ready';renderPublic();
+ }catch{
+  publicStatus='error';
+  showError('#load-error',true,publicData?'Não foi possível atualizar os avisos. As informações da última consulta continuam disponíveis.':'Não foi possível carregar os avisos. Os contatos da escola continuam disponíveis.');
+  showError('#calendar-error',true,publicData?'Não foi possível atualizar o calendário. Os eventos da última consulta continuam disponíveis.':'Não foi possível carregar o calendário.');
+  if(!publicData)document.querySelector('#notices').innerHTML='<p class="empty">Avisos temporariamente indisponíveis. Tente novamente pelo botão acima.</p>';
+  renderCalendar();renderWeek();
+ }finally{publicLoading=false;setBusy('[data-retry-public]',false);status.textContent='';status.classList.add('hidden');calendarStatus.textContent=''}
+}
+monthInput.addEventListener('change',renderCalendar);
+for(const button of document.querySelectorAll('[data-retry-public]'))button.addEventListener('click',loadPublic);
+for(const button of document.querySelectorAll('[data-retry-content]'))button.addEventListener('click',loadContent);
+for(const button of document.querySelectorAll('[data-retry-highlights]'))button.addEventListener('click',loadHighlights);
+function syncResponsiveOrder(){
+ if(typeof matchMedia!=='function')return;
+ const active=document.activeElement,hero=document.querySelector('.hero'),quick=document.querySelector('.quick-wrap');
+ const nav=document.querySelector('.nav'),staff=document.querySelector('.staff');
+ if(matchMedia('(max-width:620px)').matches){if(quick.nextElementSibling!==hero)hero.before(quick)}
+ else if(hero.nextElementSibling!==quick)hero.after(quick);
+ if(matchMedia('(max-width:850px)').matches){if(staff.nextElementSibling!==nav)staff.after(nav)}
+ else if(nav.nextElementSibling!==staff)staff.before(nav);
+ if(active&&active!==document.activeElement)active.focus({preventScroll:true});
+}
+syncResponsiveOrder();
+if(typeof matchMedia==='function')for(const query of ['(max-width:620px)','(max-width:850px)'])matchMedia(query).addEventListener('change',syncResponsiveOrder);
 let publicDay=schoolDate();
-function refreshPublicDay(){const day=schoolDate();if(day!==publicDay){publicDay=day;loadPublic();loadContent()}}
+function refreshPublicDay(){const day=schoolDate();if(day!==publicDay){publicDay=day;loadPublic();loadContent();loadHighlights()}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPublicDay()});
 if(typeof setInterval!=='undefined')setInterval(refreshPublicDay,60000);
 renderSchool();
 loadContent();
+loadHighlights();
 loadPublic();
 
 </script>
