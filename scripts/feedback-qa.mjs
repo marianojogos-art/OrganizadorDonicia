@@ -36,8 +36,9 @@ try{
  const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
  const base='http://127.0.0.1:18790',staff='http://127.0.0.1:18791';
  await page.goto(base+'/',{waitUntil:'networkidle'});await page.locator('#donicia-feedback').waitFor();
- await visible(page);assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'false');
- await page.locator('.df-toggle').click();assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'true');
+ assert.equal((await visible(page)).width,300);assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'false');
+ assert.equal(await page.locator('#df-heading').innerText(),'✎ Site em construção');
+ await page.locator('.df-toggle').click();assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'true');assert.equal((await visible(page)).width,368);
  await screenshotLog(page,'desktop-postit');
  // Pointer drag reaches both extremes without losing the note.
  const grip=page.locator('.df-grip'),box=await grip.boundingBox();
@@ -45,7 +46,9 @@ try{
  const edge=await grip.boundingBox();await page.mouse.move(edge.x+40,edge.y+20);await page.mouse.down();await page.mouse.move(1439,999,{steps:12});await page.mouse.up();position=await visible(page);assert.ok(position.x>900&&position.y>300);
  await grip.focus();await page.keyboard.press('ArrowLeft');const moved=await visible(page);assert.ok(moved.x<position.x);
  await page.setViewportSize({width:320,height:700});await visible(page);
- await page.locator('.df-toggle').click();await visible(page);assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'false');
+ await page.locator('.df-toggle').click();const compact=await visible(page);assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'false');
+ assert.ok(compact.width<=210&&compact.height<=68,'Mobile post-it must be compact: '+JSON.stringify(compact));
+ assert.match(await page.locator('#df-heading').innerText(),/Sua opinião/);await screenshotLog(page,'mobile-postit-collapsed');
  await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'false');
  await page.locator('.df-toggle').click();await page.locator('[name=message]').fill('Ideia sintética da página inicial.');
  assert.equal(await page.locator('.df-page-path').innerText(),'/');
@@ -53,6 +56,15 @@ try{
  await page.reload({waitUntil:'networkidle'});assert.equal(await page.locator('[name=message]').inputValue(),'Ideia sintética da página inicial.');assert.equal(await page.locator('.df-page-path').innerText(),'/');
  await page.locator('.df-use-page').click();assert.equal(await page.locator('.df-page-path').innerText(),'/#calendario');
  await screenshotLog(page,'mobile-postit');await visible(page);
+ // Reduced visible height approximates a phone keyboard; the header and form stay usable.
+ await page.setViewportSize({width:320,height:340});await visible(page);
+ assert.equal(await page.locator('[name=message]').evaluate(node=>getComputedStyle(node).fontSize),'16px');
+ assert.ok(await page.locator('.df-body').evaluate(node=>node.scrollHeight>node.clientHeight),'Phone form must scroll internally');
+ await page.locator('.df-send').scrollIntoViewIfNeeded();await visible(page);
+ await page.locator('[name=message]').focus();await page.keyboard.press('Escape');
+ assert.equal(await page.locator('.df-toggle').getAttribute('aria-expanded'),'false');assert.equal(await page.locator('.df-toggle').evaluate(node=>node===document.activeElement),true);
+ await page.locator('.df-toggle').click();assert.equal(await page.locator('[name=message]').inputValue(),'Ideia sintética da página inicial.');
+ await page.setViewportSize({width:320,height:700});await visible(page);
  // A failed send preserves the draft and an explicit retry stores it in the shared database.
  await page.route('**/public/feedback',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Falha sintética de envio'})}),{times:1});
  await page.locator('.df-send').click();await page.locator('.df-status').filter({hasText:'rascunho continua salvo'}).waitFor();
@@ -68,7 +80,9 @@ try{
  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:touchBox.x+30,y:touchBox.y+20}]});
  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:10,y:10}]});
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
- await visible(mobile);await touchContext.close();
+ const touchCompact=await visible(mobile);assert.ok(touchCompact.width<=210&&touchCompact.height<=68);
+ await mobile.locator('.df-toggle').tap();await visible(mobile);assert.equal(await mobile.locator('.df-toggle').getAttribute('aria-expanded'),'true');
+ await mobile.locator('.df-toggle').tap();assert.equal(await mobile.locator('.df-toggle').getAttribute('aria-expanded'),'false');await touchContext.close();
  // Staff sections are distinct, deep links open them, and the collection includes every origin.
  await page.setViewportSize({width:1440,height:1000});await page.goto(staff+'/equipe#calendario',{waitUntil:'networkidle'});await page.locator('#nav [aria-current="page"][data-section="calendario"]').waitFor();
  await page.locator('#donicia-feedback [name=message]').fill('Nova implementação sintética no calendário da equipe.');
@@ -110,7 +124,7 @@ try{
  assert.deepEqual(afterHistory.items.map(row=>({id:row.id,message:row.message,contributor:row.contributor,created_at:row.created_at})),originalContributions);
  await screenshotLog(page,'team-contributions');
  await page.goto('http://127.0.0.1:18792/equipe',{waitUntil:'networkidle'});await page.locator('#nav button').first().waitFor();assert.equal(await page.locator('#nav [data-section="contribuicoes"]').count(),0);assert.equal(await page.locator('#donicia-feedback').count(),1);
- assert.deepEqual(errors,[]);console.log('FEEDBACK_QA_COMPLETE '+JSON.stringify({public:true,staff:true,teacher:true,mouseDrag:true,touchDrag:true,keyboardDrag:true,resize:true,reload:true,draft:true,pageOrigin:true,retry:true,triage:true,anonymousIsolation:true,screenshots:3,errors}));
+ assert.deepEqual(errors,[]);console.log('FEEDBACK_QA_COMPLETE '+JSON.stringify({public:true,staff:true,teacher:true,mouseDrag:true,touchDrag:true,keyboardDrag:true,resize:true,reload:true,draft:true,pageOrigin:true,retry:true,triage:true,anonymousIsolation:true,compactMobile:true,reducedHeight:true,escapeFocus:true,screenshots:4,errors}));
  await context.close();
 }finally{
  if(browser)await browser.close();

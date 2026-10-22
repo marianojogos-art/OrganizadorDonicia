@@ -5,12 +5,29 @@ import {readFile} from 'node:fs/promises';
 import {parseHTML} from 'linkedom';
 
 const html=await readFile(new URL('../src/public.html',import.meta.url),'utf8');
-const script=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace(/\nloadContent\(\);\nloadPublic\(\);\s*$/,'');
-function page(data){
+const inlineScript=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+const script=inlineScript.replace(/\nloadContent\(\);\s*loadHighlights\(\);\s*loadPublic\(\);\s*$/,'');
+assert.notEqual(script,inlineScript,'the test harness must remove all three automatic public requests');
+function page(data,{now}={}){
  const {document,window}=parseHTML(html),calls=[];
- const context=vm.createContext({document,Intl,Date,URL,fetch:async(...args)=>{calls.push(args);return {ok:true,json:async()=>data}}});
+ const Clock=now?class extends Date{constructor(...args){super(...(args.length?args:[now]))}static now(){return new Date(now).getTime()}}:Date;
+ const context=vm.createContext({document,Intl,Date:Clock,URL,fetch:async(...args)=>{calls.push(args);return {ok:true,json:async()=>data}}});
  vm.runInContext(script,context);
- return {document,window,calls,context,load:()=>vm.runInContext('loadPublic()',context),loadContent:()=>vm.runInContext('loadContent()',context)};
+ return {document,window,calls,context,load:()=>vm.runInContext('loadPublic()',context),loadContent:()=>vm.runInContext('loadContent()',context),loadHighlights:()=>vm.runInContext('loadHighlights()',context)};
+}
+function respond(p,responses){
+ p.context.fetch=async(path,options)=>{
+  p.calls.push([path,options]);
+  assert.ok(Object.hasOwn(responses,path),'unexpected request: '+path);
+  const value=responses[path];
+  if(value instanceof Error)throw value;
+  return {ok:true,json:async()=>value};
+ };
+}
+async function clickRetry(p,selector){
+ const button=p.document.querySelector(selector);assert.ok(button,'the affected section needs its own retry button');
+ button.dispatchEvent(new p.window.Event('click'));
+ await new Promise(resolve=>setImmediate(resolve));
 }
 const empty={school:{name:'Escola fictícia',introduction:'Apresentação fictícia'},notices:[],events:[]};
 test('public portal loads only the anonymous endpoint and exposes discreet employee entrance',async()=>{
@@ -111,7 +128,9 @@ test('this week uses the school timezone, upcoming events through Sunday, and cu
  {title:'Outra semana',date:'2026-10-19',type:'Evento escolar'}],
  notices:[{title:'Vigente',date:'2026-10-12',body:'Mensagem atual'},{title:'Futuro',date:'2026-10-15',body:'Ainda não'}]});
  p.context.Date=class extends Date{constructor(...args){super(...(args.length?args:['2026-10-15T01:00:00Z']))}};
- vm.runInContext("publicHighlights=[{kind:'notice',title:'Vigente',description:'Mensagem atual'}]",p.context);
+ const fetchPublic=p.context.fetch;
+ p.context.fetch=async(path,...args)=>path==='/public/highlights'?{ok:true,json:async()=>({items:[{kind:'notice',title:'Vigente',description:'Mensagem atual'}]})}:fetchPublic(path,...args);
+ await p.loadHighlights();
  await p.load();const text=p.document.querySelector('#week-items').textContent;
  assert.match(text,/Hoje/);assert.match(text,/Domingo/);assert.match(text,/Vigente/);assert.doesNotMatch(text,/Ontem|Outra semana|Futuro/);
  assert.match(p.document.querySelector('#week-range').textContent,/12 de outubro.*18 de outubro/);
@@ -134,4 +153,171 @@ test('public content failures have an independent retry and never fabricate proj
  p.context.fetch=async()=>({ok:true,json:async()=>({items:[]})});await p.loadContent();
  assert.equal(p.document.querySelector('#content-error').classList.contains('hidden'),true);assert.match(p.document.querySelector('#projects').textContent,/quando forem publicados/);
  assert.match(p.document.querySelector('#documents').textContent,/ainda não publicou/);
+});
+
+
+const fixedNow='2026-10-14T15:00:00Z';
+const sampleContent={items:[
+ {id:'horta',kind:'project',title:'Horta da escola',description:'Plantio realizado pelas turmas.',category:'Meio ambiente',updated_at:'2026-10-13 12:00:00'},
+ {id:'familias',kind:'document',title:'Orientações às famílias',description:'Informações da secretaria.',category:'Famílias',url:'https://example.test/familias',updated_at:'2026-10-13 12:00:00'}
+]};
+const sampleHighlights={items:[{id:'highlight',kind:'notice',title:'Encontro da comunidade',description:'Conversa com as famílias.'}]};
+function isHidden(p,selector){
+ const element=p.document.querySelector(selector);assert.ok(element,'missing contextual status: '+selector);
+ return element.classList.contains('hidden');
+}
+
+test('public datasets load independently and highlight errors preserve healthy projects and documents',async()=>{
+ const p=page(empty,{now:fixedNow});
+ respond(p,{'/public/api':empty,'/public/content':sampleContent,'/public/highlights':new Error('private highlight backend details')});
+ await Promise.all([p.load(),p.loadContent(),p.loadHighlights()]);
+ assert.deepEqual(p.calls.map(([path])=>path).sort(),['/public/api','/public/content','/public/highlights']);
+ for(const [,options] of p.calls)assert.equal(options.credentials,'omit');
+ assert.match(p.document.querySelector('#projects').textContent,/Horta da escola/);
+ assert.match(p.document.querySelector('#documents').textContent,/Orientações às famílias/);
+ assert.equal(isHidden(p,'#content-error'),true);assert.equal(isHidden(p,'#documents-error'),true);
+ assert.equal(isHidden(p,'#week-agenda-error'),true);assert.equal(isHidden(p,'#week-highlights-error'),false);
+ assert.doesNotMatch(p.document.body.textContent,/private highlight backend details/);
+ respond(p,{'/public/highlights':sampleHighlights});
+ await clickRetry(p,'#week-highlights-error [data-retry-highlights]');
+ assert.equal(isHidden(p,'#week-highlights-error'),true);
+ assert.match(p.document.querySelector('#week-items').textContent,/Encontro da comunidade/);
+ assert.match(p.document.querySelector('#projects').textContent,/Horta da escola/);
+});
+
+test('a failed public agenda still displays independent highlights, in either response order',async()=>{
+ for(const highlightsFirst of [true,false]){
+  const p=page(empty,{now:fixedNow});
+  respond(p,{'/public/api':new Error('private agenda backend details'),'/public/highlights':sampleHighlights});
+  if(highlightsFirst){await p.loadHighlights();await p.load()}else{await p.load();await p.loadHighlights()}
+  assert.match(p.document.querySelector('#week-items').textContent,/Encontro da comunidade/);
+  assert.equal(isHidden(p,'#week-agenda-error'),false);assert.equal(isHidden(p,'#week-highlights-error'),true);
+  assert.equal(isHidden(p,'#calendar-error'),false);
+  assert.doesNotMatch(p.document.body.textContent,/private agenda backend details/);
+ }
+});
+
+test('calendar failure has a visible local retry that restores the agenda',async()=>{
+ const p=page(empty,{now:fixedNow});
+ respond(p,{'/public/api':new Error('private connection diagnostics')});
+ await p.load();
+ assert.equal(isHidden(p,'#calendar-error'),false);
+ assert.match(p.document.querySelector('#events').textContent,/temporariamente indisponível/);
+ assert.doesNotMatch(p.document.querySelector('#events').textContent,/Nenhum evento/);
+ assert.equal(p.document.querySelector('#calendar-error [data-retry-public]').disabled,false);
+ const recovered={...empty,events:[{title:'Reunião recuperada',date:'2026-10-14',start:'09:00',type:'Reunião'}]};
+ respond(p,{'/public/api':recovered});
+ await clickRetry(p,'#calendar-error [data-retry-public]');
+ assert.equal(isHidden(p,'#calendar-error'),true);
+ assert.equal(isHidden(p,'#load-error'),true);assert.equal(isHidden(p,'#week-agenda-error'),true);
+ assert.match(p.document.querySelector('#events').textContent,/Reunião recuperada/);
+ assert.match(p.document.querySelector('#week-items').textContent,/Reunião recuperada/);
+ assert.doesNotMatch(p.document.body.textContent,/private connection diagnostics/);
+ assert.equal(p.calls.length,2);
+});
+
+test('documents offer their own retry after a content failure, without erasing highlights',async()=>{
+ const p=page(empty,{now:fixedNow});
+ respond(p,{'/public/content':new Error('private content diagnostics'),'/public/highlights':sampleHighlights});
+ await p.loadHighlights();await p.loadContent();
+ assert.equal(isHidden(p,'#documents-error'),false);
+ assert.match(p.document.querySelector('#documents').textContent,/temporariamente indisponível/);
+ assert.match(p.document.querySelector('#week-items').textContent,/Encontro da comunidade/);
+ assert.doesNotMatch(p.document.body.textContent,/private content diagnostics/);
+ respond(p,{'/public/content':sampleContent});
+ await clickRetry(p,'#documents-error [data-retry-content]');
+ assert.equal(isHidden(p,'#documents-error'),true);assert.equal(isHidden(p,'#content-error'),true);
+ assert.match(p.document.querySelector('#projects').textContent,/Horta da escola/);
+ assert.match(p.document.querySelector('#documents').textContent,/Orientações às famílias/);
+ assert.match(p.document.querySelector('#week-items').textContent,/Encontro da comunidade/);
+});
+
+test('cleared or invalid months restore the current school month without a network error',async()=>{
+ const p=page({...empty,events:[{title:'Evento de outubro',date:'2026-10-14',type:'Evento escolar'}]},{now:'2026-11-01T01:00:00Z'});
+ await p.load();
+ const month=p.document.querySelector('#calendar-month');
+ for(const value of ['','2026-00','2026-13','2026-1','not-a-month','0000-10']){
+  month.value=value;
+  assert.doesNotThrow(()=>month.dispatchEvent(new p.window.Event('change')));
+  assert.equal(month.value,'2026-10','month follows São Paulo even when UTC has reached November');
+  assert.match(p.document.querySelector('#calendar-period').textContent,/outubro de 2026/);
+  assert.match(p.document.querySelector('#events').textContent,/Evento de outubro/);
+  assert.equal(isHidden(p,'#calendar-error'),true);assert.equal(isHidden(p,'#load-error'),true);
+ }
+ assert.equal(p.calls.length,1,'changing a calendar month should not refetch the public API');
+ const initial=page(empty,{now:fixedNow});initial.document.querySelector('#calendar-month').value='';await initial.load();
+ assert.equal(initial.document.querySelector('#calendar-month').value,'2026-10');
+ assert.equal(isHidden(initial,'#calendar-error'),true);
+});
+
+test('same-day public events sort by start time then Portuguese title in calendar and week',async()=>{
+ const p=page({...empty,events:[
+  {title:'Zebra da manhã',date:'2026-10-14',start:'08:30',type:'Evento escolar'},
+  {title:'Último da tarde',date:'2026-10-14',start:'14:00',type:'Evento escolar'},
+  {title:'Árvore da manhã',date:'2026-10-14',start:'08:30',type:'Evento escolar'},
+  {title:'Atividade do dia inteiro',date:'2026-10-14',start:'',type:'Dia letivo'},
+  {title:'Amanhã cedo',date:'2026-10-15',start:'07:00',type:'Evento escolar'}
+ ]},{now:fixedNow});
+ await p.load();
+ assert.deepEqual([...p.document.querySelectorAll('#events h3')].map(node=>node.textContent),['Atividade do dia inteiro','Árvore da manhã','Zebra da manhã','Último da tarde','Amanhã cedo']);
+ assert.deepEqual([...p.document.querySelectorAll('#week-items .event-card h3')].map(node=>node.textContent),['Atividade do dia inteiro','Árvore da manhã','Zebra da manhã']);
+});
+
+test('failed refreshes retain the last successful calendar, notices, highlights, projects and documents with warnings',async()=>{
+ const p=page(empty,{now:fixedNow});
+ const schoolData={...empty,school:{...empty.school,name:'Escola cadastrada'},notices:[{title:'Aviso preservado',body:'Texto público.',date:'2026-10-13'}],events:[{title:'Evento preservado',date:'2026-10-14',start:'08:30',type:'Evento escolar'}]};
+ respond(p,{'/public/api':schoolData,'/public/content':sampleContent,'/public/highlights':sampleHighlights});
+ await Promise.all([p.load(),p.loadContent(),p.loadHighlights()]);
+ const selectors=['#school-title','#notices','#events','#week-items','#projects','#documents'];
+ const previous=selectors.map(selector=>p.document.querySelector(selector).innerHTML);
+ respond(p,{'/public/api':new Error('private agenda error'),'/public/content':new Error('private content error'),'/public/highlights':new Error('private highlight error')});
+ await Promise.all([p.load(),p.loadContent(),p.loadHighlights()]);
+ assert.deepEqual(selectors.map(selector=>p.document.querySelector(selector).innerHTML),previous);
+ for(const selector of ['#load-error','#calendar-error','#week-agenda-error','#week-highlights-error','#content-error','#documents-error']){
+  assert.equal(isHidden(p,selector),false);
+  assert.match(p.document.querySelector(selector).textContent,/última consulta/);
+ }
+ assert.doesNotMatch(p.document.body.textContent,/private (agenda|content|highlight) error/);
+});
+
+test('empty week distinguishes no upcoming events or selected highlights from the full notice board',async()=>{
+ const p=page({...empty,notices:[{title:'Aviso sem destaque',body:'Este aviso continua disponível no mural.',date:'2026-10-13'}]},{now:fixedNow});
+ respond(p,{'/public/api':{...empty,notices:[{title:'Aviso sem destaque',body:'Este aviso continua disponível no mural.',date:'2026-10-13'}]},'/public/highlights':{items:[]}});
+ await p.load();await p.loadHighlights();
+ assert.match(p.document.querySelector('#notices').textContent,/Aviso sem destaque/);
+ assert.match(p.document.querySelector('#week-items').textContent,/Nenhum próximo evento público ou destaque publicado para o restante desta semana\. Consulte também todos os avisos e o calendário completo\./);
+ assert.doesNotMatch(p.document.querySelector('#week-items').textContent,/Sem próximos eventos públicos ou avisos vigentes/);
+ assert.equal(isHidden(p,'#week-agenda-error'),true);assert.equal(isHidden(p,'#week-highlights-error'),true);
+});
+
+test('week links identify project, document or notice and include the escaped title for screen readers',async()=>{
+ for(const [kind,label,href] of [['project','projeto','#projetos'],['document','documento','#documentos'],['notice','aviso','#avisos']]){
+  const title='Atividade <img src=x onerror=alert(1)>';
+  const p=page(empty,{now:fixedNow});
+  respond(p,{'/public/api':empty,'/public/highlights':{items:[{kind,title,description:'Descrição <script>alert(1)</script>'}]}});
+  await p.load();await p.loadHighlights();
+  const link=p.document.querySelector('#week-items a.text-link');
+  assert.equal(link.getAttribute('href'),href);
+  assert.ok(link.textContent.startsWith('Ver '+label));
+  assert.equal(link.querySelector('.sr-only').textContent,': '+title);
+  assert.equal(link.querySelector('[aria-hidden="true"]').textContent,'→');
+  assert.equal(p.document.querySelector('#week-items img,#week-items script'),null);
+  assert.doesNotMatch(link.textContent,/Ver conteúdo/);
+ }
+});
+
+test('invalid dataset responses keep prior good content and show only the affected error',async()=>{
+ const p=page(empty,{now:fixedNow});
+ respond(p,{'/public/api':empty,'/public/content':sampleContent,'/public/highlights':sampleHighlights});
+ await Promise.all([p.load(),p.loadContent(),p.loadHighlights()]);
+ respond(p,{'/public/highlights':{items:null}});
+ await p.loadHighlights();
+ assert.equal(isHidden(p,'#week-highlights-error'),false);
+ assert.equal(isHidden(p,'#week-agenda-error'),true);assert.equal(isHidden(p,'#documents-error'),true);
+ assert.match(p.document.querySelector('#week-items').textContent,/Encontro da comunidade/);
+ respond(p,{'/public/content':{items:null}});
+ await p.loadContent();
+ assert.equal(isHidden(p,'#documents-error'),false);
+ assert.match(p.document.querySelector('#projects').textContent,/Horta da escola/);
+ assert.match(p.document.querySelector('#documents').textContent,/Orientações às famílias/);
 });

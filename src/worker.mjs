@@ -28,10 +28,11 @@ const schoolFields=['name','introduction','address','phone','email','hours'];
 const whatsappFields=['whatsapp_secretaria','whatsapp_orientacao'];
 const validWhatsapp=value=>typeof value==='string'&&(value===''||/^\+?[1-9]\d{10,14}$/.test(value));
 async function taskVerifier(DB,value){if(typeof value!=='string'||value.length>254)throw new XeroxInputError('Verificador inválido');if(value&&!await DB.prepare("SELECT email FROM users WHERE email=? AND active=1 AND role IN ('direction','supervision','guidance')").bind(value).first())throw new XeroxInputError('Escolha um verificador ativo da equipe pedagógica');return value}
+const versionedPublicImages=Object.freeze(["/public-assets/donicia-2026-480.c67023d134b5.webp","/public-assets/donicia-2026-960.707952f5d28c.webp","/public-assets/donicia-2026-1440.f4d9f138aee3.webp"]);
 async function serveAsset(request,env,pathname){
  if(!['GET','HEAD'].includes(request.method))return json({error:'Método indisponível'},405);
  const url=new URL(request.url);url.pathname=pathname;
- const asset=await env.ASSETS.fetch(new Request(url,request));const out=new Response(asset.body,asset);out.headers.set('Cache-Control','no-store');out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");return out;
+ const asset=await env.ASSETS.fetch(new Request(url,request));const out=new Response(asset.body,asset);out.headers.set('Cache-Control',versionedPublicImages.includes(pathname)&&[200,304].includes(asset.status)?'public, max-age=31536000, immutable':'no-store');out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");return out;
 }
 const eventDetails=(d,old={})=>{const start=d.start??old.start??'',end=d.end??old.end??'',location=d.location??old.location??'',details=d.details??old.details??'';if((start!==''||end!=='')&&(!validTime(start)||!validTime(end)||end<=start))throw new XeroxInputError('Confira início e término do evento');if(typeof location!=='string'||location.length>250||typeof details!=='string'||details.length>4000)throw new XeroxInputError('Local ou informações do evento inválidos');return [d.type==='Formação'||d.formation===true||d.formation===1?1:0,start,end,location.trim(),details.trim()]};
 const contextValid=d=>['class','subject'].every(k=>d[k]===undefined||(typeof d[k]==='string'&&d[k].length<=100));
@@ -40,7 +41,7 @@ const schoolToday=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Pau
 const weekOf=date=>{const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);return monday.toISOString().slice(0,10)};
 async function handleInner(request,env,authenticate=identity){
  const path=new URL(request.url).pathname;
- if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg'||path==='/public-assets/donicia-2026.png'||path==='/public-assets/feedback.js'||path==='/public-assets/site-metrics.js'||path==='/public-assets/feedback.css')return serveAsset(request,env,path==='/'?'/public.html':path);
+ if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg'||path==='/public-assets/donicia-2026.png'||path==='/public-assets/feedback.js'||path==='/public-assets/site-metrics.js'||path==='/public-assets/feedback.css'||versionedPublicImages.includes(path))return serveAsset(request,env,path==='/'?'/public.html':path);
  if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy','trainings','notices','notes'],studentData:false});
  if(!env.DB)return json({error:'Persistência não configurada'},503);
  if(path==='/public/content'||path==='/public/highlights'||/^\/public\/projects\/[A-Za-z0-9_-]{1,100}\/image$/.test(path))return publicContent(request,env.DB);

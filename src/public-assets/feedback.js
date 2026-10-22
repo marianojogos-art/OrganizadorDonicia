@@ -28,9 +28,13 @@ export function mountFeedback(doc=document,win=window){
  const publicPage=!doc.querySelector('#nav');
  let position={x:stored.x,y:stored.y},collapsed=typeof stored.collapsed==='boolean'?stored.collapsed:publicPage,drag=null,busy=false,layoutFrame=null;
  const viewport=()=>({left:win.visualViewport?.offsetLeft||0,top:win.visualViewport?.offsetTop||0,width:win.visualViewport?.width||win.innerWidth,height:win.visualViewport?.height||win.innerHeight});
+ const headingText=root.querySelector('#df-heading'),gripHint=grip.querySelector('span');
  function rememberPosition(){write(positionKey,{...position,collapsed})}
  function layout(){
-  const view=viewport();root.style.width=Math.min(collapsed?300:368,Math.max(1,view.width-16))+'px';root.style.maxHeight=Math.max(44,view.height-16)+'px';
+  const view=viewport(),compact=win.innerWidth<=480;
+  headingText.textContent=compact&&collapsed?'✎ Sua opinião':'✎ Site em construção';
+  gripHint.textContent=compact&&collapsed?'Ajude a melhorar o site':'Arraste pelo topo · deixe sua ideia';
+  root.style.width=Math.min(collapsed?(compact?204:300):368,Math.max(1,view.width-16))+'px';root.style.maxHeight=Math.max(44,view.height-16)+'px';
   const box=root.getBoundingClientRect();if(!Number.isFinite(position.x)||!Number.isFinite(position.y))position={x:view.left+view.width-box.width-20,y:publicPage&&collapsed?view.top+view.height-box.height-20:view.top+Math.min(100,Math.max(8,(view.height-box.height)/2))};
   position=clampPosition(position,{width:box.width,height:box.height},view);root.style.left=position.x+'px';root.style.top=position.y+'px';
  }
@@ -59,6 +63,7 @@ export function mountFeedback(doc=document,win=window){
  grip.addEventListener('pointerup',finishDrag);grip.addEventListener('pointercancel',finishDrag);grip.addEventListener('lostpointercapture',finishDrag);
  grip.addEventListener('keydown',event=>{const moves={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};if(!moves[event.key])return;event.preventDefault();const step=event.shiftKey?30:10;position={x:position.x+moves[event.key][0]*step,y:position.y+moves[event.key][1]*step};layout();rememberPosition()});
  toggle.addEventListener('click',()=>{collapsed=!collapsed;collapse()});
+ root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!collapsed&&win.innerWidth<=480){event.preventDefault();event.stopPropagation();collapsed=true;collapse();toggle.focus()}});
  for(const control of [message,kind,contributor])control.addEventListener('input',()=>{if(busy)return;saveDraft();status.textContent='Rascunho salvo neste navegador.'});
  usePage.addEventListener('click',()=>{if(busy)return;draft.page=pageContext(doc,win.location);draft.id=freshId();saveDraft()});
  form.addEventListener('submit',async event=>{
