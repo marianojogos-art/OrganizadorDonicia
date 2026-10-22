@@ -26,7 +26,7 @@ try{
   });
   const page=await context.newPage(),errors=[],responses=[];
   page.on('pageerror',e=>errors.push(e.message));
-  page.on('response',r=>{if(new URL(r.url()).origin===base)responses.push({path:new URL(r.url()).pathname,status:r.status()})});
+  page.on('response',r=>{if(new URL(r.url()).origin===base)responses.push({path:new URL(r.url()).pathname,status:r.status(),cache:r.headers()['cache-control']})});
   await page.goto(base,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#load-status')?.classList.contains('hidden'));
   await page.waitForFunction(()=>!document.querySelector('#projects')?.textContent.includes('Carregando'));
@@ -72,7 +72,7 @@ try{
    log('API_FAILURE',{error:await page.locator('#load-error').isVisible(),calendar:await page.locator('#events').innerText(),week:await page.locator('#week-items').innerText()});
    await capture(page,'failure-calendar','#calendario');
    await page.unroute('**/public/api');
-   await page.locator('#retry').click();await page.waitForFunction(()=>document.querySelector('#load-error')?.classList.contains('hidden'));
+   await page.locator('#retry').click();await page.waitForFunction(()=>!document.querySelector('#retry')?.disabled&&document.querySelector('#load-status')?.classList.contains('hidden'));
    log('RECOVERY',{calendar:await page.locator('#events').innerText()});
    await page.locator('.df-toggle').click();log('FEEDBACK',{expanded:await page.locator('.df-toggle').getAttribute('aria-expanded'),formVisible:await page.locator('#df-body form').isVisible()});
    await page.locator('.df-toggle').click();
