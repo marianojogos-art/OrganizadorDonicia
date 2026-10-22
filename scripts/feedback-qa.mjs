@@ -76,6 +76,11 @@ try{
  // Touch drag uses real Chromium touch events and stays within the mobile viewport.
  const touchContext=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,locale:'pt-BR'});
  const mobile=await touchContext.newPage();await mobile.goto(base+'/',{waitUntil:'networkidle'});await mobile.locator('.df-grip').waitFor();
+ await mobile.evaluate(()=>{window.__feedbackTouchTrace=[];window.__feedbackTouchPhase='before-drag';for(const type of ['pointerdown','pointerup','click'])document.addEventListener(type,event=>window.__feedbackTouchTrace.push({phase:window.__feedbackTouchPhase,type,at:Math.round(performance.now()),target:event.target.closest?.('.df-toggle')?'toggle':event.target.className}),true)});
+ assert.equal(await mobile.locator('.df-toggle').evaluate(node=>getComputedStyle(node).touchAction),'manipulation');
+ // Ordinary repeated taps and taps after dragging both use the native click handler.
+ await mobile.locator('.df-toggle').tap();await mobile.waitForFunction(()=>document.querySelector('.df-toggle')?.getAttribute('aria-expanded')==='true',{},{timeout:5000});
+ await mobile.locator('.df-toggle').tap();await mobile.waitForFunction(()=>document.querySelector('.df-toggle')?.getAttribute('aria-expanded')==='false',{},{timeout:5000});
  const touchBox=await mobile.locator('.df-grip').boundingBox(),cdp=await touchContext.newCDPSession(mobile);
  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:touchBox.x+30,y:touchBox.y+20}]});
  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:10,y:10}]});
@@ -83,7 +88,7 @@ try{
  const touchCompact=await visible(mobile);assert.ok(touchCompact.width<=210&&touchCompact.height<=68);
  // Touch input can deliver its compatibility click after dispatchTouchEvent returns.
  // Observe the actual click target and resulting state, rather than measuring bounds while still collapsed.
- await mobile.evaluate(()=>{window.__feedbackTouchTrace=[];for(const type of ['pointerdown','pointerup','click'])document.addEventListener(type,event=>window.__feedbackTouchTrace.push({type,at:Math.round(performance.now()),target:event.target.closest?.('.df-toggle')?'toggle':event.target.className}),true)});
+ await mobile.evaluate(()=>{window.__feedbackTouchPhase='after-drag'});
  await mobile.locator('.df-toggle').tap();
  try{await mobile.waitForFunction(()=>document.querySelector('.df-toggle')?.getAttribute('aria-expanded')==='true',{},{timeout:5000})}
  catch(error){console.log('FEEDBACK_TOUCH_TRACE '+JSON.stringify(await mobile.evaluate(()=>({events:window.__feedbackTouchTrace,expanded:document.querySelector('.df-toggle')?.getAttribute('aria-expanded')}))));await screenshotLog(mobile,'touch-toggle-failure');throw error}
