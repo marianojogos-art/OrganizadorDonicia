@@ -58,7 +58,7 @@ test('image cache validation works but missing/error assets are never immutable'
 
 test('HTML, mutable assets and authenticated staff pages keep no-store',async()=>{
  const user={email:'qa@example.invalid',name:'Synthetic user',role:'direction'};
- const env={DB:{prepare(){return {async first(){return user}}}},ASSETS:{async fetch(){return new Response('synthetic',{headers:{'Cache-Control':'public, max-age=3600'}})}}};
+ const env={DB:{prepare(){return {bind(){return this},async first(){return user}}}},ASSETS:{async fetch(){return new Response('synthetic',{headers:{'Cache-Control':'public, max-age=3600'}})}}};
  for(const path of ['/','/public.html','/public.js','/public-assets/logo.jpg','/public-assets/donicia-2026.png','/public-assets/feedback.js','/public-assets/feedback.css','/public-assets/site-metrics.js','/equipe','/equipe/app.js']){
   const response=await handle(new Request('https://school.example'+path),env,async()=>user.email);
   assert.equal(response.status,200,path);assert.equal(response.headers.get('Cache-Control'),'no-store',path);

@@ -81,8 +81,17 @@ try{
  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:10,y:10}]});
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  const touchCompact=await visible(mobile);assert.ok(touchCompact.width<=210&&touchCompact.height<=68);
- await mobile.locator('.df-toggle').tap();await visible(mobile);assert.equal(await mobile.locator('.df-toggle').getAttribute('aria-expanded'),'true');
- await mobile.locator('.df-toggle').tap();assert.equal(await mobile.locator('.df-toggle').getAttribute('aria-expanded'),'false');await touchContext.close();
+ // Touch input can deliver its compatibility click after dispatchTouchEvent returns.
+ // Observe the actual click target and resulting state, rather than measuring bounds while still collapsed.
+ await mobile.evaluate(()=>{window.__feedbackTouchTrace=[];for(const type of ['pointerdown','pointerup','click'])document.addEventListener(type,event=>window.__feedbackTouchTrace.push({type,at:Math.round(performance.now()),target:event.target.closest?.('.df-toggle')?'toggle':event.target.className}),true)});
+ await mobile.locator('.df-toggle').tap();
+ try{await mobile.waitForFunction(()=>document.querySelector('.df-toggle')?.getAttribute('aria-expanded')==='true',{},{timeout:5000})}
+ catch(error){console.log('FEEDBACK_TOUCH_TRACE '+JSON.stringify(await mobile.evaluate(()=>({events:window.__feedbackTouchTrace,expanded:document.querySelector('.df-toggle')?.getAttribute('aria-expanded')}))));await screenshotLog(mobile,'touch-toggle-failure');throw error}
+ await visible(mobile);
+ await mobile.locator('.df-toggle').tap();
+ await mobile.waitForFunction(()=>document.querySelector('.df-toggle')?.getAttribute('aria-expanded')==='false',{},{timeout:5000});
+ console.log('FEEDBACK_TOUCH_TRACE '+JSON.stringify(await mobile.evaluate(()=>({events:window.__feedbackTouchTrace,expanded:document.querySelector('.df-toggle')?.getAttribute('aria-expanded')}))));
+ await touchContext.close();
  // Staff sections are distinct, deep links open them, and the collection includes every origin.
  await page.setViewportSize({width:1440,height:1000});await page.goto(staff+'/equipe#calendario',{waitUntil:'networkidle'});await page.locator('#nav [aria-current="page"][data-section="calendario"]').waitFor();
  await page.locator('#donicia-feedback [name=message]').fill('Nova implementação sintética no calendário da equipe.');
