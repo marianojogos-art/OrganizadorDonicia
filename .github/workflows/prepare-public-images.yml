@@ -1,0 +1,29 @@
+name: Prepare public images
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/public-image-prep-2026-10-22']
+    paths:
+      - 'scripts/prepare-public-images.mjs'
+      - '.github/workflows/prepare-public-images.yml'
+permissions:
+  contents: read
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install isolated image conversion tool
+        env:
+          PUBLIC_IMAGE_TOOLS: ${{ runner.temp }}/public-image-tools
+        run: npm install --prefix "$PUBLIC_IMAGE_TOOLS" --no-save --package-lock=false sharp@0.34.5
+      - name: Prepare responsive image variants
+        env:
+          PUBLIC_IMAGE_TOOLS: ${{ runner.temp }}/public-image-tools
+        run: node scripts/prepare-public-images.mjs
