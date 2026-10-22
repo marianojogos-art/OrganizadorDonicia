@@ -56,9 +56,7 @@ export function mountFeedback(doc=document,win=window){
  }
  grip.addEventListener('pointerdown',event=>{
   if(event.button!==0||drag)return;
-  drag={id:event.pointerId,x:event.clientX,y:event.clientY,origin:{...position}};grip.setPointerCapture(event.pointerId);root.classList.add('df-dragging');
-  // Mobile touch gestures are governed by the grip's touch-action:none; keep their native event sequence.
-  if(event.pointerType!=='touch'||win.innerWidth>480)event.preventDefault();
+  drag={id:event.pointerId,x:event.clientX,y:event.clientY,origin:{...position}};grip.setPointerCapture(event.pointerId);root.classList.add('df-dragging');event.preventDefault();
  });
  grip.addEventListener('pointermove',event=>{if(!drag||event.pointerId!==drag.id)return;position={x:drag.origin.x+event.clientX-drag.x,y:drag.origin.y+event.clientY-drag.y};layout()});
  const finishDrag=()=>{if(!drag)return;drag=null;root.classList.remove('df-dragging');rememberPosition()};
