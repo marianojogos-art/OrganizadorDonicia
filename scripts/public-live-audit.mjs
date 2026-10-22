@@ -27,7 +27,8 @@ try{
   const page=await context.newPage(),errors=[],responses=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('response',r=>{if(new URL(r.url()).origin===base)responses.push({path:new URL(r.url()).pathname,status:r.status()})});
-  await page.goto(base,{waitUntil:'networkidle'});
+  await page.goto(base,{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('#load-status')?.classList.contains('hidden'));
   await page.waitForFunction(()=>!document.querySelector('#projects')?.textContent.includes('Carregando'));
   await page.evaluate(async()=>{for(const image of document.images){image.loading='eager';try{await image.decode()}catch{}}});
   if(width===390||width===1440){
@@ -45,6 +46,7 @@ try{
     timings:performance.getEntriesByType('navigation').map(n=>({ttfb:n.responseStart,domContentLoaded:n.domContentLoadedEventEnd,load:n.loadEventEnd})),
     resources:performance.getEntriesByType('resource').map(r=>({path:new URL(r.name).pathname,bytes:r.transferSize,duration:Math.round(r.duration)}))};
   });
+  await page.evaluate(()=>scrollTo(0,0));
   await page.keyboard.press('Tab');
   log('STATE',{width,...state,firstFocus:await page.locator(':focus').getAttribute('class'),errors,responses});
   if(width===1440){
@@ -52,21 +54,28 @@ try{
     const r=await context.request.get(base+path);
     const data=await r.json();log('INVENTORY',{path,status:r.status(),data});
    }
-   await page.locator('.nav a[href="#contatos"]').focus();await page.keyboard.press('Enter');
+   await page.locator('.nav a[href="#contatos"]').focus();await page.keyboard.press('Enter');await page.waitForURL('**/#contatos');
    log('KEYBOARD',{contactAnchor:new URL(page.url()).hash});
    await page.locator('.faq summary').first().focus();await page.keyboard.press('Enter');
    log('FAQ',{opened:await page.locator('.faq details').first().getAttribute('open')!==null});
    await page.locator('#calendar-month').fill('2026-11');
    log('CALENDAR',{period:await page.locator('#calendar-period').innerText(),text:await page.locator('#events').innerText()});
    await page.route('**/public/highlights',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));
-   await page.reload({waitUntil:'networkidle'});
+   await page.reload({waitUntil:'domcontentloaded'});
+   await page.waitForFunction(()=>document.querySelector('#load-status')?.classList.contains('hidden')&&!document.querySelector('#projects')?.textContent.includes('Carregando'));
    log('HIGHLIGHTS_FAILURE',{contentError:await page.locator('#content-error').isVisible(),projects:await page.locator('#projects').innerText(),week:await page.locator('#week-items').innerText()});
    await capture(page,'failure-highlights-projects','#projetos');
    await page.unroute('**/public/highlights');
    await page.route('**/public/api',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));
-   await page.reload({waitUntil:'networkidle'});
+   await page.reload({waitUntil:'domcontentloaded'});
+   await page.waitForFunction(()=>document.querySelector('#load-status')?.classList.contains('hidden')&&!document.querySelector('#projects')?.textContent.includes('Carregando'));
    log('API_FAILURE',{error:await page.locator('#load-error').isVisible(),calendar:await page.locator('#events').innerText(),week:await page.locator('#week-items').innerText()});
    await capture(page,'failure-calendar','#calendario');
+   await page.unroute('**/public/api');
+   await page.locator('#retry').click();await page.waitForFunction(()=>document.querySelector('#load-error')?.classList.contains('hidden'));
+   log('RECOVERY',{calendar:await page.locator('#events').innerText()});
+   await page.locator('.df-toggle').click();log('FEEDBACK',{expanded:await page.locator('.df-toggle').getAttribute('aria-expanded'),formVisible:await page.locator('#df-body form').isVisible()});
+   await page.locator('.df-toggle').click();
   }
   await context.close();
  }
