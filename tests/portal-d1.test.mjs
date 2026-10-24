@@ -59,6 +59,8 @@ test('D1 migration preserves referenced users and atomically resolves approval c
   assert.equal((await send('/api/secretariat-access')).body.members.length,3);
   for(const email of grant.emails){assert.equal((await send('/api/secretariat-access/me','GET',undefined,email)).body.allowed,true);assert.equal((await send('/api/me','GET',undefined,email)).body.role,'direction')}
   assert.deepEqual((await send('/public/secretariat-requests','GET',undefined,null)).body,{enabled:false});
+  const activations=await Promise.all([send('/api/secretariat-intake','POST',{confirmed:true,enabled:true}),send('/api/secretariat-intake','POST',{confirmed:true,enabled:true})]);assert.ok(activations.every(x=>x.status===200));assert.equal(activations.filter(x=>x.body.applied).length,1);assert.equal((await send('/public/secretariat-requests','GET',undefined,null)).body.enabled,true);
+  assert.equal((await send('/public/secretariat-requests','POST',{id:crypto.randomUUID(),kind:'transfer',name:'Responsável fictício',contact:'familia@example.invalid',consent:true},null)).status,201);
   assert.deepEqual((await DB.prepare('PRAGMA foreign_key_check').all()).results,[]);
  }finally{await mf.dispose()}
 });

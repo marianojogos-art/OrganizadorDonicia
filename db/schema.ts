@@ -72,3 +72,5 @@ export const assistantOperations=sqliteTable('assistant_operations',{
 
 export const secretariatAccess=sqliteTable('secretariat_access',{email:text('email').primaryKey().references(()=>users.email,{onDelete:'cascade'}),grantedBy:text('granted_by').notNull().references(()=>users.email),grantedAt:text('granted_at').notNull().default(sql`CURRENT_TIMESTAMP`)});
 export const secretariatAccessInitialization=sqliteTable('secretariat_access_initialization',{id:integer('id').primaryKey(),actor:text('actor').notNull().references(()=>users.email),createdAt:text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`)});
+
+export const secretariatIntake=sqliteTable('secretariat_intake',{id:integer('id').primaryKey(),enabled:integer('enabled').notNull().default(0),updatedBy:text('updated_by').references(()=>users.email),updatedAt:text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`)});

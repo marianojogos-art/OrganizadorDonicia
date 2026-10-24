@@ -161,3 +161,28 @@ test('grant rejects directory changes, role-wide access, unconfirmed input and r
  assert.equal((await request(env,path,approvedFixture,'direction')).status,503);
  assert.equal((await env.DB.prepare('SELECT count(*) AS n FROM secretariat_access').first()).n,0);assert.equal((await env.DB.prepare('SELECT count(*) AS n FROM secretariat_access_initialization').first()).n,0);env.DB.close();
 });
+
+test('public intake requires a separate audited activation after all grants and supports minimal private receipts',async()=>{
+ const env=grantSetup(),path='/api/secretariat-intake',activation={confirmed:true,enabled:true};
+ assert.equal((await request(env,path,activation,'direction')).status,403);
+ await request(env,'/api/secretariat-access',approvedFixture,'direction');
+ assert.equal((await request(env,path,{...activation,confirmed:false},'direction')).status,400);
+ assert.equal((await request(env,path,activation,'direction',{headers:{Origin:'https://evil.test'}})).status,403);
+ const enabled=await Promise.all([request(env,path,activation,'direction'),request(env,path,activation,'direction')]);assert.ok(enabled.every(x=>x.status===200));assert.equal(enabled.filter(x=>x.body.applied).length,1);
+ assert.equal((await env.DB.prepare("SELECT count(*) AS n FROM audit WHERE action='ENABLE'").first()).n,1);
+ assert.deepEqual((await request(env,'/public/secretariat-requests',undefined,'anonymous',{method:'GET'})).body,{enabled:true});
+ const intake='/public/secretariat-requests',data={id:crypto.randomUUID(),kind:'documents',name:'Responsável fictício',contact:'familia@example.test',consent:true};
+ assert.equal((await request(env,intake,{...data,student:'Não permitido'})).status,400);assert.equal((await request(env,intake,{...data,consent:false})).status,400);
+ assert.equal((await request(env,intake,data)).status,201);assert.equal((await request(env,intake,data)).status,200);assert.equal((await request(env,intake,{...data,name:'Outro responsável'})).status,409);
+ for(let i=0;i<4;i++)assert.equal((await request(env,intake,{...data,id:crypto.randomUUID()})).status,201);assert.equal((await request(env,intake,{...data,id:crypto.randomUUID()})).status,429);
+ assert.doesNotMatch(JSON.stringify((await ask(env,'Responsável fictício documentos')).body),/familia@example.test/);
+ env.DB.exec("UPDATE users SET active=0 WHERE email='guide@prof.pmf.sc.gov.br'; UPDATE users SET active=1,role='direction' WHERE email='other@prof.pmf.sc.gov.br'");
+ assert.equal((await request(env,path,activation,'other')).status,403);assert.equal((await request(env,'/api/secretariat-requests',undefined,'other',{method:'GET'})).status,403);
+ assert.deepEqual((await request(env,intake,undefined,'anonymous',{method:'GET'})).body,{enabled:false});assert.equal((await request(env,intake,{...data,id:crypto.randomUUID()})).status,503);
+ assert.equal((await request(env,path,activation,'direction')).status,409);assert.equal((await request(env,path,{confirmed:true,enabled:false},'direction')).body.enabled,false);env.DB.close();
+});
+
+test('public intake activation rolls back if audit fails',async()=>{
+ const env=grantSetup();await request(env,'/api/secretariat-access',approvedFixture,'direction');env.DB.exec('DROP TABLE audit');
+ assert.equal((await request(env,'/api/secretariat-intake',{confirmed:true,enabled:true},'direction')).status,503);assert.equal((await env.DB.prepare('SELECT enabled FROM secretariat_intake').first()).enabled,0);env.DB.close();
+});

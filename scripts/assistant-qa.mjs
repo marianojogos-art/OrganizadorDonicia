@@ -9,7 +9,7 @@ import {migrateLocal} from './migrate-local.mjs';
 if(!process.env.ASSISTANT_QA_PLAYWRIGHT_DIR)throw Error('Configure the isolated Playwright directory.');
 const {chromium}=createRequire(join(process.env.ASSISTANT_QA_PLAYWRIGHT_DIR,'loader.cjs'))('playwright');
 const directory=await mkdtemp(join(tmpdir(),'donicia-assistant-qa-')),database=join(directory,'synthetic.sqlite');
-const DB=sqlite(database);await migrateLocal(DB);DB.exec("INSERT INTO users VALUES('direction.demo@prof.pmf.sc.gov.br','Direção fictícia','direction',1); INSERT INTO secretariat_access(email,granted_by) VALUES('direction.demo@prof.pmf.sc.gov.br','direction.demo@prof.pmf.sc.gov.br'); INSERT INTO secretariat_requests(id,kind,name,contact) VALUES('00000000-0000-4000-8000-000000000001','documents','Responsável fictício','familia@example.invalid')");await DB.prepare("UPDATE school_profile SET phone='0000-0000',email='secretaria@example.invalid' WHERE id=1").run();DB.close();
+const DB=sqlite(database);await migrateLocal(DB);DB.exec("INSERT INTO users VALUES('direction.demo@prof.pmf.sc.gov.br','Direção fictícia','direction',1),('supervision.demo@prof.pmf.sc.gov.br','Equipe fictícia','direction',1),('guidance.demo@prof.pmf.sc.gov.br','Equipe fictícia','direction',1),('teacher.demo@prof.pmf.sc.gov.br','Professor fictício','teacher',0)");await DB.prepare("UPDATE school_profile SET phone='0000-0000',email='secretaria@example.invalid' WHERE id=1").run();DB.close();
 const server=spawn(process.execPath,['scripts/dev.mjs'],{env:{...process.env,PORT:'18793',LOCAL_DB:database,LOCAL_ROLE:'direction',LOCAL_SECRETARIAT_INTAKE_ENABLED:'true'},stdio:'ignore'});
 let browser;const base='http://127.0.0.1:18793';
 try{
@@ -23,10 +23,14 @@ try{
   assert.equal(await page.locator('[data-answer]').getByRole('link',{name:/contatos publicados/}).count(),1);
  }
  await page.locator('[data-intake]').getByText(/registro de pedidos pelo site ainda não está habilitado/).waitFor();assert.equal(await page.locator('[data-request]').count(),0);
+ const grant=await page.request.post(base+'/api/secretariat-access',{headers:{Origin:base},data:{confirmed:true,emails:['direction.demo@prof.pmf.sc.gov.br','supervision.demo@prof.pmf.sc.gov.br','guidance.demo@prof.pmf.sc.gov.br']}});assert.equal(grant.status(),201);
+ const activated=await page.request.post(base+'/api/secretariat-intake',{headers:{Origin:base},data:{confirmed:true,enabled:true}});assert.equal(activated.status(),200);
+ await page.reload();await page.locator('#donicia-assistant .da-launch').click();await page.getByRole('button',{name:'Consultar vagas',exact:true}).click();
+ await page.getByLabel('Seu nome (responsável)').fill('Responsável fictício');await page.getByLabel('Seu e-mail ou telefone para retorno').fill('familia@example.invalid');await page.getByRole('button',{name:'Revisar solicitação'}).click();await page.getByRole('button',{name:'Confirmar e registrar pedido'}).click();await page.locator('[data-intake]').getByText(/Pedido registrado:/).waitFor();
  await page.goto(base+'/equipe');await page.locator('#donicia-assistant .da-launch').click();await page.getByRole('button',{name:'Quero pedir xerox',exact:true}).click();await page.getByRole('button',{name:'Conversar passo a passo'}).click();
  for(const value of ['Material sintético','2','2026-11-30']){await page.locator('#da-step').fill(value);await page.locator('[data-answer]').getByRole('button',{name:'Continuar',exact:true}).click()}
  assert.equal(await page.locator('[data-answer]').getByText('Revise antes de confirmar').count(),1);await page.getByRole('button',{name:'Confirmar e registrar',exact:true}).click();await page.locator('[data-answer]').getByText(/Registro confirmado no sistema/).waitFor();
  await page.locator('#donicia-assistant [data-close]').click();await page.getByRole('link',{name:'Fila da Secretaria',exact:true}).click();assert.ok(page.url().endsWith('/equipe/secretaria'));const identity=await page.request.get(base+'/api/me');assert.equal((await identity.json()).role,'direction');await page.locator('#requests').getByText(/familia@example.invalid/).waitFor();
  await page.locator('#requests textarea').fill('Recebido na fila interna (sintético)');await page.getByRole('button',{name:'Assumir na Secretaria'}).click();await page.getByRole('button',{name:'Confirmar atendimento concluído'}).waitFor();
- assert.deepEqual(errors,[]);console.log('Assistant browser QA passed: 3 widths, public intake disabled, employee guided xerox, individual queue access with direction preserved and forwarding state. Synthetic data only.');
+ assert.deepEqual(errors,[]);console.log('Assistant browser QA passed: 3 widths, public intake disabled until explicit activation, family receipt, employee guided xerox, individual queue access with direction preserved and forwarding state. Synthetic data only.');
 }finally{await browser?.close();server.kill();await rm(directory,{recursive:true,force:true})}

@@ -25,7 +25,7 @@ O botão **Fale com o assistente** atende alunos e famílias na página inicial.
 
 ## Fila da Secretaria e recebimento público
 
-**O recebimento público está desativado incondicionalmente.** `GET /public/secretariat-requests` retorna apenas `enabled:false`; POST retorna 503 sem consultar ou gravar pedidos, mesmo com variável de ambiente habilitada ou contas autorizadas. O assistente público oferece orientação e contatos publicados, sem formulário de coleta. Uma futura abertura depende de alteração específica, fora desta entrega.
+**Publicar o código não ativa o recebimento público.** A migração `0023_secretariat_intake.sql` inicia a coleta desligada. `GET /public/secretariat-requests` informa somente `enabled`; enquanto desativada, POST retorna 503 e o assistente não apresenta formulário. Variáveis de ambiente e perfis não ativam a coleta.
 
 A fila privada existente usa `0019_secretariat_requests.sql`. O acesso depende de uma concessão nominal em `secretariat_access`, vinculada a uma conta ativa; nenhum perfil, inclusive Direção ou Secretaria, recebe acesso automaticamente. `/equipe/secretaria`, seu script e a API verificam a mesma permissão no backend. O atalho **Fila da Secretaria** aparece na área de funcionários somente após verificação dessa permissão. O perfil original e suas demais funções são preservados.
 
@@ -33,7 +33,9 @@ A migração aditiva `0022_secretariat_access.sql` cria as concessões e o marca
 
 `POST /api/secretariat-access` é uma inicialização única, restrita à direção, com `confirmed:true` e uma lista de exatamente três e-mails institucionais previamente confirmados. O backend exige que a lista corresponda exatamente ao cadastro ativo atual, com todas as três contas ainda em Direção. Mudança no conjunto ou perfil impede a operação. Concessões, marcador e auditoria são atômicos; repetir o mesmo conjunto não duplica registros, e substituir ou acrescentar contas após a inicialização é recusado. Contas futuras não recebem acesso; contas inativas não podem usá-lo. Identidades de produção não são incluídas neste repositório público.
 
-Publicar o mecanismo não aplica concessões: a operação nominal deve ocorrer pela sessão autenticada existente e seu resultado deve ser verificado separadamente. Não há alteração de regras do Access, criação de credenciais nem ampliação do domínio institucional.
+Publicar o mecanismo não aplica concessões: a operação nominal deve ocorrer pela sessão autenticada existente e seu resultado deve ser verificado separadamente. Depois de verificar as três concessões, a direção com acesso individual pode executar `POST /api/secretariat-intake` com `confirmed:true, enabled:true`. A ativação é separada, explícita, atômica e auditada; retries não duplicam a auditoria. O mesmo endpoint permite suspensão com `enabled:false`. A coleta exige sempre as três concessões e contas ativas, inclusive na gravação, e fecha automaticamente se alguma delas perder o acesso. Não há alteração de regras do Access, criação de credenciais nem ampliação do domínio institucional.
+
+Quando habilitado, o formulário coleta somente assunto (documentos, vagas ou transferência), nome do responsável e telefone/e-mail de retorno, com revisão e envio explícito. Não aceita nome do aluno, documentos, anexos ou informações de saúde. O protocolo UUID é idempotente. Há limite atômico por contato/dia e teto global por hora; esses limites não autenticam o contato. Não há consulta pública de protocolo. A confirmação significa registro na fila interna, sem afirmar atendimento ou concessão de vaga. Nenhum dado do formulário é enviado a IA ou canais externos.
 
 Estados existentes: **Registrado → Encaminhado → Atendido**. A ação **Assumir na Secretaria** indica recebimento interno; **Confirmar atendimento concluído** registra a conclusão com observação. As alterações têm versão e auditoria. Não há transmissão externa ou envio a IA. Nenhuma transição garante vaga, emissão de documento ou transferência. Os testes usam exclusivamente pedidos fictícios inseridos em banco descartável; não criam pedidos reais.
 
@@ -42,9 +44,9 @@ Estados existentes: **Registrado → Encaminhado → Atendido**. A ação **Assu
 - Endpoints públicos e privados separados; o público recebe apenas uma capacidade de leitura com allowlist de duas fontes públicas. Nem cookies de funcionário ampliam esse escopo.
 - O interno exige JWT verificado pelo módulo Access existente e usuário nominal ativo, incluindo nas ações. Não houve alteração das regras de autenticação nem ampliação dos papéis existentes.
 - JSON e tamanho de corpo limitados; `Origin` verificado; não aceita papel, fonte, identidade, histórico ou contexto enviados pelo cliente. Respostas sem cache. Conteúdo exibido como texto, sem executar HTML.
-- Perguntas não são persistidas nem encaminhadas externamente. Dados da conversa ficam em memória e são apagados ao fechar/limpar. A fila existente permanece privada; novos pedidos públicos estão bloqueados. Recibos de operações internas não guardam o texto da conversa.
-- Testes sintéticos em `tests/assistant.test.mjs` e `tests/assistant-ui.test.mjs`: fontes públicas, rascunhos/expiração, usuários ativos, filtros por proprietário, perfis, XSS, origem/tamanho, falha de fonte, recebimento público bloqueado, concessões individuais, preservação de perfis, estados, auditoria, retries e concorrência.
-- `scripts/assistant-qa.mjs` executa navegador com SQLite descartável: três larguras, consulta pública sem coleta, xerox por conversa e fila interna por permissão individual mantendo o perfil Direção. O workflow **Assistant QA** repete o ensaio no GitHub.
+- Perguntas não são persistidas nem encaminhadas externamente. Dados da conversa ficam em memória e são apagados ao fechar/limpar. A fila existente permanece privada; novos pedidos públicos dependem de ativação explícita. Recibos de operações internas não guardam o texto da conversa.
+- Testes sintéticos em `tests/assistant.test.mjs` e `tests/assistant-ui.test.mjs`: fontes públicas, rascunhos/expiração, usuários ativos, filtros por proprietário, perfis, XSS, origem/tamanho, falha de fonte, recebimento público condicionado à ativação, concessões individuais, preservação de perfis, estados, auditoria, retries e concorrência.
+- `scripts/assistant-qa.mjs` executa navegador com SQLite descartável: três larguras, consulta pública inicialmente sem coleta, ativação e registro sintético com protocolo, xerox por conversa e fila interna por permissão individual mantendo o perfil Direção. O workflow **Assistant QA** repete o ensaio no GitHub.
 
 ## API generativa pendente
 
@@ -52,8 +54,8 @@ A inspeção segura não encontrou `OPENAI_API_KEY` no ambiente ou em arquivos `
 
 ## Publicação e recuperação
 
-Publicação usa a integração existente da main com o Worker `organizadordonicia`. As migrações 0019–0020 e 0022 são aditivas; a 0021 ampliou somente o enum de perfil, sem atribuir acesso. As tabelas novas não devem ser apagadas em uma reversão. Uma reversão deve preservar o recebimento público desligado e as restrições individuais de acesso à fila.
+Publicação usa a integração existente da main com o Worker `organizadordonicia`. As migrações 0019–0020 e 0022–0023 são aditivas; a 0021 ampliou somente o enum de perfil, sem atribuir acesso. As tabelas novas não devem ser apagadas em uma reversão. Uma reversão deve preservar as solicitações, o controle explícito de recebimento e as restrições individuais de acesso à fila.
 
-A validação inclui testes web/backend e móveis, lint, TypeScript, build, consistência de runtime e empacotamento Workers em modo dry-run. O ensaio Chromium usa dados sintéticos em 360, 768 e 1280 px. O job `live` do workflow Assistant QA verifica o domínio pelo GitHub, compara o SHA-256 do script servido com o checkout, consulta os três atalhos, confirma o recebimento público desativado e os redirecionamentos privados. O resultado do job, não sua simples criação, comprova a verificação em produção.
+A validação inclui testes web/backend e móveis, lint, TypeScript, build, consistência de runtime e empacotamento Workers em modo dry-run. O ensaio Chromium usa dados sintéticos em 360, 768 e 1280 px. O job `live` do workflow Assistant QA verifica o domínio pelo GitHub, compara o SHA-256 do script servido com o checkout, consulta os três atalhos, consulta o estado público de recebimento e os redirecionamentos privados. O resultado do job, não sua simples criação, comprova a verificação em produção.
 
 Testes locais e CI não comprovam login nominal real nem aplicação de concessões. Esses resultados devem ser relatados separadamente da publicação dos arquivos e da saúde HTTP pública.

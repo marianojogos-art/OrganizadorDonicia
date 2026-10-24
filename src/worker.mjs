@@ -1,6 +1,7 @@
 import {assistant} from './assistant.mjs';
 import {executeAssistantAction} from './assistant-actions.mjs';
 import {secretariatRequests} from './secretariat-requests.mjs';
+import {intakeEnabled,manageSecretariatIntake} from './secretariat-intake.mjs';
 import {canAccessSecretariat,manageSecretariatAccess} from './secretariat-access.mjs';
 import {projectReview,returnedStatus,validReason,highlightFields} from './pedagogical-workflows.mjs';
 import {isPublicContentRoute,publicContent,managePublicContent} from './public-content.mjs';
@@ -68,7 +69,8 @@ async function handleInner(request,env,authenticate=identity,assistantCreateId){
  const write=async(statement,target=path)=>{const results=await env.DB.batch([statement,env.DB.prepare('INSERT INTO audit(id,actor,action,target) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),email,request.method,target)]);if(path.split('/').length===4&&!results[0].meta?.changes)throw Error('version_conflict');return results[0]};
  const user=await env.DB.prepare('SELECT email,name,role FROM users WHERE email=? AND active=1').bind(email).first();if(!user)return json({error:'Usuário não autorizado pela direção'},403);
  if(!['direction','supervision','guidance','teacher','secretary'].includes(user.role))return json({error:'Perfil sem permissão'},403);
- if(path==='/api/secretariat-access/me')return request.method==='GET'?json({allowed:await canAccessSecretariat(env.DB,user),publicIntakeEnabled:false}):json({error:'Método indisponível'},405);
+ if(path==='/api/secretariat-access/me')return request.method==='GET'?json({allowed:await canAccessSecretariat(env.DB,user),publicIntakeEnabled:await intakeEnabled(env.DB)}):json({error:'Método indisponível'},405);
+ if(path==='/api/secretariat-intake')return manageSecretariatIntake(request,env.DB,user);
  if(path==='/api/secretariat-access')return manageSecretariatAccess(request,env.DB,user);
  if(['/equipe/secretaria','/equipe/secretariat.js'].includes(path)){
   if(!await canAccessSecretariat(env.DB,user))return json({error:'Acesso à fila não concedido a esta conta'},403);
