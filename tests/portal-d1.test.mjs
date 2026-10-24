@@ -50,6 +50,15 @@ test('D1 migration preserves referenced users and atomically resolves approval c
   const list=(await send('/api/trainings','GET',undefined,'teacher@prof.pmf.sc.gov.br')).body;assert.equal(list[0].id,formation.body.id);assert.equal(list[0].notes,'Prévia');
   assert.equal((await send('/api/trainings/'+formation.body.id,'PATCH',{title:'Formação revisada',date:'2026-10-21',area:'Linguagens',notes:'Revisão',version:1})).status,200);
   assert.equal((await DB.prepare('SELECT details FROM events WHERE id=?').bind(formation.body.id).first()).details,'Revisão');
+  // Exercise the grant transaction against D1, including connection-local changes().
+  await DB.batch([DB.prepare("UPDATE users SET role='direction'"),DB.prepare("INSERT INTO users VALUES('third@prof.pmf.sc.gov.br','Terceira pessoa fictícia','direction',1)")]);
+  const grant={confirmed:true,emails:['team@prof.pmf.sc.gov.br','teacher@prof.pmf.sc.gov.br','third@prof.pmf.sc.gov.br']};
+  const grants=await Promise.all([send('/api/secretariat-access','POST',grant),send('/api/secretariat-access','POST',grant)]);
+  assert.deepEqual(grants.map(result=>result.status).sort(),[200,201]);
+  assert.equal((await DB.prepare("SELECT count(*) AS n FROM audit WHERE action='GRANT'").first()).n,1);
+  assert.equal((await send('/api/secretariat-access')).body.members.length,3);
+  for(const email of grant.emails){assert.equal((await send('/api/secretariat-access/me','GET',undefined,email)).body.allowed,true);assert.equal((await send('/api/me','GET',undefined,email)).body.role,'direction')}
+  assert.deepEqual((await send('/public/secretariat-requests','GET',undefined,null)).body,{enabled:false});
   assert.deepEqual((await DB.prepare('PRAGMA foreign_key_check').all()).results,[]);
  }finally{await mf.dispose()}
 });

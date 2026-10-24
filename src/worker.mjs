@@ -1,6 +1,7 @@
 import {assistant} from './assistant.mjs';
 import {executeAssistantAction} from './assistant-actions.mjs';
 import {secretariatRequests} from './secretariat-requests.mjs';
+import {canAccessSecretariat,manageSecretariatAccess} from './secretariat-access.mjs';
 import {projectReview,returnedStatus,validReason,highlightFields} from './pedagogical-workflows.mjs';
 import {isPublicContentRoute,publicContent,managePublicContent} from './public-content.mjs';
 import {ingestMetrics,readMetrics} from './site-metrics.mjs';
@@ -66,11 +67,17 @@ async function handleInner(request,env,authenticate=identity,assistantCreateId){
  const email=await authenticate(request,env);if(!email)return json({error:'Login institucional necessário'},401);
  const write=async(statement,target=path)=>{const results=await env.DB.batch([statement,env.DB.prepare('INSERT INTO audit(id,actor,action,target) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),email,request.method,target)]);if(path.split('/').length===4&&!results[0].meta?.changes)throw Error('version_conflict');return results[0]};
  const user=await env.DB.prepare('SELECT email,name,role FROM users WHERE email=? AND active=1').bind(email).first();if(!user)return json({error:'Usuário não autorizado pela direção'},403);
+ if(!['direction','supervision','guidance','teacher','secretary'].includes(user.role))return json({error:'Perfil sem permissão'},403);
+ if(path==='/api/secretariat-access/me')return request.method==='GET'?json({allowed:await canAccessSecretariat(env.DB,user),publicIntakeEnabled:false}):json({error:'Método indisponível'},405);
+ if(path==='/api/secretariat-access')return manageSecretariatAccess(request,env.DB,user);
+ if(['/equipe/secretaria','/equipe/secretariat.js'].includes(path)){
+  if(!await canAccessSecretariat(env.DB,user))return json({error:'Acesso à fila não concedido a esta conta'},403);
+  return serveAsset(request,env,path==='/equipe/secretaria'?'/secretariat.html':'/secretariat.js');
+ }
  if(user.role==='secretary'){
   if(path==='/api/me'&&request.method==='GET')return json(user);
   if(path==='/api/secretariat-requests'||/^\/api\/secretariat-requests\/[a-f0-9-]+$/.test(path))return secretariatRequests(request,env,user);
-  if(['/equipe','/equipe/','/index.html'].includes(path))return serveAsset(request,env,'/secretariat.html');
-  if(path==='/equipe/secretariat.js')return serveAsset(request,env,'/secretariat.js');
+  if(['/equipe','/equipe/','/index.html'].includes(path)&&await canAccessSecretariat(env.DB,user))return serveAsset(request,env,'/secretariat.html');
   return json({error:'Este recurso não está disponível no perfil Secretaria'},403);
  }
  const pedagogical=isPedagogical(user);

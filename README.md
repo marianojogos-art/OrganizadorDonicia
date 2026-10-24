@@ -1,6 +1,6 @@
 # Organizador Donícia — Cloudflare Workers
 
-O [assistente de atendimento](docs/assistente-atendimento.md) consulta fontes públicas e internas com isolamento no backend. Na equipe, oferece reserva, xerox e mensagens com perguntas guiadas, revisão e confirmação. O registro privado de pedidos das famílias usa a fila exclusiva do perfil Secretaria e só aceita envios quando existe uma conta Secretaria ativa. Não há envio externo. Esta versão não usa API de IA.
+O [assistente de atendimento](docs/assistente-atendimento.md) consulta fontes públicas e internas com isolamento no backend. Na equipe, oferece reserva, xerox e mensagens com perguntas guiadas, revisão e confirmação. A fila privada da Secretaria exige concessão individual para conta ativa, preservando seu perfil. O recebimento público de pedidos está desativado. Não há envio externo. Esta versão não usa API de IA.
 
 Projeto escolar independente para a EBM Donícia Maria da Costa, publicado em [Organizador Donícia](https://organizadordonicia.carijo.workers.dev/) com a área de funcionários protegida por Cloudflare Access. O GitHub está conectado ao Worker `organizadordonicia`, com build e publicação automáticos da branch `main`. Não utiliza recursos operacionais da Lepidus.
 

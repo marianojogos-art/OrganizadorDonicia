@@ -64,20 +64,14 @@ test('input cannot select source, role, history or context; bad origin/method/si
  assert.equal((await ask(env,'a'.repeat(501))).status,400);assert.equal((await ask(env,'a'.repeat(5000))).status,413);
  env.DB.exec('DROP TABLE notices');assert.equal((await ask(env,'avisos')).status,503);env.DB.close();
 });
-test('family intake is disabled by default, minimal, private, idempotent and quota bounded',async()=>{
+test('family intake stays disabled regardless of active profiles, grants and environment flags',async()=>{
  const env=setup(),path='/public/secretariat-requests',data={id:crypto.randomUUID(),kind:'documents',name:'Responsável fictício',contact:'familia@example.test',consent:true};
- assert.equal((await request(env,path,undefined,'anonymous',{method:'GET'})).body.enabled,false);assert.equal((await request(env,path,data)).status,503);
- env.SECRETARIAT_INTAKE_ENABLED='true';env.DB.exec("UPDATE users SET active=1 WHERE role='secretary'");assert.equal((await request(env,path,{...data,student:'Não permitido'})).status,400);
- assert.equal((await request(env,path,{...data,consent:false})).status,400);
- assert.equal((await request(env,path,data)).status,201);assert.equal((await request(env,path,data)).status,200);
- assert.equal((await request(env,path,{...data,name:'Outra pessoa'})).status,409);
- assert.deepEqual(Object.keys((await request(env,path,undefined,'anonymous',{method:'GET'})).body),['enabled']);
- for(const role of ['anonymous','teacher','inactive'])assert.ok([401,403].includes((await request(env,'/api/secretariat-requests',undefined,role,{method:'GET'})).status));
- for(let i=0;i<4;i++)assert.equal((await request(env,path,{...data,id:crypto.randomUUID()})).status,201);assert.equal((await request(env,path,{...data,id:crypto.randomUUID()})).status,429);
- assert.doesNotMatch(JSON.stringify((await ask(env,'Responsável fictício documentos')).body),/familia@example.test/);env.DB.close();
+ env.DB.exec("UPDATE users SET active=1 WHERE role='secretary'; INSERT INTO secretariat_access(email,granted_by) VALUES('secretary.demo@prof.pmf.sc.gov.br','director@prof.pmf.sc.gov.br')");
+ for(const flag of [undefined,'true','false']){env.SECRETARIAT_INTAKE_ENABLED=flag;assert.deepEqual((await request(env,path,undefined,'anonymous',{method:'GET'})).body,{enabled:false});assert.equal((await request(env,path,data)).status,503)}
+ assert.equal((await env.DB.prepare('SELECT count(*) AS n FROM secretariat_requests').first()).n,0);env.DB.close();
 });
 test('request forwarding and attendance require evidence, ordered states and versioned audit',async()=>{
- const env=setup();env.SECRETARIAT_INTAKE_ENABLED='true';env.DB.exec("UPDATE users SET active=1 WHERE role='secretary'");const id=crypto.randomUUID();await request(env,'/public/secretariat-requests',{id,kind:'vacancy',name:'Fictício',contact:'familia@example.test',consent:true});const path='/api/secretariat-requests/'+id;
+ const env=setup();env.SECRETARIAT_INTAKE_ENABLED='true';env.DB.exec("UPDATE users SET active=1 WHERE role='secretary'");env.DB.exec("INSERT INTO secretariat_access(email,granted_by) VALUES('secretary.demo@prof.pmf.sc.gov.br','director@prof.pmf.sc.gov.br')");const id=crypto.randomUUID();await env.DB.prepare("INSERT INTO secretariat_requests(id,kind,name,contact) VALUES(?,'vacancy','Fictício','familia@example.test')").bind(id).run();const path='/api/secretariat-requests/'+id;
  assert.equal((await request(env,path,{version:1,status:'Atendido',evidence:'Confirmação fictícia'},'secretary',{method:'PATCH'})).status,409);
  assert.equal((await request(env,path,{version:1,status:'Encaminhado',evidence:''},'secretary',{method:'PATCH'})).status,400);
  const update={version:1,status:'Encaminhado',evidence:'Encaminhado manualmente à secretaria por canal confirmado (fictício)'};
@@ -112,7 +106,8 @@ test('confirmed conversational actions reuse validation and commit receipts atom
 
 test('Secretariat has an isolated inbox and cannot use pedagogical or teacher APIs',async()=>{
  const env=setup();env.DB.exec("UPDATE users SET active=1 WHERE role='secretary'");
- assert.equal((await request(env,'/public/secretariat-requests',undefined,'anonymous',{method:'GET'})).body.enabled,true);
+ assert.equal((await request(env,'/public/secretariat-requests',undefined,'anonymous',{method:'GET'})).body.enabled,false);
+ assert.equal((await request(env,'/api/secretariat-requests',undefined,'secretary',{method:'GET'})).status,403,'role alone grants nothing');env.DB.exec("INSERT INTO secretariat_access(email,granted_by) VALUES('secretary.demo@prof.pmf.sc.gov.br','director@prof.pmf.sc.gov.br')");
  assert.equal((await request(env,'/api/secretariat-requests',undefined,'secretary',{method:'GET'})).status,200);
  assert.equal((await request(env,'/api/me',undefined,'secretary',{method:'GET'})).body.role,'secretary');
  for(const role of ['direction','supervision','guidance','teacher','other','inactive'])assert.equal((await request(env,'/api/secretariat-requests',undefined,role,{method:'GET'})).status,403);
@@ -124,9 +119,45 @@ test('Secretariat has an isolated inbox and cannot use pedagogical or teacher AP
 });
 
 test('Secretariat role migration preserves existing identities and dependent rows without assigning access',async()=>{
- const DB=sqlite();for(const sql of migrations.slice(0,-1))DB.exec('BEGIN;'+sql+'COMMIT;');
+ const DB=sqlite(),roleMigration=migrations.findIndex(sql=>sql.includes('CREATE TABLE users_secretariat'));for(const sql of migrations.slice(0,roleMigration))DB.exec('BEGIN;'+sql+'COMMIT;');
  DB.exec("INSERT INTO users VALUES('legacy@prof.pmf.sc.gov.br','Pessoa fictícia','direction',1); INSERT INTO personal_notes(id,owner,title,content) VALUES('legacy-note','legacy@prof.pmf.sc.gov.br','Nota privada','Conteúdo fictício'); INSERT INTO tasks(id,title,owner,due,creator) VALUES('legacy-task','Tarefa','legacy@prof.pmf.sc.gov.br','2026-11-01','legacy@prof.pmf.sc.gov.br'); INSERT INTO assistant_operations(owner,operation_id,request_hash,record_id,action) VALUES('legacy@prof.pmf.sc.gov.br','old-op','old-hash','old-id','xerox')");
- DB.exec('BEGIN;'+migrations.at(-1)+'COMMIT;');
+ DB.exec('BEGIN;'+migrations[roleMigration]+'COMMIT;');
  assert.deepEqual((await DB.prepare('SELECT role FROM users').all()).results.map(x=>x.role),['direction']);assert.equal((await DB.prepare('SELECT count(*) AS n FROM personal_notes').first()).n,1);assert.equal((await DB.prepare('SELECT count(*) AS n FROM tasks').first()).n,1);assert.equal((await DB.prepare('SELECT count(*) AS n FROM assistant_operations').first()).n,1);assert.deepEqual((await DB.prepare('PRAGMA foreign_key_check').all()).results,[]);
  assert.throws(()=>DB.exec("DELETE FROM users WHERE email='legacy@prof.pmf.sc.gov.br'"),/FOREIGN KEY/);DB.close();
+});
+
+function grantSetup(){const env=setup();env.DB.exec("UPDATE users SET active=0; UPDATE users SET role='direction',active=1 WHERE email IN ('director@prof.pmf.sc.gov.br','supervisor@prof.pmf.sc.gov.br','guide@prof.pmf.sc.gov.br')");return env}
+const approvedFixture={emails:[users.direction,users.supervision,users.guidance],confirmed:true};
+test('one-time named grant is atomic, preserves direction, excludes future/inactive accounts and never enables intake',async()=>{
+ const env=grantSetup(),path='/api/secretariat-access';
+ assert.deepEqual((await request(env,path,undefined,'direction',{method:'GET'})).body,{initialized:false,members:[],publicIntakeEnabled:false});
+ assert.equal((await request(env,'/api/secretariat-requests',undefined,'direction',{method:'GET'})).status,403);
+ const responses=await Promise.all([request(env,path,approvedFixture,'direction'),request(env,path,approvedFixture,'direction')]);assert.deepEqual(responses.map(x=>x.status).sort(),[200,201]);
+ assert.equal((await env.DB.prepare('SELECT count(*) AS n FROM audit').first()).n,1);
+ for(const role of ['direction','supervision','guidance']){
+  assert.equal((await request(env,'/api/secretariat-access/me',undefined,role,{method:'GET'})).body.allowed,true);
+  assert.equal((await request(env,'/api/me',undefined,role,{method:'GET'})).body.role,'direction');
+  assert.equal((await request(env,'/api/tasks',undefined,role,{method:'GET'})).status,200);
+  assert.equal((await request(env,'/api/secretariat-requests',undefined,role,{method:'GET'})).status,200);
+ }
+ env.DB.exec("UPDATE users SET active=0 WHERE email='guide@prof.pmf.sc.gov.br'; UPDATE users SET active=1,role='direction' WHERE email='other@prof.pmf.sc.gov.br'");
+ assert.equal((await request(env,'/api/secretariat-requests',undefined,'guidance',{method:'GET'})).status,403);
+ assert.equal((await request(env,'/api/secretariat-access/me',undefined,'other',{method:'GET'})).body.allowed,false);
+ assert.equal((await request(env,'/api/secretariat-requests',undefined,'other',{method:'GET'})).status,403);
+ assert.equal((await request(env,path,{...approvedFixture,emails:[users.direction,users.supervision,users.other]},'direction')).status,409);
+ assert.equal((await request(env,path,approvedFixture,'direction')).body.applied,false);
+ assert.deepEqual((await request(env,'/public/secretariat-requests',undefined,'anonymous',{method:'GET'})).body,{enabled:false});env.DB.close();
+});
+test('grant rejects directory changes, role-wide access, unconfirmed input and rolls back on audit failure',async()=>{
+ const env=grantSetup(),path='/api/secretariat-access';
+ assert.equal((await request(env,path,{...approvedFixture,confirmed:false},'direction')).status,400);
+ assert.equal((await request(env,path,{...approvedFixture,role:'direction'},'direction')).status,400);
+ assert.equal((await request(env,path,approvedFixture,'direction',{headers:{Origin:'https://evil.test'}})).status,403);
+ env.DB.exec("UPDATE users SET active=1 WHERE email='other@prof.pmf.sc.gov.br'");
+ assert.equal((await request(env,path,approvedFixture,'direction')).status,409,'an additional active account requires a fresh review');
+ env.DB.exec("UPDATE users SET active=0 WHERE email='other@prof.pmf.sc.gov.br'; UPDATE users SET role='teacher' WHERE email='guide@prof.pmf.sc.gov.br'");
+ assert.equal((await request(env,path,approvedFixture,'direction')).status,409);assert.equal((await request(env,path,approvedFixture,'guidance')).status,403);
+ env.DB.exec("UPDATE users SET role='direction' WHERE email='guide@prof.pmf.sc.gov.br'; DROP TABLE audit");
+ assert.equal((await request(env,path,approvedFixture,'direction')).status,503);
+ assert.equal((await env.DB.prepare('SELECT count(*) AS n FROM secretariat_access').first()).n,0);assert.equal((await env.DB.prepare('SELECT count(*) AS n FROM secretariat_access_initialization').first()).n,0);env.DB.close();
 });

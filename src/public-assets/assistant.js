@@ -37,6 +37,7 @@ find('[data-question]').addEventListener('submit',event=>{event.preventDefault()
 const shortcuts=staff?['Pedidos de xerox','Reservas de espaços','Calendário','Formação','Notas pessoais']:['Pedir documentos','Consultar vagas','Solicitar transferência','Horário de atendimento','Calendário'];
 for(const text of shortcuts){const button=node('button',text);button.type='button';button.addEventListener('click',()=>{input.value=text;ask(text);if(!staff&&/documentos|vagas|transferência/.test(text))showIntake(text)});find('.da-shortcuts').append(button)}
 if(staff){
+ fetch('/api/secretariat-access/me',{credentials:'same-origin',redirect:'error',cache:'no-store'}).then(response=>response.ok?response.json():null).then(access=>{const link=document.querySelector('#secretariat-link');if(link)link.hidden=access?.allowed!==true}).catch(()=>{});
  for(const text of ['Quero reservar um espaço','Quero pedir xerox','Quero enviar uma mensagem']){const button=node('button',text);button.type='button';button.addEventListener('click',()=>{input.value=text;ask(text)});find('.da-shortcuts').append(button)}
 
 }

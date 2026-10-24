@@ -69,3 +69,6 @@ export const secretariatRequests=sqliteTable('secretariat_requests',{
 export const assistantOperations=sqliteTable('assistant_operations',{
  owner:text('owner').notNull().references(()=>users.email),operationId:text('operation_id').notNull(),requestHash:text('request_hash').notNull(),recordId:text('record_id').notNull(),action:text('action',{enum:['reservation','xerox','message']}).notNull(),createdAt:text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`)
 },t=>[primaryKey({columns:[t.owner,t.operationId]})]);
+
+export const secretariatAccess=sqliteTable('secretariat_access',{email:text('email').primaryKey().references(()=>users.email,{onDelete:'cascade'}),grantedBy:text('granted_by').notNull().references(()=>users.email),grantedAt:text('granted_at').notNull().default(sql`CURRENT_TIMESTAMP`)});
+export const secretariatAccessInitialization=sqliteTable('secretariat_access_initialization',{id:integer('id').primaryKey(),actor:text('actor').notNull().references(()=>users.email),createdAt:text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`)});
