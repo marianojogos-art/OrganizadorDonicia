@@ -3,10 +3,13 @@ const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:
 const uuid=value=>typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 export async function secretariatRequests(request,env,user){
  const path=new URL(request.url).pathname,publicRoute=path==='/public/secretariat-requests';
- if(!publicRoute&&!['direction','supervision','guidance'].includes(user?.role))return json({error:'Acesso exclusivo da equipe pedagógica'},403);
- if(publicRoute&&request.method==='GET')return json({enabled:env.SECRETARIAT_INTAKE_ENABLED==='true'});
+ if(!publicRoute&&user?.role!=='secretary')return json({error:'Acesso exclusivo da Secretaria'},403);
+ // No orphan intake: the role must have a nominal active account. The existing
+ // Cloudflare identity gate still applies; this does not provision or grant access.
+ const enabled=publicRoute?env.SECRETARIAT_INTAKE_ENABLED!=='false'&&!!await env.DB.prepare("SELECT 1 AS ready FROM users WHERE role='secretary' AND active=1 LIMIT 1").first():false;
+ if(publicRoute&&request.method==='GET')return json({enabled});
  if(publicRoute&&request.method!=='POST'||!publicRoute&&!['GET','PATCH'].includes(request.method))return json({error:'Método indisponível'},405);
- if(publicRoute&&env.SECRETARIAT_INTAKE_ENABLED!=='true')return json({error:'Registro ainda não habilitado. Consulte os contatos da secretaria.'},503);
+ if(publicRoute&&!enabled)return json({error:'Registro ainda não habilitado. Consulte os contatos da secretaria.'},503);
  if(request.method==='GET'){
   const offset=Number(new URL(request.url).searchParams.get('offset')||0);if(!Number.isSafeInteger(offset)||offset<0)return json({error:'Página inválida'},400);
   const rows=await env.DB.prepare('SELECT id,kind,name,contact,status,evidence,version,created_at,updated_at FROM secretariat_requests ORDER BY created_at DESC,id LIMIT 30 OFFSET ?').bind(offset).all();

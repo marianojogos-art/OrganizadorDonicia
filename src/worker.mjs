@@ -66,6 +66,13 @@ async function handleInner(request,env,authenticate=identity,assistantCreateId){
  const email=await authenticate(request,env);if(!email)return json({error:'Login institucional necessário'},401);
  const write=async(statement,target=path)=>{const results=await env.DB.batch([statement,env.DB.prepare('INSERT INTO audit(id,actor,action,target) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),email,request.method,target)]);if(path.split('/').length===4&&!results[0].meta?.changes)throw Error('version_conflict');return results[0]};
  const user=await env.DB.prepare('SELECT email,name,role FROM users WHERE email=? AND active=1').bind(email).first();if(!user)return json({error:'Usuário não autorizado pela direção'},403);
+ if(user.role==='secretary'){
+  if(path==='/api/me'&&request.method==='GET')return json(user);
+  if(path==='/api/secretariat-requests'||/^\/api\/secretariat-requests\/[a-f0-9-]+$/.test(path))return secretariatRequests(request,env,user);
+  if(['/equipe','/equipe/','/index.html'].includes(path))return serveAsset(request,env,'/secretariat.html');
+  if(path==='/equipe/secretariat.js')return serveAsset(request,env,'/secretariat.js');
+  return json({error:'Este recurso não está disponível no perfil Secretaria'},403);
+ }
  const pedagogical=isPedagogical(user);
  if(!pedagogical&&user.role!=='teacher')return json({error:'Perfil sem permissão'},403);
  if(path==='/api/assistant/execute')return executeAssistantAction(request,env.DB,user,(target,data,DB,id)=>handleInner(new Request(new URL(target,request.url),{method:'POST',headers:{Origin:new URL(request.url).origin,'Content-Type':'application/json'},body:JSON.stringify(data)}),{...env,DB},async()=>email,id));
