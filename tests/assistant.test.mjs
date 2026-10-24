@@ -186,3 +186,15 @@ test('public intake activation rolls back if audit fails',async()=>{
  const env=grantSetup();await request(env,'/api/secretariat-access',approvedFixture,'direction');env.DB.exec('DROP TABLE audit');
  assert.equal((await request(env,'/api/secretariat-intake',{confirmed:true,enabled:true},'direction')).status,503);assert.equal((await env.DB.prepare('SELECT enabled FROM secretariat_intake').first()).enabled,0);env.DB.close();
 });
+
+
+test('Secretariat administration page and script require active direction and never grant access on navigation',async()=>{
+ const env=setup();
+ for(const path of ['/equipe/secretaria/acessos','/equipe/secretariat-admin.js']){
+  for(const role of ['anonymous','teacher','supervision','guidance','inactive','secretary']){
+   const response=await handle(new Request('https://school.test'+path),env,async()=>users[role]||null);assert.ok([401,403].includes(response.status));
+  }
+  const response=await handle(new Request('https://school.test'+path),env,async()=>users.direction);assert.equal(response.status,200);assert.equal(response.headers.get('Cache-Control'),'no-store');assert.match(response.headers.get('Content-Security-Policy'),/script-src 'self'/);
+ }
+ assert.equal((await env.DB.prepare('SELECT count(*) AS n FROM secretariat_access').first()).n,0);assert.equal((await env.DB.prepare('SELECT enabled FROM secretariat_intake').first()).enabled,0);env.DB.close();
+});

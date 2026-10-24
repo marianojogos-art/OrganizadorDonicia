@@ -72,6 +72,10 @@ async function handleInner(request,env,authenticate=identity,assistantCreateId){
  if(path==='/api/secretariat-access/me')return request.method==='GET'?json({allowed:await canAccessSecretariat(env.DB,user),publicIntakeEnabled:await intakeEnabled(env.DB)}):json({error:'Método indisponível'},405);
  if(path==='/api/secretariat-intake')return manageSecretariatIntake(request,env.DB,user);
  if(path==='/api/secretariat-access')return manageSecretariatAccess(request,env.DB,user);
+ if(['/equipe/secretaria/acessos','/equipe/secretariat-admin.js'].includes(path)){
+  if(user.role!=='direction')return json({error:'Administração restrita à direção autenticada'},403);
+  return serveAsset(request,env,path==='/equipe/secretaria/acessos'?'/secretariat-admin.html':'/secretariat-admin.js');
+ }
  if(['/equipe/secretaria','/equipe/secretariat.js'].includes(path)){
   if(!await canAccessSecretariat(env.DB,user))return json({error:'Acesso à fila não concedido a esta conta'},403);
   return serveAsset(request,env,path==='/equipe/secretaria'?'/secretariat.html':'/secretariat.js');
