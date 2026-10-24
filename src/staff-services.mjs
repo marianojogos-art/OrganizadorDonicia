@@ -48,7 +48,7 @@ export function isStaffServicesRoute(path){const match=pattern.exec(path);return
 
 // The worker authenticates the active user, checks same-origin CSRF and bounds JSON
 // before calling this handler. This service also checks roles, ownership and versions.
-export async function handleStaffServices(request,DB,user,data){
+export async function handleStaffServices(request,DB,user,data,assistantCreateId){
  const path=new URL(request.url).pathname,match=pattern.exec(path);
  if(!match||!isStaffServicesRoute(path))return null;
  const [,kind,id,attachment]=match,config=resources[kind],team=pedagogical(user),method=request.method;
@@ -92,7 +92,7 @@ export async function handleStaffServices(request,DB,user,data){
   if(kind==='staff-requests'&&data.status!==undefined&&!returning&&!statuses.includes(data.status))failure('Situação inválida');
   if(kind==='staff-requests'&&id&&!returning&&data.status!==undefined&&data.status!==previous.status&&!transitions[previous.status].includes(data.status))failure('Transição inválida. Analise/aprove antes de concluir a solicitação',409);
   if(method==='POST'&&data.status!==undefined&&data.status!=='Pendente')failure('Novas solicitações começam pendentes');
-  const recordId=id||crypto.randomUUID();let statement;
+  const recordId=id||assistantCreateId||crypto.randomUUID();let statement;
   if(method==='DELETE')statement=DB.prepare('DELETE FROM '+table+' WHERE id=? AND version=?'+visible).bind(id,data.version,...args);
   else{
    const values=fields(kind,data,user,previous);

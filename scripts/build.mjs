@@ -7,7 +7,7 @@ for(const [name,scriptName,url] of [['index','app','/equipe/app.js'],['public','
  await writeFile(new URL('../dist/'+scriptName+'.js',import.meta.url),script);
 }
 await mkdir(new URL('../dist/public-assets/',import.meta.url),{recursive:true});
-for(const name of ['logo.jpg','donicia-2026.png','donicia-2026-480.c67023d134b5.webp','donicia-2026-960.707952f5d28c.webp','donicia-2026-1440.f4d9f138aee3.webp','feedback.css','feedback.js','site-metrics.js'])await copyFile(new URL('../src/public-assets/'+name,import.meta.url),new URL('../dist/public-assets/'+name,import.meta.url));
+for(const name of ['logo.jpg','donicia-2026.png','donicia-2026-480.c67023d134b5.webp','donicia-2026-960.707952f5d28c.webp','donicia-2026-1440.f4d9f138aee3.webp','feedback.css','feedback.js','site-metrics.js','assistant.js','assistant.css'])await copyFile(new URL('../src/public-assets/'+name,import.meta.url),new URL('../dist/public-assets/'+name,import.meta.url));
 await copyFile(new URL('../src/staff-assets/formacao-outubro-2026.csv',import.meta.url),new URL('../dist/formation-outubro-2026.csv',import.meta.url));
 await import('./build-sge-connector.mjs');
 console.log('Build completo: portal público e área da equipe, JS separado para CSP.');

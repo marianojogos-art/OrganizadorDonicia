@@ -58,3 +58,14 @@ export const publicContent=sqliteTable('public_content',{featured:integer('featu
  id:text('id').primaryKey(),kind:text('kind',{enum:['project','document']}).notNull(),title:text('title').notNull(),description:text('description').notNull().default(''),category:text('category').notNull().default('Geral'),url:text('url').notNull().default(''),published:integer('published').notNull().default(0),
  attachmentName:text('attachment_name').notNull().default(''),attachmentMime:text('attachment_mime').notNull().default(''),attachmentData:text('attachment_data').notNull().default(''),imageAlt:text('image_alt').notNull().default(''),creator:text('creator').notNull().references(()=>users.email),version:integer('version').notNull().default(1),updatedAt:text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`)
 },t=>[index('public_content_public_kind').on(t.published,t.kind,t.title)]);
+
+// Private intake; enabling collection requires an agreed secretariat routing owner.
+export const secretariatRequests=sqliteTable('secretariat_requests',{
+ id:text('id').primaryKey(),kind:text('kind',{enum:['documents','vacancy','transfer']}).notNull(),name:text('name').notNull(),contact:text('contact').notNull(),
+ status:text('status',{enum:['Registrado','Encaminhado','Atendido']}).notNull().default('Registrado'),evidence:text('evidence').notNull().default(''),version:integer('version').notNull().default(1),
+ createdAt:text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),updatedAt:text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`)
+},t=>[index('secretariat_requests_status_date').on(t.status,t.createdAt),index('secretariat_requests_contact_date').on(t.contact,t.createdAt)]);
+
+export const assistantOperations=sqliteTable('assistant_operations',{
+ owner:text('owner').notNull().references(()=>users.email),operationId:text('operation_id').notNull(),requestHash:text('request_hash').notNull(),recordId:text('record_id').notNull(),action:text('action',{enum:['reservation','xerox','message']}).notNull(),createdAt:text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`)
+},t=>[primaryKey({columns:[t.owner,t.operationId]})]);

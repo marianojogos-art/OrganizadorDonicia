@@ -1,3 +1,6 @@
+import {assistant} from './assistant.mjs';
+import {executeAssistantAction} from './assistant-actions.mjs';
+import {secretariatRequests} from './secretariat-requests.mjs';
 import {projectReview,returnedStatus,validReason,highlightFields} from './pedagogical-workflows.mjs';
 import {isPublicContentRoute,publicContent,managePublicContent} from './public-content.mjs';
 import {ingestMetrics,readMetrics} from './site-metrics.mjs';
@@ -39,11 +42,19 @@ const contextValid=d=>['class','subject'].every(k=>d[k]===undefined||(typeof d[k
 const fixedRange=d=>{if(!validDate(d.from_date)||!validDate(d.to_date)||d.to_date<d.from_date)return false;const first=new Date(d.from_date+'T12:00:00Z');first.setUTCDate(first.getUTCDate()+(d.weekday-first.getUTCDay()+7)%7);return first.toISOString().slice(0,10)<=d.to_date};
 const schoolToday=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const weekOf=date=>{const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);return monday.toISOString().slice(0,10)};
-async function handleInner(request,env,authenticate=identity){
+async function handleInner(request,env,authenticate=identity,assistantCreateId){
  const path=new URL(request.url).pathname;
- if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg'||path==='/public-assets/donicia-2026.png'||path==='/public-assets/feedback.js'||path==='/public-assets/site-metrics.js'||path==='/public-assets/feedback.css'||versionedPublicImages.includes(path))return serveAsset(request,env,path==='/'?'/public.html':path);
+ if(path==='/'||path==='/public.html'||path==='/public.js'||path==='/public-assets/logo.jpg'||path==='/public-assets/donicia-2026.png'||path==='/public-assets/feedback.js'||path==='/public-assets/site-metrics.js'||path==='/public-assets/assistant.js'||path==='/public-assets/assistant.css'||path==='/public-assets/feedback.css'||versionedPublicImages.includes(path))return serveAsset(request,env,path==='/'?'/public.html':path);
  if(path==='/api/health')return json({ok:true,modules:['reservations','tasks','substitutions','auxiliaries','xerox','minutes','events','fixed-occupancy','trainings','notices','notes'],studentData:false});
  if(!env.DB)return json({error:'Persistência não configurada'},503);
+ // This capability cannot address an internal endpoint, even for a logged-in visitor.
+ const readAssistantPublic=async target=>{
+  if(!['/public/api','/public/content'].includes(target))throw Error('source_not_public');
+  const response=await handleInner(new Request(new URL(target,request.url)),env,async()=>null);
+  if(!response.ok)throw Error('source_unavailable');return response.json();
+ };
+ if(path==='/public/assistant')return assistant(request,{readPublic:readAssistantPublic});
+ if(path==='/public/secretariat-requests')return secretariatRequests(request,env);
  if(path==='/public/content'||path==='/public/highlights'||/^\/public\/projects\/[A-Za-z0-9_-]{1,100}\/image$/.test(path))return publicContent(request,env.DB);
  if(path==='/public/metrics')return ingestMetrics(request,env.DB);
  if(path==='/public/feedback')return submitFeedback(request,env.DB);
@@ -57,6 +68,16 @@ async function handleInner(request,env,authenticate=identity){
  const user=await env.DB.prepare('SELECT email,name,role FROM users WHERE email=? AND active=1').bind(email).first();if(!user)return json({error:'Usuário não autorizado pela direção'},403);
  const pedagogical=isPedagogical(user);
  if(!pedagogical&&user.role!=='teacher')return json({error:'Perfil sem permissão'},403);
+ if(path==='/api/assistant/execute')return executeAssistantAction(request,env.DB,user,(target,data,DB,id)=>handleInner(new Request(new URL(target,request.url),{method:'POST',headers:{Origin:new URL(request.url).origin,'Content-Type':'application/json'},body:JSON.stringify(data)}),{...env,DB},async()=>email,id));
+ if(path==='/api/secretariat-requests'||/^\/api\/secretariat-requests\/[a-f0-9-]+$/.test(path))return secretariatRequests(request,env,user);
+ if(path==='/api/assistant')return assistant(request,{readPublic:readAssistantPublic,user,readStaff:async target=>{
+  const allowed=['/api/xerox','/api/reservations','/api/events','/api/trainings','/api/tasks','/api/minutes','/api/notes','/api/staff-requests'];
+  if(!allowed.includes(target))throw Error('source_not_allowed');
+  // Reuse existing endpoint authorization and owner filters with the verified identity.
+  const response=await handleInner(new Request(new URL(target,request.url)),env,async()=>email);
+  if(response.status===403)return null;
+  if(!response.ok)throw Error('source_unavailable');return response.json();
+ }});
  if(!pedagogical&&path.startsWith('/api/')){
   const read=request.method==='GET'&&(['/api/me','/api/reservations','/api/fixed-occupancy','/api/xerox','/api/events','/api/trainings','/api/official-trainings'].includes(path)||/^\/api\/xerox\/[^/]+\/attachment$/.test(path)||/^\/api\/staff-requests(?:\/[^/]+)?$/.test(path));
   const create=request.method==='POST'&&['/api/reservations','/api/xerox','/api/staff-requests'].includes(path);
@@ -132,7 +153,7 @@ async function handleInner(request,env,authenticate=identity){
  if(resource){if(!Number.isInteger(data.version)||data.version<1)return json({error:'Versão do registro necessária. Atualize a tela'},400);const table=resource[1]==='trainings'?'events':resource[1].replace('fixed-occupancy','fixed_occupancy');const row=await env.DB.prepare('SELECT version FROM '+table+' WHERE id=?'+(resource[1]==='trainings'?' AND formation=1':'')).bind(resource[2]).first();if(!row)return json({error:'Registro não encontrado'},404);if(row.version!==data.version)return json({error:'Este registro mudou. Atualize a tela'},409)}
  try{
   if(isPublicContentRoute(path))return await managePublicContent(request,env.DB,user,data);
-  if(isStaffServicesRoute(path))return await handleStaffServices(request,env.DB,user,data);
+  if(isStaffServicesRoute(path))return await handleStaffServices(request,env.DB,user,data,assistantCreateId);
   const verifyTask=/^\/api\/tasks\/([^/]+)\/verify$/.exec(path);
   if(verifyTask){
    if(request.method!=='POST')return json({error:'Método indisponível'},405);
@@ -284,7 +305,7 @@ async function handleInner(request,env,authenticate=identity){
    await write(env.DB.prepare('UPDATE substitutions SET auxiliary=?,version=version+1 WHERE id=? AND version=?').bind(data.auxiliary,id,data.version));return json({ok:true});
   }
   if(path==='/api/xerox'&&request.method==='POST'){
-   if(!text(data.title)||!validDate(data.deadline)||!Number.isInteger(data.copies)||data.copies<1||data.copies>10000)return json({error:'Pedido inválido'},400);const id=crypto.randomUUID();await write(env.DB.prepare('INSERT INTO xerox(id,title,copies,deadline,requester,professor,class,color,attachment_name,attachment_mime,attachment_data) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id,data.title.trim(),data.copies,data.deadline,email,...xeroxFields(data,user)),path+'/'+id);return json({id},201);
+   if(!text(data.title)||!validDate(data.deadline)||!Number.isInteger(data.copies)||data.copies<1||data.copies>10000)return json({error:'Pedido inválido'},400);const id=assistantCreateId||crypto.randomUUID();await write(env.DB.prepare('INSERT INTO xerox(id,title,copies,deadline,requester,professor,class,color,attachment_name,attachment_mime,attachment_data) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id,data.title.trim(),data.copies,data.deadline,email,...xeroxFields(data,user)),path+'/'+id);return json({id},201);
   }
   if(resource&&resource[1]==='xerox'&&request.method==='PATCH'){
    const id=path.split('/')[3];const row=await env.DB.prepare('SELECT * FROM xerox WHERE id=?').bind(id).first();if(!row)return json({error:'Pedido não encontrado'},404);
@@ -300,7 +321,7 @@ async function handleInner(request,env,authenticate=identity){
   }
   if(path==='/api/reservations'&&request.method==='POST'){
    if(!spaces.includes(data.space)||!validDate(data.date)||!validTime(data.start)||!validTime(data.end)||data.end<=data.start||!text(data.purpose)||!text(data.responsible)||!contextValid(data))return json({error:'Confira espaço, data, horários, responsável e atividade'},400);
-   const id=crypto.randomUUID(),status=pedagogical?'Aprovada':'Pendente';await write(env.DB.prepare('INSERT INTO reservations(id,space,date,start,end,owner,purpose,responsible,class,subject,status) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id,data.space,data.date,data.start,data.end,email,data.purpose.trim(),data.responsible.trim(),(data.class||'').trim(),(data.subject||'').trim(),status),path+'/'+id);return json({id,status},201);
+   const id=assistantCreateId||crypto.randomUUID(),status=pedagogical?'Aprovada':'Pendente';await write(env.DB.prepare('INSERT INTO reservations(id,space,date,start,end,owner,purpose,responsible,class,subject,status) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id,data.space,data.date,data.start,data.end,email,data.purpose.trim(),data.responsible.trim(),(data.class||'').trim(),(data.subject||'').trim(),status),path+'/'+id);return json({id,status},201);
   }
   if(path==='/api/tasks'&&request.method==='POST'){
    if(!text(data.title)||!validDate(data.due)||typeof data.restricted!=='boolean'||typeof data.owner!=='string')return json({error:'Tarefa inválida'},400);
