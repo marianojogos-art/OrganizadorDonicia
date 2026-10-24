@@ -20,4 +20,11 @@ for(const question of ['Pedir documentos','Consultar vagas','Solicitar transferÃ
  const response=await fetch(base+'/public/assistant',{method:'POST',redirect:'manual',credentials:'omit',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({question}),signal:AbortSignal.timeout(15000)});
  assert.equal(response.status,200);assert.match(response.headers.get('cache-control'),/no-store/);const result=await response.json();assert.equal(result.scope,'public');assert.equal(result.mode,'consulta-fontes');assert.ok(Array.isArray(result.sources));assert.ok(result.sources.length>0);assert.equal(result.action,undefined);assert.ok(result.sources.every(source=>source.url.startsWith('/#')));console.log('Public consultation verified:',question);
 }
+const portalResponse=await get('/public/api');assert.equal(portalResponse.status,200);const portal=await portalResponse.json();
+if(portal.events.length){
+ const event=portal.events[0];
+ const response=await fetch(base+'/public/assistant',{method:'POST',redirect:'manual',credentials:'omit',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({question:'CalendÃ¡rio '+event.title}),signal:AbortSignal.timeout(15000)});
+ assert.equal(response.status,200);const data=await response.json();const source=data.sources.find(item=>item.url==='/#calendario'&&item.title===event.title);assert.ok(source,'Public event is returned with source');
+ assert.ok(source.excerpt.includes('Data: '+event.date.split('-').reverse().join('/')));assert.ok(source.excerpt.includes('Tipo: '+event.type));if(event.location)assert.ok(source.excerpt.includes('Local: '+event.location));assert.doesNotMatch(source.excerpt,/^(date|start|end|location|type):/m);assert.equal(source.date,event.date);console.log('Production calendar labels and Brazilian date verified; original date preserved.');
+}else console.log('No public calendar event available for live content assertion; synthetic regression covers labels and dates.');
 console.log('Production assistant HTTP checks passed. Employee login, real requests and secretariat delivery were not exercised.');

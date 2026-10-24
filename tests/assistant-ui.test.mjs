@@ -31,6 +31,11 @@ test('staff uses authenticated route and opens only a reviewed action proposal',
 test('source outage is an error, not a successful answer or fabricated information',async()=>{
  const p=page('/',async()=>{throw Error('Fontes indisponíveis')});p.click('.da-launch');await p.submit('Que horas?');assert.match(p.document.querySelector('[data-status]').textContent,/Fontes indisponíveis/);assert.equal(p.document.querySelector('[data-answer] a').getAttribute('href'),'/#contatos');assert.equal(p.document.querySelector('[data-question] button').disabled,false);
 });
+test('source date display uses pt-BR and preserves date-only and timestamp calendar days',async()=>{
+ const p=page('/',async()=>({answer:'Referências',sources:[{title:'Evento',excerpt:'Data: 01/03/2026',date:'2026-03-01',url:'/#calendario'},{title:'Documento',excerpt:'Texto',date:'2028-02-29 00:15:00',url:'/#documentos'}]}));
+ p.click('.da-launch');await p.submit('calendário');
+ assert.deepEqual([...p.document.querySelectorAll('[data-answer] small')].map(x=>x.textContent),['Data na fonte: 01/03/2026','Data na fonte: 29/02/2028 00:15:00']);
+});
 test('closing discards delayed sensitive answers',async()=>{
  let release;const p=page('/equipe',()=>new Promise(resolve=>{release=resolve}));p.click('.da-launch');await p.submit('notas pessoais');p.click('[data-close]');release({answer:'PRIVADO',sources:[]});await new Promise(resolve=>setImmediate(resolve));assert.doesNotMatch(p.document.querySelector('[data-answer]').textContent,/PRIVADO/);
 });

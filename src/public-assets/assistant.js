@@ -11,6 +11,8 @@ find('[data-close]').addEventListener('click',close);
 root.addEventListener('keydown',event=>{if(event.key==='Escape'){event.stopPropagation();close()}});
 find('[data-clear]').addEventListener('click',()=>{viewCycle++;controller?.abort();answer.replaceChildren();input.value='';status.textContent='';find('[data-intake]').replaceChildren();input.focus()});
 function node(tag,text){const element=document.createElement(tag);element.textContent=text;return element}
+// Preserve the source day and any time suffix without applying the browser timezone.
+const displayDate=value=>String(value).replace(/^(\d{4})-(\d{2})-(\d{2})(?=$|[ T])/,'$3/$2/$1');
 function link(text,url){const a=node('a',text);if(/^\/(?!\/)/.test(url))a.href=url;if(staff&&/^\/equipe#[a-z-]+$/.test(url))a.dataset.section=url.split('#')[1];return a}
 async function ask(question){
  const cycle=++viewCycle;controller?.abort();const active=new AbortController();controller=active;
@@ -25,7 +27,7 @@ async function ask(question){
    if(['reservation','xerox','message'].includes(data.action.workflow)){const guided=node('button','Conversar passo a passo');guided.type='button';guided.addEventListener('click',()=>startWorkflow(data.action));answer.append(guided)}
    const action=node('button','Preencher e revisar · '+data.action.label);action.type='button';action.addEventListener('click',()=>{close();document.dispatchEvent(new CustomEvent('donicia-assistant-action',{detail:{form:data.action.form}}))});answer.append(action);
   }
-  for(const item of data.sources||[]){const article=node('article','');article.append(link(item.title,item.url),node('blockquote',item.excerpt));if(item.date)article.append(node('small','Data na fonte: '+item.date));answer.append(article)}
+  for(const item of data.sources||[]){const article=node('article','');article.append(link(item.title,item.url),node('blockquote',item.excerpt));if(item.date)article.append(node('small','Data na fonte: '+displayDate(item.date)));answer.append(article)}
   answer.append(link('Falar com a secretaria · contatos publicados','/#contatos'));
   status.textContent='Consulta concluída. Confira as referências abaixo.';
  }catch(error){if(active.signal.aborted||cycle!==viewCycle)return;status.textContent=error.message||'Falha de conexão. Tente novamente.';answer.append(link('Contatos da secretaria','/#contatos'))}

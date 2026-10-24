@@ -8,7 +8,10 @@ const stop=new Set('a as o os e de da do das dos em na no nas nos para por com u
 const tokens=value=>[...new Set(normalize(value).split(/[^a-z0-9]+/).filter(word=>word.length>2&&!stop.has(word)))];
 const excerpt=value=>String(value??'').slice(0,2000);
 const source=(title,text,url,keywords='',date='')=>({title:excerpt(title),excerpt:excerpt(text),url,keywords,date});
-const fields=(row,keys)=>keys.filter(key=>row[key]!==undefined&&row[key]!==null&&row[key]!=='').map(key=>`${key}: ${row[key]}`).join('\n');
+const fieldLabels={title:'Título',status:'Situação',copies:'Cópias',deadline:'Prazo',review_reason:'Observação da análise',space:'Espaço',date:'Data',start:'Início',end:'Término',purpose:'Atividade',location:'Local',type:'Tipo',details:'Informações',area:'Área',notes:'Orientações',due:'Prazo',description:'Descrição',decisions:'Decisões',content:'Conteúdo',updated_at:'Atualizado em'};
+// Reorder the stored calendar date only: no Date parsing or timezone conversion.
+const displayDate=value=>String(value).replace(/^(\d{4})-(\d{2})-(\d{2})(?=$|[ T])/,'$3/$2/$1');
+const fields=(row,keys)=>keys.filter(key=>row[key]!==undefined&&row[key]!==null&&row[key]!=='').map(key=>`${fieldLabels[key]||key}: ${['date','deadline','due','updated_at'].includes(key)?displayDate(row[key]):row[key]}`).join('\n');
 const internalSources=[
  {pattern:/\b(xerox|copia|copias|impressao)\b/,path:'/api/xerox',section:'xerox',label:'Pedido de xerox',keys:['title','status','copies','deadline','review_reason']},
  {pattern:/\b(reserva|reservas|espaco|espacos)\b/,path:'/api/reservations',section:'espacos',label:'Reserva de espaço',keys:['space','date','start','end','purpose','status','review_reason']},

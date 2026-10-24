@@ -8,6 +8,17 @@ const users={secretary:'secretary.demo@prof.pmf.sc.gov.br',direction:'director@p
 function setup(){const DB=sqlite();for(const sql of migrations)DB.exec(sql);for(const [role,email] of Object.entries(users))DB.exec(`INSERT INTO users VALUES('${email}','Pessoa fictícia','${['other','inactive'].includes(role)?'teacher':role}',${['inactive','secretary'].includes(role)?0:1})`);return {DB,ASSETS:{fetch:async()=>new Response('asset')}}}
 async function request(env,path,data,role='anonymous',options={}){const response=await handle(new Request('https://school.test'+path,{method:options.method||'POST',headers:{Origin:'https://school.test','Content-Type':'application/json',...options.headers},body:options.method==='GET'?undefined:JSON.stringify(data)}),env,async()=>users[role]||null);return {status:response.status,headers:response.headers,body:await response.json()}}
 const ask=(env,question,role='anonymous',extra={})=>request(env,role==='anonymous'?'/public/assistant':'/api/assistant',{question,...extra},role);
+test('calendar excerpts use Portuguese labels and Brazilian dates without changing event dates or times',async()=>{
+ const env=setup();
+ const event={title:'Encontro fictício',date:'2026-03-01',start:'08:30',end:'09:45',type:'Evento escolar',location:'Pátio fictício',details:'Orientação fictícia',visibility:'public'};
+ assert.equal((await request(env,'/api/events',event,'direction')).status,201);
+ const published=await ask(env,'calendário');const publicEvent=published.body.sources.find(item=>item.url==='/#calendario');
+ assert.ok(publicEvent);assert.equal(publicEvent.excerpt,'Data: 01/03/2026\nInício: 08:30\nTérmino: 09:45\nLocal: Pátio fictício\nTipo: Evento escolar');assert.equal(publicEvent.date,'2026-03-01','metadata retains the original date');
+ const internal=await ask(env,'calendário','teacher');const excerpt=internal.body.sources[0].excerpt;
+ for(const expected of ['Título: Encontro fictício','Data: 01/03/2026','Início: 08:30','Término: 09:45','Local: Pátio fictício','Informações: Orientação fictícia'])assert.ok(excerpt.includes(expected),expected);
+ assert.doesNotMatch(excerpt,/^(title|date|start|end|location|details):/m);
+ const original=await env.DB.prepare("SELECT date,start,end,type,location,details FROM events WHERE title='Encontro fictício'").first();assert.equal(original.date,event.date);assert.equal(original.start,event.start);assert.equal(original.end,event.end);assert.equal(original.type,event.type);env.DB.close();
+});
 test('public answers use current published sources only, including for logged-in visitors',async()=>{
  const env=setup();
  env.DB.exec("INSERT INTO notices(id,title,body,date,published,creator) VALUES('public','Aviso público','FESTA_PUBLICA','2026-10-24',1,'director@prof.pmf.sc.gov.br'),('draft','Aviso privado','SEGREDO_RASCUNHO','2026-10-24',0,'director@prof.pmf.sc.gov.br'),('expired','Aviso antigo','SEGREDO_EXPIRADO','2020-01-01',1,'director@prof.pmf.sc.gov.br'); UPDATE notices SET expires_on='2020-01-02' WHERE id='expired'");
