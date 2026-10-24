@@ -11,10 +11,14 @@ const {chromium}=createRequire(join(process.env.ASSISTANT_QA_PLAYWRIGHT_DIR,'loa
 const directory=await mkdtemp(join(tmpdir(),'donicia-assistant-qa-')),database=join(directory,'synthetic.sqlite');
 const DB=sqlite(database);await migrateLocal(DB);DB.exec("INSERT INTO users VALUES('secretary.demo@prof.pmf.sc.gov.br','Secretaria fictícia','secretary',1)");await DB.prepare("UPDATE school_profile SET phone='0000-0000',email='secretaria@example.invalid' WHERE id=1").run();DB.close();
 const server=spawn(process.execPath,['scripts/dev.mjs'],{env:{...process.env,PORT:'18793',LOCAL_DB:database,LOCAL_ROLE:'direction',LOCAL_SECRETARIAT_INTAKE_ENABLED:'true'},stdio:'ignore'});
-const secretaryServer=spawn(process.execPath,['scripts/dev.mjs'],{env:{...process.env,PORT:'18794',LOCAL_DB:database,LOCAL_ROLE:'secretary'},stdio:'ignore'});
-let browser;const base='http://127.0.0.1:18793';
+let browser,secretaryServer;const base='http://127.0.0.1:18793';
 try{
  let ready=false;for(let n=0;n<100;n++){try{if((await fetch(base+'/public/api')).ok){ready=true;break}}catch{}await new Promise(resolve=>setTimeout(resolve,100))}assert.ok(ready,'synthetic server started');
+ // Both fixtures build assets and initialize the same synthetic database. Start
+ // them sequentially and wait for each listener, avoiding startup write races.
+ secretaryServer=spawn(process.execPath,['scripts/dev.mjs'],{env:{...process.env,PORT:'18794',LOCAL_DB:database,LOCAL_ROLE:'secretary'},stdio:['ignore','pipe','pipe']});
+ let secretaryOutput='';for(const stream of [secretaryServer.stdout,secretaryServer.stderr])stream.on('data',chunk=>{secretaryOutput=(secretaryOutput+chunk).slice(-3000)});
+ let secretaryReady=false;for(let n=0;n<100;n++){if(secretaryServer.exitCode!==null)throw Error('Synthetic Secretariat server exited: '+secretaryOutput);try{if((await fetch('http://127.0.0.1:18794/api/me')).ok){secretaryReady=true;break}}catch{}await new Promise(resolve=>setTimeout(resolve,100))}assert.ok(secretaryReady,'synthetic Secretariat listener ready');
  browser=await chromium.launch({headless:true,...(process.env.ASSISTANT_QA_BROWSER?{executablePath:process.env.ASSISTANT_QA_BROWSER}:{})});
  const page=await browser.newPage();const errors=[];page.on('pageerror',error=>errors.push(error.message));
  for(const width of [360,768,1280]){
@@ -30,4 +34,4 @@ try{
  await page.goto('http://127.0.0.1:18794/equipe');await page.locator('#requests').getByText(/familia@example.invalid/).waitFor();
  await page.locator('#requests textarea').fill('Recebido na fila interna (sintético)');await page.getByRole('button',{name:'Assumir na Secretaria'}).click();await page.getByRole('button',{name:'Confirmar atendimento concluído'}).waitFor();
  assert.deepEqual(errors,[]);console.log('Assistant browser QA passed: 3 widths, family receipt, employee guided xerox, private queue and forwarding state. Synthetic data only.');
-}finally{await browser?.close();server.kill();secretaryServer.kill();await rm(directory,{recursive:true,force:true})}
+}finally{await browser?.close();server.kill();secretaryServer?.kill();await rm(directory,{recursive:true,force:true})}
