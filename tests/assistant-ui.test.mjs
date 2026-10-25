@@ -4,9 +4,9 @@ import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 import {parseHTML} from 'linkedom';
 const script=await readFile(new URL('../src/public-assets/assistant.js',import.meta.url),'utf8');
-function page(path='/',respond=async()=>({answer:'Não encontrei informação confirmada.',sources:[]})){
+function page(path='/',respond=async()=>({answer:'Não encontrei informação confirmada.',sources:[]}),identity='teacher'){
  const {document,window}=parseHTML('<html><body></body></html>'),calls=[];
- const fetch=async(url,options)=>{calls.push({url,options});if(url==='/api/me')return {ok:true,json:async()=>({role:'teacher'})};return {ok:true,json:async()=>respond(url,options)}};
+ const fetch=async(url,options)=>{calls.push({url,options});if(url==='/api/me')return typeof identity==='function'?identity():{ok:true,json:async()=>({role:identity})};return {ok:true,json:async()=>respond(url,options)}};
  const context=vm.createContext({document,location:{pathname:path},fetch,AbortController,CustomEvent:window.CustomEvent,crypto});vm.runInContext(script,context);
  const click=selector=>document.querySelector(selector).dispatchEvent(new window.Event('click'));
  const submit=async question=>{document.querySelector('#da-question').value=question;document.querySelector('[data-question]').dispatchEvent(new window.Event('submit'));await new Promise(resolve=>setImmediate(resolve))};
@@ -38,4 +38,23 @@ test('source date display uses pt-BR and preserves date-only and timestamp calen
 });
 test('closing discards delayed sensitive answers',async()=>{
  let release;const p=page('/equipe',()=>new Promise(resolve=>{release=resolve}));p.click('.da-launch');await p.submit('notas pessoais');p.click('[data-close]');release({answer:'PRIVADO',sources:[]});await new Promise(resolve=>setImmediate(resolve));assert.doesNotMatch(p.document.querySelector('[data-answer]').textContent,/PRIVADO/);
+});
+
+
+test('personal notes shortcut waits for verified role and only appears for authorized staff',async()=>{
+ for(const role of ['teacher','secretary',null,'unknown','direction','supervision','guidance']){
+  const p=page('/equipe',undefined,role),labels=()=>[...p.document.querySelectorAll('.da-shortcuts button')].map(button=>button.textContent);
+  assert.equal(labels().includes('Notas pessoais'),false,'no shortcut before identity resolves');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(labels().includes('Notas pessoais'),['direction','supervision','guidance'].includes(role),String(role));
+  for(const label of ['Pedidos de xerox','Calendário','Quero pedir xerox'])assert.ok(labels().includes(label));
+  const identity=p.calls.find(call=>call.url==='/api/me');assert.equal(identity.options.credentials,'same-origin');assert.equal(identity.options.cache,'no-store');
+  assert.equal(p.calls.some(call=>call.url==='/api/notes'),false,'checking role never reads notes');
+  if(role==='direction'){const button=[...p.document.querySelectorAll('.da-shortcuts button')].find(button=>button.textContent==='Notas pessoais');button.click();await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(JSON.parse(p.calls.find(call=>call.url==='/api/assistant').options.body),{question:'Notas pessoais'})}
+ }
+});
+test('unavailable or denied identity keeps personal notes shortcut absent',async()=>{
+ for(const identity of [async()=>{throw Error('offline')},async()=>({ok:false,status:401,json:async()=>({role:'direction'})})]){
+  const p=page('/equipe',undefined,identity);await new Promise(resolve=>setImmediate(resolve));assert.equal([...p.document.querySelectorAll('.da-shortcuts button')].some(button=>button.textContent==='Notas pessoais'),false);
+ }
 });

@@ -34,9 +34,12 @@ async function ask(question){
  finally{if(controller===active)submit.disabled=false}
 }
 find('[data-question]').addEventListener('submit',event=>{event.preventDefault();if(input.value.trim())ask(input.value.trim())});
-const shortcuts=staff?['Pedidos de xerox','Reservas de espaços','Calendário','Formação','Notas pessoais']:['Pedir documentos','Consultar vagas','Solicitar transferência','Horário de atendimento','Calendário'];
-for(const text of shortcuts){const button=node('button',text);button.type='button';button.addEventListener('click',()=>{input.value=text;ask(text);if(!staff&&/documentos|vagas|transferência/.test(text))showIntake(text)});find('.da-shortcuts').append(button)}
+const shortcuts=staff?['Pedidos de xerox','Reservas de espaços','Calendário','Formação']:['Pedir documentos','Consultar vagas','Solicitar transferência','Horário de atendimento','Calendário'];
+function addShortcut(text){const button=node('button',text);button.type='button';button.addEventListener('click',()=>{input.value=text;ask(text);if(!staff&&/documentos|vagas|transferência/.test(text))showIntake(text)});find('.da-shortcuts').append(button)}
+for(const text of shortcuts)addShortcut(text);
 if(staff){
+ // Hide restricted shortcuts until the existing authenticated identity confirms access.
+ fetch('/api/me',{credentials:'same-origin',redirect:'error',cache:'no-store'}).then(response=>response.ok?response.json():null).then(user=>{if(['direction','supervision','guidance'].includes(user?.role))addShortcut('Notas pessoais')}).catch(()=>{});
  fetch('/api/secretariat-access/me',{credentials:'same-origin',redirect:'error',cache:'no-store'}).then(response=>response.ok?response.json():null).then(access=>{const link=document.querySelector('#secretariat-link');if(link)link.hidden=access?.allowed!==true}).catch(()=>{});
  for(const text of ['Quero reservar um espaço','Quero pedir xerox','Quero enviar uma mensagem']){const button=node('button',text);button.type='button';button.addEventListener('click',()=>{input.value=text;ask(text)});find('.da-shortcuts').append(button)}
 
