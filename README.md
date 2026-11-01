@@ -11,7 +11,7 @@ Esta revisão implementa o portal público e a separação de acessos, preservan
 | Acesso | Conteúdo e ações |
 | --- | --- |
 | Público, sem login, em `/` | Apresentação da escola, avisos publicados, calendário público e contatos. O link discreto **Acesso de funcionários** abre `/equipe`. |
-| Professor, após login institucional | Pedidos de xerox, pedidos de reserva de espaço, calendário público e interno, calendário de formação por área. |
+| Professor, após login institucional | Pedidos de xerox, pedidos de reserva de espaço, calendário público e interno, calendário de formação por área, Minhas notas privadas por login e painel Meu dia. |
 | Direção, supervisão e orientação, após login institucional | Acesso completo à gestão, incluindo aprovação de reservas e manutenção dos conteúdos públicos, calendário e formações. |
 
 As permissões são verificadas na API: professores não podem consultar tarefas, atas, substituições, Supervisão, auditoria ou cadastros administrativos. Login válido também exige uma conta nominal ativa em `users`; não existe cadastro aberto. Os papéis técnicos são `direction`, `supervision`, `guidance` e `teacher`, com as mesmas permissões completas para os três primeiros neste momento.
@@ -24,7 +24,7 @@ Em **Formação**, a equipe cadastra título, área, data, horários opcionais, 
 
 A migração `0010_public_portal.sql` sucede as migrações 0006–0009 e adiciona os novos perfis, conteúdos públicos e a área das formações. Ela preserva os vínculos de usuários, marca reservas anteriores como **Aprovada** e eventos anteriores como **Interno**. O executor local aplica cada migração em uma transação, como o D1, inclusive a atualização da tabela de usuários.
 
-Formação continua usando os mesmos eventos do calendário, sem duplicar registros; `/api/trainings` apresenta os encontros por área. As notas pessoais ficam disponíveis à equipe pedagógica e preservam o isolamento por proprietário, inclusive entre direção, supervisão e orientação.
+Formação continua usando os mesmos eventos do calendário, sem duplicar registros; `/api/trainings` apresenta os encontros por área. As notas pessoais ficam disponíveis à equipe pedagógica e aos professores, com cartões na página inicial de cada perfil e isolamento por proprietário, inclusive perante direção, supervisão e orientação.
 
 A configuração Access salva usa a mesma aplicação e audience, com proteção integral das prévias do Worker e quatro destinos privados no domínio de produção: `/equipe`, `/ap*`, `/index.html` e `/sge-connector.zip`. O endpoint anônimo canônico é `/public/api`; o alias `/api/public` permanece protegido na borda. Veja o [registro e procedimento de deploy](docs/deploy.md#portal-público-e-acesso-de-funcionários).
 
@@ -87,7 +87,7 @@ Doze sugestões e métricas agregadas foram implementadas e testadas na nuvem; a
 - Xerox: professor, turma opcional, impressão preto e branco/colorida, material, quantidade e prazo; anexo PDF/PNG/JPEG até 256 KiB com download privado pelo proprietário/equipe pedagógica; aprovação e transições concorrentes preservadas
 - Atas: exclusivas da equipe pedagógica, que registra/edita/remove e consulta
 - Calendário e Formação: mesmos registros, filtros por mês/tipo/área, horários, local e informações; a equipe mantém os eventos e define visibilidade pública/interna; professores consultam ambos os calendários e visitantes somente eventos públicos
-- Minhas notas: cartões pessoais da equipe pedagógica, com isolamento na API inclusive contra acesso de outros integrantes da equipe e direção; professores não acessam este módulo
+- Minhas notas: cartões pessoais para equipe pedagógica e professores, com até três notas recentes na página inicial, lista completa e criação/edição/remoção; isolamento por proprietário na API inclusive perante direção
 - Estudantes: desabilitado, sem tabela ativa nem rota. Proposta sintética em `db/proposals/`, fora das migrações, para revisão futura
 
 Detalhes, limites e evidências das quatro melhorias: [guia de outubro](docs/melhorias-2026-10.md).
@@ -104,7 +104,7 @@ O JWT é lido do cabeçalho `Cf-Access-Jwt-Assertion` ou, quando o cabeçalho n�
 
 A consulta às chaves públicas usa `redirect: 'manual'` e recusa respostas sem sucesso, incluindo redirecionamentos. O runtime Workers não aceita `redirect: 'error'`; essa opção interrompia a validação antes de consultar as chaves, mesmo depois de um login Access válido. O teste no Miniflare reproduziu a falha anterior e verifica login por cabeçalho e cookie, assinatura inválida e recusa de redirecionamentos. Diagnóstico opcional com `ACCESS_DIAGNOSTICS=1` registra somente códigos fixos de falha, sem JWT, cookies ou e-mail; fica desativado por padrão.
 
-Perfis desta revisão: `direction`, `supervision`, `guidance` e `teacher`. As permissões são verificadas na API. Direção, supervisão e orientação têm acesso completo por decisão da escola; professores têm somente os quatro recursos descritos acima. Usuários são provisionados por migração administrativa revisada; não existe cadastro aberto.
+Perfis desta revisão: `direction`, `supervision`, `guidance` e `teacher`. As permissões são verificadas na API. Direção, supervisão e orientação têm acesso completo por decisão da escola; professores têm os recursos descritos acima, com suas notas e solicitações filtradas pelo próprio login. Usuários são provisionados por migração administrativa revisada; não existe cadastro aberto.
 
 ## Banco
 

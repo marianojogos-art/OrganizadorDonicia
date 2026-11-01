@@ -1,6 +1,6 @@
 # Área do professor — Meu dia e pedidos
 
-Professores entram em Meu dia, com atalhos, pedidos próprios em atendimento, próximas reservas aprovadas, xerox e formações. A navegação também permite Espaços, Xerox, Calendário, Formação e Meus pedidos. Gestão preserva sua Visão do dia; a prévia de professor continua somente leitura.
+Professores entram em Meu dia, com atalhos, pedidos próprios em atendimento, próximas reservas aprovadas, xerox e formações. A navegação também permite Espaços, Xerox, Calendário, Formação, Minhas notas e Meus pedidos. Gestão preserva sua Visão do dia; a prévia de professor continua somente leitura.
 
 ## Acompanhamento e cópias
 
@@ -22,7 +22,7 @@ Meu dia atualiza pelo botão, ao voltar à aba e a cada cinco minutos enquanto o
 
 ## Validação e recuperação
 
-Sem alteração de banco ou permissões de API. Checkpoint anterior: 657c774228a7419f4f04d50ab840c1ea02ab9cc4, Cloudflare 001314f0-b36a-46b9-b9f5-159f73ea6ffc. A reversão é um commit normal dos arquivos desta etapa; o registro local de lembretes pode permanecer sem afetar o banco.
+A entrega original de Meu dia não alterou o banco nem as permissões de API. Em 01/11/2026, professores passaram a acessar suas próprias notas, conforme a seção abaixo. Checkpoint da entrega original: 657c774228a7419f4f04d50ab840c1ea02ab9cc4, Cloudflare 001314f0-b36a-46b9-b9f5-159f73ea6ffc. A reversão é um commit normal dos arquivos desta etapa; o registro local de lembretes pode permanecer sem afetar o banco.
 
 Testes de interface cobrem propriedade, estados reais, cópias, datas, ocupação, persistência de lembretes, passagem de dias e prévia somente leitura. Teacher day QA exercita APIs e formulários com contas/banco fictícios em Chromium 320/390/768/1440 px, incluindo aprovação pendente, cópia sem anexo e mudança de formação após recarregar. Capturas devem ser revisadas antes da publicação. Resultado efetivo registrado no PR da entrega.
 

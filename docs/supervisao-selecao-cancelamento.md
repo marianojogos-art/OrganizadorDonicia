@@ -4,11 +4,11 @@
 
 A opção numerada identificada foi **1º trimestre · março a maio**, no seletor **Trimestre da consulta**. Ela fica selecionada ao abrir e ao reiniciar a Supervisão. Os demais trimestres e Todos os trimestres continuam disponíveis; alterar o período não apaga resultados anteriores.
 
-Cada categoria (Anos finais, Anos iniciais e Outras turmas) oferece Selecionar todas / Desmarcar todas. Uma seleção parcial passa a selecionar a categoria inteira; uma seleção completa passa a desmarcá-la. As outras categorias não mudam. A busca pela escola inteira mantém a seleção explícita de todas as turmas elegíveis e a exigência de identificar o professor.
+Cada categoria (Anos finais, Anos iniciais, AEE e Outras turmas) oferece Selecionar todas / Desmarcar todas. Uma seleção parcial passa a selecionar a categoria inteira; uma seleção completa passa a desmarcá-la. As outras categorias não mudam. A busca pela escola inteira mantém a seleção explícita de todas as turmas elegíveis e a exigência de identificar o professor.
 
 Os rótulos ficam curtos, por exemplo **6º · 61 · Manhã**. Ano, código da turma e turno continuam distinguíveis. O título do botão mantém o nome original; em nomes abreviados iguais, o ID também aparece para evitar confusão. IDs e vínculos enviados à API permanecem iguais.
 
-**Apoio e AEE são ignorados na seleção e na travessia de leitura.** O catálogo de turmas precisa ser enumerado para identificar os rótulos a excluir; nenhuma requisição de professores ou planejamentos é feita para essas turmas. AEE também é reconhecido pelo rótulo Atendimento Educacional Especializado. A filtragem ocorre na interface, na montagem do snapshot e na coleta da API, inclusive na busca por toda a escola. Professores auxiliares vinculados a turmas regulares continuam incluídos. Dados anteriormente salvos não são excluídos.
+**Turmas de apoio são ignoradas; AEE participa em grupo próprio.** O catálogo de turmas é enumerado para identificar os rótulos. Nenhuma requisição de professores ou planejamentos é feita para turmas de apoio. AEE é reconhecido pela sigla ou pelo rótulo Atendimento Educacional Especializado e permanece na interface, no snapshot e na coleta da API, inclusive na busca pela escola inteira. Professores auxiliares vinculados às turmas elegíveis continuam incluídos. Dados anteriormente salvos são preservados.
 
 ## Bloqueio, progresso e cancelamento
 
@@ -23,16 +23,16 @@ O conector 1.3.1 e a ponte mobile existentes não oferecem comando de interrupç
 ## Verificação
 
 - `npm run validate`: lint, TypeScript, testes da raiz/mobile, build e consistência dos runtimes.
-- Testes de Supervisão: trimestre padrão/reinício, grupos e IDs, AEE/apoio excluídos com auxiliares preservados, navegação bloqueada, cliques repetidos, leitura salva abortável, erro, cancelamento no ping/catálogo/professores/planejamentos e rejeição de retornos/gravações posteriores ao cancelamento válido.
+- Testes de Supervisão: trimestre padrão/reinício, grupos e IDs, AEE separado e incluído, apoio excluído e auxiliares preservados, navegação bloqueada, cliques repetidos, leitura salva abortável, erro, cancelamento no ping/catálogo/professores/planejamentos e rejeição de retornos/gravações posteriores ao cancelamento válido.
 - O teste mobile com fixture de outubro escolhe explicitamente o terceiro trimestre, depois de conferir o novo padrão 1; não depende mais da seleção anterior Todos os trimestres.
-- Workflow **Supervision request QA**: Chromium em 320/390/1440 px, servidor e SQLite descartáveis e conector simulado com dados fictícios. Exercita seleção por categoria, trimestre 1, zero consultas de professores/planejamentos AEE, modal sem overflow, navegação bloqueada, cancelamento liberando o site, retorno tardio sem POST, sucesso e liberação após erro.
+- Workflow **Supervision request QA**: Chromium em 320/390/1440 px, servidor e SQLite descartáveis e conector simulado com dados fictícios. Exercita seleção por categoria, trimestre 1, consultas de professores/planejamentos para dois rótulos de AEE, modal sem overflow, navegação bloqueada, cancelamento liberando o site, retorno tardio sem POST, sucesso e liberação após erro.
 
 Reprodução no executor com Chromium instalado e Playwright temporário: `PUBLIC_QA_PLAYWRIGHT_DIR=/tmp/donicia-preview-playwright QA_CHROMIUM_PATH=/usr/bin/chromium node scripts/supervision-qa.mjs`. A CI instala a versão de Playwright fixada no workflow em diretório temporário.
 
-Não houve consulta a SGE autenticado, uso de dados pessoais, alteração de registros reais, migração de banco ou mudança de credenciais/permissões. Testes sintéticos não confirmam a sessão real do SGE nem um APK em aparelho físico. A publicação segue a integração Cloudflare existente; a tela privada em produção depende de autenticação para inspeção.
+Os testes não consultaram SGE autenticado nem usaram dados pessoais ou alteraram planejamentos reais. Não houve migração de banco nem mudança de credenciais ou permissões da Supervisão. Testes sintéticos não confirmam a sessão real do SGE nem um APK em aparelho físico. A publicação segue a integração Cloudflare existente; a tela privada em produção depende de autenticação para inspeção.
 
 ## AEE como grupo próprio
 
 A seleção organiza **Anos finais**, **Anos iniciais** e **AEE**, cada um com seleção de todas as turmas da categoria. O AEE participa das consultas e dos relatórios, inclusive na busca pela escola inteira. Apenas turmas de apoio são descartadas; vínculos de professores auxiliares nas turmas elegíveis continuam incluídos. A classificação reconhece tanto a sigla AEE quanto Atendimento Educacional Especializado.
 
-As referências anteriores à exclusão do AEE descrevem o comportamento anterior. Esta alteração inclui testes da interface e da coleta no servidor, além de QA com conector simulado, sem gravar no SGE.
+A atualização de 01/11/2026 inclui testes da interface e da coleta no servidor, além de QA com conector simulado, sem gravar no SGE.
