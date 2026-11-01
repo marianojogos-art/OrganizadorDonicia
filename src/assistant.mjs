@@ -43,7 +43,7 @@ export async function assistant(request,{readPublic,readStaff,user}){
     [/\b(material|materiais|mensagem|solicitacao)\b/,'new-request','Mensagem ou material',false],
     [/\b(tarefa|tarefas)\b/,'new-task','Tarefa',true],
     [/\b(ata|atas)\b/,'new-minute','Ata',true],
-    [/\b(nota|notas|anotar)\b/,'new-note','Nota pessoal',true],
+    [/\b(nota|notas|anotar)\b/,'new-note','Nota pessoal',false],
     [/\b(formacao|formacoes)\b/,'new-training','Formação',true],
     [/\b(evento|eventos|agenda|calendario)\b/,'new-event','Evento',true]
    ];
@@ -51,7 +51,7 @@ export async function assistant(request,{readPublic,readStaff,user}){
    if(action){
     if(action[3]&&!['direction','supervision','guidance'].includes(user?.role))return json({...base,answer:'Esta ação não está disponível no seu perfil. Procure a equipe pedagógica.',sources:[]});
     const workflow=({'new-booking':'reservation','new-xerox':'xerox','new-request':'message'})[action[1]];
-    return json({...base,answer:`Posso ajudar com ${action[2].toLowerCase()}. Vamos preencher os dados e revisar antes de salvar. Nada foi registrado ainda.`,sources:[],action:{form:action[1],label:action[2],workflow,impact:workflow==='reservation'&&user.role!=='teacher'?'A reserva da equipe pedagógica será criada como aprovada e ocupará o horário.':'O pedido será registrado para análise da equipe; o registro não significa aprovação ou atendimento.'}});
+    return json({...base,answer:`Posso ajudar com ${action[2].toLowerCase()}. Vamos preencher os dados e revisar antes de salvar. Nada foi registrado ainda.`,sources:[],action:{form:action[1],label:action[2],workflow,impact:action[1]==='new-note'?'A nota ficará visível somente para o seu login.':workflow==='reservation'&&user.role!=='teacher'?'A reserva da equipe pedagógica será criada como aprovada e ocupará o horário.':'O pedido será registrado para análise da equipe; o registro não significa aprovação ou atendimento.'}});
    }
   }
   const family=/\b(documento|documentos|declaracao|declaracoes|historico|vaga|vagas|matricula|matriculas|transferencia|transferencias)\b/.test(question);

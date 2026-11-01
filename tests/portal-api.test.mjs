@@ -62,11 +62,11 @@ test('anonymous portal serves only public assets and explicitly published conten
 
 test('teacher API allowlist blocks internal reads and writes while all pedagogical roles retain access',async()=>{
  const env=setup();
- for(const path of ['tasks','minutes','users','teachers','substitutions','auxiliaries','settings','audit','school','notices','notes','supervision/saved']){
+ for(const path of ['tasks','minutes','users','teachers','substitutions','auxiliaries','settings','audit','school','notices','supervision/saved']){
   assert.equal((await send(env,'/api/'+path,'GET',undefined,'teacher')).status,403,path);
   assert.equal((await send(env,'/api/'+path,'POST',{},'teacher')).status,403,path);
  }
- for(const path of ['me','reservations','fixed-occupancy','xerox','events','trainings'])assert.equal((await send(env,'/api/'+path,'GET',undefined,'teacher')).status,200,path);
+ for(const path of ['me','reservations','fixed-occupancy','xerox','events','trainings','notes'])assert.equal((await send(env,'/api/'+path,'GET',undefined,'teacher')).status,200,path);
  for(const role of ['direction','supervision','guidance']){
   for(const path of ['tasks','minutes','users','audit','school','notices','supervision/saved'])assert.equal((await send(env,'/api/'+path,'GET',undefined,role)).status,200,role+' '+path);
   assert.equal((await send(env,'/api/events','POST',{...event,title:role},role)).status,201);
@@ -176,7 +176,7 @@ test('training API shares calendar records and cannot mutate unrelated events',a
  env.DB.close();
 });
 
-test('xerox attachment access and pedagogical private notes survive portal separation',async()=>{
+test('xerox attachment access and owner-scoped private notes survive portal separation',async()=>{
  const env=setup(),attachment={name:'material.pdf',type:'application/pdf',base64:btoa('%PDF-1.4\nMaterial fictício')};
  const created=await send(env,'/api/xerox','POST',{title:'Material',copies:1,deadline:'2026-10-20',attachment},'teacher');assert.equal(created.status,201);
  const path='/api/xerox/'+created.body.id+'/attachment';
@@ -187,8 +187,24 @@ test('xerox attachment access and pedagogical private notes survive portal separ
  const listings=(await send(env,'/api/xerox','GET',undefined,'teacher')).body;assert.equal(listings[0].attachment_data,undefined);
  const note=await send(env,'/api/notes','POST',{title:'Nota fictícia',content:'Detalhes privados',color:'azul'},'supervision');assert.equal(note.status,201);
  assert.equal((await send(env,'/api/notes/'+note.body.id,'GET',undefined,'guidance')).status,404);
- assert.equal((await send(env,'/api/notes/'+note.body.id,'GET',undefined,'teacher')).status,403);
- assert.equal((await send(env,'/api/notes/'+note.body.id,'PATCH',{title:'Nota revisada',content:'Texto',color:'verde',version:1},'teacher')).status,403);
- assert.equal((await send(env,'/api/notes/'+note.body.id,'DELETE',{version:1},'teacher')).status,403);
+ assert.equal((await send(env,'/api/notes/'+note.body.id,'GET',undefined,'teacher')).status,404);
+ assert.equal((await send(env,'/api/notes/'+note.body.id,'PATCH',{title:'Nota revisada',content:'Texto',color:'verde',version:1},'teacher')).status,404);
+ assert.equal((await send(env,'/api/notes/'+note.body.id,'DELETE',{version:1},'teacher')).status,404);
  env.DB.close();
+});
+
+test('teachers manage only their own notes, with owner forgery, CSRF and conflicts rejected',async()=>{
+ const env=setup(),data={title:'Nota docente',content:'Texto particular',color:'azul',owner:emails.direction};
+ const first=await send(env,'/api/notes','POST',data,'teacher');assert.equal(first.status,201);
+ const second=await send(env,'/api/notes','POST',{...data,title:'Outro login'},'other');assert.equal(second.status,201);
+ const id=first.body.id;assert.equal((await env.DB.prepare('SELECT owner FROM personal_notes WHERE id=?').bind(id).first()).owner,emails.teacher);
+ const own=await send(env,'/api/notes','GET',undefined,'teacher');assert.deepEqual(own.body.map(x=>x.id),[id]);assert.match(own.headers.get('cache-control'),/private, no-store/);
+ for(const role of ['other','direction','supervision','guidance']){
+  for(const method of ['GET','PATCH','DELETE'])assert.equal((await send(env,'/api/notes/'+id,method,{...data,version:999},role)).status,404,role+' '+method);
+ }
+ assert.equal((await send(env,'/api/notes/'+id,'PATCH',{...data,content:'Corrigido',version:1},'teacher')).status,200);
+ assert.equal((await send(env,'/api/notes/'+id,'PATCH',{...data,version:1},'teacher')).status,409);
+ const csrf=await handle(new Request('https://school.example/api/notes',{method:'POST',headers:{Origin:'https://foreign.example','Content-Type':'application/json'},body:JSON.stringify(data)}),env,async()=>emails.teacher);assert.equal(csrf.status,403);
+ assert.equal((await send(env,'/api/notes/'+id,'DELETE',{version:2},'teacher')).status,200);assert.deepEqual((await send(env,'/api/notes','GET',undefined,'teacher')).body,[]);
+ assert.equal((await send(env,'/api/notes','GET',undefined,'other')).body.length,1);assert.equal((await send(env,'/api/notes','GET',undefined,'anonymous')).status,401);env.DB.close();
 });

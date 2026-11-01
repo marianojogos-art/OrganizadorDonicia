@@ -33,7 +33,7 @@ try{
   await page.evaluate(()=>setPage('supervisao'));await page.waitForFunction(()=>!supervision.loading);await page.locator('[data-supervision-view="classes"]').first().click();
   const help=page.locator('.supervision-setup');await help.locator('summary').click();assert.ok(await help.locator('[data-sge-store]').isVisible());assert.match(await help.locator('[data-sge-store]').getAttribute('href'),/^https:\/\/chromewebstore\.google\.com\/detail\/.+\/pdkbopdpbenpapkdfkpffnfdaeccmbjf$/);assert.doesNotMatch(await help.innerText(),/ZIP|descompact|modo de desenvolvedor|substituir a pasta/i);assert.equal(await help.locator('[download]').count(),0);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'store help overflow '+width);
   await page.locator('[data-supervision-load]').click();await page.waitForSelector('#supervision-operation-root [data-supervision-cancel]');await page.waitForFunction(()=>!supervision.loading);
-  assert.equal(await page.locator('[data-supervision-trimester]').inputValue(),'1');assert.equal(await page.locator('[data-supervision-class]').count(),3);assert.equal(await page.locator('[data-supervision-class="aee"]').count(),0);
+  assert.equal(await page.locator('[data-supervision-trimester]').inputValue(),'1');assert.equal(await page.locator('[data-supervision-class]').count(),5);assert.equal(await page.locator('[data-supervision-class="aee"]').count(),1);
   await page.locator('[data-supervision-category="final"]').click();assert.equal(await page.evaluate(()=>supervision.selected.size),2);
   await page.evaluate(()=>{window.mockHold='teachers'});await page.locator('[data-supervision-confirm]').click();await page.waitForFunction(()=>window.mockPending.length===1);
   const dialog=page.locator('#supervision-operation-root [role=dialog]');assert.ok(await dialog.isVisible());assert.ok(await page.evaluate(()=>!!document.querySelector('main').closest('[inert]')));
@@ -45,8 +45,11 @@ try{
   await page.evaluate(()=>setPage('supervisao'));await page.locator('[data-supervision-confirm]').click();await page.waitForFunction(()=>!supervision.loading&&!!supervision.report);assert.equal(saves.length,1);
   assert.deepEqual(saves[0].classIds,['final-6','final-7']);assert.equal(saves[0].trimester,1);
   const queried=await page.evaluate(()=>window.mockQueries.filter(q=>['teachers','planning'].includes(q.command)).map(q=>q.input.classId));assert.ok(queried.every(id=>id.startsWith('final-')));
+  await page.locator('[data-supervision-view="classes"]').first().click();await page.locator('[data-supervision-category="final"]').click();await page.locator('[data-supervision-category="aee"]').click();assert.equal(await page.evaluate(()=>supervision.selected.size),2);
+  await page.locator('[data-supervision-confirm]').click();await page.waitForFunction(()=>!supervision.loading);assert.equal(saves.length,2);assert.deepEqual([...saves[1].classIds].sort(),['aee','aee-full']);
+  const aeeQueried=await page.evaluate(()=>window.mockQueries.filter(q=>q.command==='planning'&&q.input.classId.startsWith('aee')).map(q=>q.input.classId));assert.deepEqual([...new Set(aeeQueried)].sort(),['aee','aee-full']);
   await page.evaluate(()=>{window.mockFailure=true});await page.locator('[data-supervision-view="classes"]').first().click();await page.locator('[data-supervision-load]').click();await page.waitForFunction(()=>!supervision.loading);assert.equal(await page.locator('#supervision-operation-root').count(),0);assert.match(await page.locator('#page').innerText(),/Falha sintética/);
-  assert.deepEqual(errors,[]);console.log('SUPERVISION_QA '+JSON.stringify({width,trimester:1,aeeQueries:0,category:true,cancel:true,navigationBlocked:true,lateSave:false,success:true,errorRelease:true,errors}));await context.close();
+  assert.deepEqual(errors,[]);console.log('SUPERVISION_QA '+JSON.stringify({width,trimester:1,aeeQueries:2,category:true,cancel:true,navigationBlocked:true,lateSave:false,success:true,errorRelease:true,errors}));await context.close();
  }
 
 }finally{

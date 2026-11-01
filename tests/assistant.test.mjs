@@ -51,7 +51,7 @@ test('staff requests and xerox are filtered per requester, unpublished events st
 });
 test('action intents are scoped, never mutate until reviewed in existing authorized forms',async()=>{
  const env=setup();for(const [question,form] of [['Quero reservar um espaço','new-booking'],['Quero pedir xerox','new-xerox'],['Quero criar uma mensagem','new-request']]){const result=await ask(env,question,'teacher');assert.equal(result.body.action.form,form);assert.match(result.body.answer,/Nada foi registrado/)}
- assert.equal((await ask(env,'Criar nota pessoal','teacher')).body.action,undefined);
+ assert.equal((await ask(env,'Criar nota pessoal','teacher')).body.action.form,'new-note');
  assert.equal((await ask(env,'Criar nota pessoal','direction')).body.action.form,'new-note');
  assert.equal((await ask(env,'Criar nota pessoal')).body.action,undefined);
  assert.equal((await env.DB.prepare('SELECT count(*) AS n FROM reservations').first()).n,0);env.DB.close();

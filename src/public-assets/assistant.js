@@ -39,7 +39,7 @@ function addShortcut(text){const button=node('button',text);button.type='button'
 for(const text of shortcuts)addShortcut(text);
 if(staff){
  // Hide restricted shortcuts until the existing authenticated identity confirms access.
- fetch('/api/me',{credentials:'same-origin',redirect:'error',cache:'no-store'}).then(response=>response.ok?response.json():null).then(user=>{if(['direction','supervision','guidance'].includes(user?.role))addShortcut('Notas pessoais')}).catch(()=>{});
+ fetch('/api/me',{credentials:'same-origin',redirect:'error',cache:'no-store'}).then(response=>response.ok?response.json():null).then(user=>{if(['direction','supervision','guidance','teacher'].includes(user?.role))addShortcut('Notas pessoais')}).catch(()=>{});
  fetch('/api/secretariat-access/me',{credentials:'same-origin',redirect:'error',cache:'no-store'}).then(response=>response.ok?response.json():null).then(access=>{const link=document.querySelector('#secretariat-link');if(link)link.hidden=access?.allowed!==true}).catch(()=>{});
  for(const text of ['Quero reservar um espaço','Quero pedir xerox','Quero enviar uma mensagem']){const button=node('button',text);button.type='button';button.addEventListener('click',()=>{input.value=text;ask(text)});find('.da-shortcuts').append(button)}
 

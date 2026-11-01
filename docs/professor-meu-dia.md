@@ -27,3 +27,11 @@ Sem alteração de banco ou permissões de API. Checkpoint anterior: 657c774228a
 Testes de interface cobrem propriedade, estados reais, cópias, datas, ocupação, persistência de lembretes, passagem de dias e prévia somente leitura. Teacher day QA exercita APIs e formulários com contas/banco fictícios em Chromium 320/390/768/1440 px, incluindo aprovação pendente, cópia sem anexo e mudança de formação após recarregar. Capturas devem ser revisadas antes da publicação. Resultado efetivo registrado no PR da entrega.
 
 Na área do professor, o post-it de contribuições fica temporariamente oculto durante o preenchimento de formulários, para não cobrir os controles. Volta ao fechar, sem alterar sua posição, preferência ou rascunho.
+
+## Notas pessoais na página inicial
+
+Professores, direção, supervisão e orientação têm **Minhas notas** no menu. A página inicial de cada perfil mostra até três notas recentes, com texto resumido, edição e os atalhos **Nova nota** e **Ver todas**. A lista completa permite criar, editar e remover notas com controle de versão.
+
+A API fixa o dono pelo login autenticado. Nenhum perfil, incluindo direção, pode ler ou alterar notas alheias. A prévia de professor da gestão mostra apenas as notas da própria conta, em modo somente leitura. Notas não são publicadas no portal e não guardam a senha do usuário.
+
+A duração da sessão é administrada pelo Cloudflare Access; o link **Sair** encerra o acesso neste navegador. O prazo efetivamente aplicado deve ser confirmado na configuração remota, não inferido do código.

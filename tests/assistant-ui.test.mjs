@@ -46,7 +46,7 @@ test('personal notes shortcut waits for verified role and only appears for autho
   const p=page('/equipe',undefined,role),labels=()=>[...p.document.querySelectorAll('.da-shortcuts button')].map(button=>button.textContent);
   assert.equal(labels().includes('Notas pessoais'),false,'no shortcut before identity resolves');
   await new Promise(resolve=>setImmediate(resolve));
-  assert.equal(labels().includes('Notas pessoais'),['direction','supervision','guidance'].includes(role),String(role));
+  assert.equal(labels().includes('Notas pessoais'),['direction','supervision','guidance','teacher'].includes(role),String(role));
   for(const label of ['Pedidos de xerox','Calendário','Quero pedir xerox'])assert.ok(labels().includes(label));
   const identity=p.calls.find(call=>call.url==='/api/me');assert.equal(identity.options.credentials,'same-origin');assert.equal(identity.options.cache,'no-store');
   assert.equal(p.calls.some(call=>call.url==='/api/notes'),false,'checking role never reads notes');

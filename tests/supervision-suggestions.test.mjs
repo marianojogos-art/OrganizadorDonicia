@@ -68,15 +68,16 @@ test('once a save was submitted the UI cannot promise to undo it and preserves t
  u.run('cancelSupervision()');assert.equal(u.run('supervision.cancelled'),false);g.resolve();await pending;assert.equal(u.run('supervision.saved.version'),1);
 });
 
-test('class groups exclude support and AEE classes without excluding auxiliary teacher assignments',async()=>{
+test('class groups include separate AEE and exclude support without losing auxiliary teacher assignments',async()=>{
  const u=ui();u.context.catalog.classes.push({id:'initial',name:'1º ano - 11-TURMA 11 - Matutino'},{id:'aee',name:'AEE - 1 - Matutino'},{id:'support',name:'Apoio - 2-TURMA APOIO - Vespertino'},{id:'unknown',name:'Etapa não identificada'});
- u.run('render()');assert.equal(u.document.querySelectorAll('[data-supervision-class]').length,3);assert.equal(u.document.querySelector('[data-supervision-class="support"]'),null);
- const labels=Array.from(u.document.querySelectorAll('#supervision-classes h3')).map(x=>x.textContent);assert.deepEqual(labels,['Anos finais','Anos iniciais','Outras turmas — conferir classificação']);
+ u.run('render()');assert.equal(u.document.querySelectorAll('[data-supervision-class]').length,4);assert.equal(u.document.querySelector('[data-supervision-class="support"]'),null);
+ const labels=Array.from(u.document.querySelectorAll('#supervision-classes h3')).map(x=>x.textContent);assert.deepEqual(labels,['Anos finais','Anos iniciais','AEE','Outras turmas — conferir classificação']);
  assert.equal(u.run("supervisionClassGroup('Atendimento Educacional Especializado - 1 - Matutino')"),'aee');assert.equal(u.run("supervisionClassGroup('9° ano - 91 - Vespertino')"),'final');
  const source=structuredClone(directory);source.classes.push({id:'aee',name:'Turma AEE - 1 - Matutino',url:base+'classes.aspx'},{id:'support',name:'Apoio - 2 - Matutino',url:base+'classes.aspx'});
- const entries=[{path:'/classes/regular/teachers',data:teachers},{path:'/classes/regular/teachers/202%3A123/planning',data:planning}];
- const report=await collectSupervision({SGE:snapshotAdapter({directory:source,entries})},{classIds:['regular'],scope:'school',teacher:'docente'});
- assert.equal(report.classes.length,1);assert.equal(report.teachers[0].assignments[0].subject,'Professora auxiliar');assert.equal(report.teachers[0].plans.length,1);
+ const entries=[{path:'/classes/regular/teachers',data:teachers},{path:'/classes/regular/teachers/202%3A123/planning',data:planning},{path:'/classes/aee/teachers',data:{...teachers,classId:'aee'}},{path:'/classes/aee/teachers/202%3A123/planning',data:{...planning,classId:'aee',plans:[{...plan,id:'aee-plan'}]}}];
+ const report=await collectSupervision({SGE:snapshotAdapter({directory:source,entries})},{classIds:['regular','aee'],scope:'school',teacher:'docente'});
+ assert.equal(report.classes.length,2);assert.equal(report.teachers[0].assignments[0].subject,'Professora auxiliar');assert.equal(report.teachers[0].plans.length,2);assert.ok(report.teachers[0].plans.some(p=>p.classId==='aee'));
+ await assert.rejects(collectSupervision({SGE:snapshotAdapter({directory:source,entries})},{classIds:['regular'],scope:'school',teacher:'docente'}),/Confirme todas as turmas/);
  await assert.rejects(collectSupervision({SGE:snapshotAdapter({directory:source,entries})},{classIds:['support'],scope:'classes',teacher:''}),/turmas de apoio/);
 });
 
