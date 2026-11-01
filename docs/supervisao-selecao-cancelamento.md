@@ -30,3 +30,9 @@ O conector 1.3.1 e a ponte mobile existentes não oferecem comando de interrupç
 Reprodução no executor com Chromium instalado e Playwright temporário: `PUBLIC_QA_PLAYWRIGHT_DIR=/tmp/donicia-preview-playwright QA_CHROMIUM_PATH=/usr/bin/chromium node scripts/supervision-qa.mjs`. A CI instala a versão de Playwright fixada no workflow em diretório temporário.
 
 Não houve consulta a SGE autenticado, uso de dados pessoais, alteração de registros reais, migração de banco ou mudança de credenciais/permissões. Testes sintéticos não confirmam a sessão real do SGE nem um APK em aparelho físico. A publicação segue a integração Cloudflare existente; a tela privada em produção depende de autenticação para inspeção.
+
+## AEE como grupo próprio
+
+A seleção organiza **Anos finais**, **Anos iniciais** e **AEE**, cada um com seleção de todas as turmas da categoria. O AEE participa das consultas e dos relatórios, inclusive na busca pela escola inteira. Apenas turmas de apoio são descartadas; vínculos de professores auxiliares nas turmas elegíveis continuam incluídos. A classificação reconhece tanto a sigla AEE quanto Atendimento Educacional Especializado.
+
+As referências anteriores à exclusão do AEE descrevem o comportamento anterior. Esta alteração inclui testes da interface e da coleta no servidor, além de QA com conector simulado, sem gravar no SGE.

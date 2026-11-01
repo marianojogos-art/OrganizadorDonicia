@@ -99,9 +99,9 @@ async function handleInner(request,env,authenticate=identity,assistantCreateId){
   if(!response.ok)throw Error('source_unavailable');return response.json();
  }});
  if(!pedagogical&&path.startsWith('/api/')){
-  const read=request.method==='GET'&&(['/api/me','/api/reservations','/api/fixed-occupancy','/api/xerox','/api/events','/api/trainings','/api/official-trainings'].includes(path)||/^\/api\/xerox\/[^/]+\/attachment$/.test(path)||/^\/api\/staff-requests(?:\/[^/]+)?$/.test(path));
-  const create=request.method==='POST'&&['/api/reservations','/api/xerox','/api/staff-requests'].includes(path);
-  const change=['PATCH','DELETE'].includes(request.method)&&/^\/api\/(reservations|xerox|staff-requests)\/[^/]+$/.test(path);
+  const read=request.method==='GET'&&(['/api/me','/api/reservations','/api/fixed-occupancy','/api/xerox','/api/events','/api/trainings','/api/official-trainings','/api/notes'].includes(path)||/^\/api\/notes\/[^/]+$/.test(path)||/^\/api\/xerox\/[^/]+\/attachment$/.test(path)||/^\/api\/staff-requests(?:\/[^/]+)?$/.test(path));
+  const create=request.method==='POST'&&['/api/reservations','/api/xerox','/api/staff-requests','/api/notes'].includes(path);
+  const change=['PATCH','DELETE'].includes(request.method)&&/^\/api\/(reservations|xerox|staff-requests|notes)\/[^/]+$/.test(path);
   if(!read&&!create&&!change)return json({error:'Acesso exclusivo da equipe pedagógica'},403);
  }
  const preparePlan=async(teacher,date,extraDays)=>{

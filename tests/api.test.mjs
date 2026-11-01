@@ -152,7 +152,7 @@ test('personal notes isolate pedagogical users and direction on every API path, 
  const note={title:'Lembrete fictício',content:'Organizar material fictício',color:'azul',owner:two};
  const n=await send(e,'notes','POST',note,one);assert.equal(n.status,201);
  const call=async(email,path='notes',method='GET',data)=>{const r=await handle(new Request('https://school.example/api/'+path,{method,headers:{Origin:'https://school.example','Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(data)}),e,async()=>email);return {status:r.status,body:await r.json()}};
- for(const teacher of ['one@prof.pmf.sc.gov.br','two@prof.pmf.sc.gov.br']){assert.equal((await call(teacher)).status,403);assert.equal((await call(teacher,'notes','POST',note)).status,403);for(const method of ['GET','PATCH','DELETE'])assert.equal((await call(teacher,'notes/'+n.body.id,method,{...note,version:1})).status,403)}
+ for(const teacher of ['one@prof.pmf.sc.gov.br','two@prof.pmf.sc.gov.br']){assert.equal((await call(teacher)).status,200);assert.deepEqual((await call(teacher)).body,[]);for(const method of ['GET','PATCH','DELETE'])assert.equal((await call(teacher,'notes/'+n.body.id,method,{...note,version:1})).status,404)}
  const own=(await call(one)).body;assert.equal(own.length,1);assert.equal(own[0].title,note.title);assert.equal((await call(two)).body.length,0);assert.equal((await call(director)).body.length,0);
  for(const other of [two,director]){
   assert.equal((await call(other,'notes/'+n.body.id)).status,404);

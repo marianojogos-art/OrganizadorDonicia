@@ -27,15 +27,15 @@ function page(role='teacher',storage=new Map(),reminderStorage=new Map()){
 
 test('teacher boot loads only permitted resources and cannot navigate or open pedagogical actions',async()=>{
  const p=page();await p.run('boot()');
- assert.deepEqual(p.calls.map(x=>x.path).sort(),['me','reservations','xerox','events','fixed-occupancy','trainings','official-trainings','staff-requests'].sort());
- assert.deepEqual([...p.document.querySelectorAll('#nav [data-section]')].map(x=>x.dataset.section),['meu-dia','espacos','xerox','calendario','formacao','solicitacoes']);
+ assert.deepEqual(p.calls.map(x=>x.path).sort(),['me','reservations','xerox','events','fixed-occupancy','trainings','official-trainings','staff-requests','notes'].sort());
+ assert.deepEqual([...p.document.querySelectorAll('#nav [data-section]')].map(x=>x.dataset.section),['meu-dia','espacos','xerox','calendario','formacao','notas','solicitacoes']);
  assert.equal(p.run('state.section'),'meu-dia');assert.match(p.document.querySelector('#page').textContent,/Seu dia/);
- p.run("setPage('tarefas');setPage('notas');modal('new-task');modal('new-note')");
+ p.run("setPage('tarefas');modal('new-task')");
  assert.equal(p.run('state.section'),'meu-dia');assert.equal(p.document.querySelector('.modal'),null);
  p.run("state.section='supervisao';render()");assert.equal(p.run('state.section'),'meu-dia');
  p.click('[data-section="formacao"]');assert.match(p.document.querySelector('#page').textContent,/calendário de formação será disponibilizado/);
  assert.equal(p.document.querySelector('[data-action="new-training"]'),null);
- await p.run('refresh()');assert.ok(p.calls.every(x=>!['users','tasks','settings','minutes','notices','school','substitutions','auxiliaries','notes'].includes(x.path)));
+ await p.run('refresh()');assert.ok(p.calls.every(x=>!['users','tasks','settings','minutes','notices','school','substitutions','auxiliaries'].includes(x.path)));
 });
 
 test('direction, supervision and guidance have the complete workspace and publishing tools',async()=>{
@@ -184,13 +184,13 @@ test('site metrics panel is pedagogical-only, shows aggregates and sends selecte
 test('opening the metrics hash directly also fetches its initial aggregates',async()=>{const p=page('direction');p.data['site-metrics']={from:'2026-10-07',to:'2026-10-13',totals:{views:0,estimatedVisits:0,sectionClicks:0,whatsappClicks:0},byDay:[],bySection:[]};p.context.window={};p.context.location={hash:'#metricas'};await p.run('boot()');await new Promise(resolve=>setImmediate(resolve));assert.equal(p.run('state.section'),'metricas');assert.ok(p.calls.some(call=>call.path.startsWith('site-metrics?')));assert.match(p.document.querySelector('#page').textContent,/Visitas estimadas/)});
 
 
-test('management can preview the six teacher sections and return without changing identity',async()=>{
+test('management can preview the seven teacher sections and return without changing identity',async()=>{
  for(const role of ['direction','supervision','guidance']){
   const p=page(role);await p.run('boot()');p.run("setPage('tarefas')");
   assert.match(p.document.querySelector('[data-toggle-teacher-view]').textContent,/Visão de professor/);
   await p.run('toggleTeacherPreview()');
   assert.equal(p.run('currentUser.role'),role);assert.equal(p.run('hasPedagogicalAccess()'),true);
-  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,6,p.document.querySelector('#page').textContent);
+  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,7,p.document.querySelector('#page').textContent);
   assert.match(p.document.querySelector('#view-switcher').textContent,/somente leitura/);
   assert.equal(p.run("allowedAction('new-task')"),false);
   p.run("modal('new-booking')");assert.equal(p.document.querySelector('#entryform button[type=submit]').disabled,true);
@@ -364,4 +364,24 @@ test('returned reservations and material requests show feedback and allow only o
  assert.ok(p.document.querySelector('[data-edit="reservations:0"]'));p.click('[data-edit="staff-requests:0"]');
  await p.save('edit-staff-requests',0,{type:'material',title:'Papel',classes:'61',description:'Dez folhas',deadline:'2026-10-14'});
  const change=p.calls.find(x=>x.method==='PATCH');assert.equal(change.body.resubmit,true);assert.equal(change.body.version,2);
+});
+
+test('own notes appear on both home pages and teachers can create and edit without pedagogical permissions',async()=>{
+ for(const role of ['teacher','direction','supervision','guidance']){
+  const p=page(role);p.data.notes=[0,1,2,3].map(i=>({id:'note-'+i,title:i?'Nota '+i:'<img src=x>',content:i?'Lembrete privado':'Texto <script> '+('a'.repeat(400)),color:'azul',version:4}));
+  await p.run('boot()');const panel=p.document.querySelector('[data-notes-overview]');
+  assert.ok(panel);assert.equal(panel.querySelectorAll('.personal-note').length,3);assert.equal(panel.querySelector('img'),null);assert.match(panel.textContent,/<img src=x>/);assert.ok(panel.querySelector('.note-text').textContent.length<=241);
+  p.click('[data-edit="notes:0"]');assert.match(p.document.querySelector('.modal').textContent,/Editar nota pessoal/);
+  await p.save('edit-notes',0,{title:'Revisada',content:'Texto revisado',color:'verde'});
+  const edit=p.calls.find(x=>x.method==='PATCH');assert.equal(edit.path,'notes/note-0');assert.equal(edit.body.version,4);
+  p.click('[data-action="new-note"]');await p.save('new-note',null,{title:'Nova',content:'Meu texto',color:'rosa'});
+  assert.ok(p.calls.some(x=>x.path==='notes'&&x.method==='POST'));
+  p.run("setPage('notas')");assert.equal(p.document.querySelectorAll('.personal-note').length,4);
+  if(role==='teacher'){p.run("setPage('tarefas');modal('new-task')");assert.equal(p.run('state.section'),'notas');assert.equal(p.document.querySelector('.modal'),null)}
+ }
+});
+test('teacher preview shows own notes read-only and clears them when a new view is loading',async()=>{
+ const p=page('direction');p.data.notes=[{id:'mine',title:'Nota da gestão',content:'Particular',color:'verde',version:1}];
+ await p.run('boot()');await p.run('toggleTeacherPreview()');assert.ok(p.document.querySelector('[data-notes-overview]'));assert.equal(p.document.querySelector('[data-action="new-note"]'),null);assert.equal(p.document.querySelector('[data-edit="notes:0"]'),null);
+ p.run("setPage('notas');modal('new-note')");assert.equal(p.document.querySelector('.modal'),null);assert.equal(p.calls.filter(x=>x.path==='notes'&&x.method!=='GET').length,0);
 });

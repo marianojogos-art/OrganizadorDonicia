@@ -21,6 +21,7 @@ try{
  await DB.prepare("INSERT INTO xerox(id,title,copies,deadline,requester,professor,class,color,status,attachment_name,attachment_mime,attachment_data) VALUES('old-xerox','Material anterior fictício',12,?,?,?,'Turma fictícia','Colorido','Concluído','anterior.pdf','application/pdf','JVBERi0xLjQ=')").bind(today,teacher,'Professor fictício').run();
  await DB.prepare("INSERT INTO staff_requests(id,requester,type,title,classes,description,deadline,status) VALUES('material',?,'material','Solicitação em análise fictícia','Turma fictícia','Papel',?,'Em análise')").bind(teacher,tomorrow).run();
  await DB.prepare("INSERT INTO events(id,title,date,type,creator,formation,area,start,end,location,details,visibility) VALUES('local-formation','Formação local fictícia',?,'Evento escolar',?,1,'Ciências','08:00','10:00','Sala inicial','','internal')").bind(tomorrow,team).run();
+ await DB.prepare("INSERT INTO personal_notes(id,owner,title,content,color) VALUES('teacher-note',?,'Lembrete particular do professor','Preparar material','azul'),('team-note',?,'Nota privada da gestão','Texto apenas da equipe','verde')").bind(teacher,team).run();
 }finally{DB.close()}
 async function start(port,role){
  const child=spawn(process.execPath,['scripts/dev.mjs'],{env:{...process.env,PORT:String(port),LOCAL_DB:database,LOCAL_ROLE:role},stdio:['ignore','pipe','pipe']});servers.push(child);let log='';child.stdout.on('data',data=>log=(log+data).slice(-3000));child.stderr.on('data',data=>log=(log+data).slice(-3000));
@@ -39,8 +40,18 @@ try{
   const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base+'/equipe',{waitUntil:'networkidle'});await page.waitForFunction(()=>currentUser?.role==='teacher'&&state.section==='meu-dia'&&state.trainings.length>0);
   const postit=page.locator('.df-toggle');if(await postit.getAttribute('aria-expanded')==='true')await postit.click();
-  assert.equal(await page.locator('#nav [data-section]').count(),6);assert.match(await page.locator('#page').innerText(),/Reserva próxima: Biblioteca/);assert.match(await page.locator('#page').innerText(),/Solicitação em análise fictícia/);assert.ok(!(await page.locator('#page').innerText()).includes('Atividade de outro docente'));
+  assert.equal(await page.locator('#nav [data-section]').count(),7);assert.match(await page.locator('#page').innerText(),/Reserva próxima: Biblioteca/);assert.match(await page.locator('#page').innerText(),/Solicitação em análise fictícia/);assert.ok(!(await page.locator('#page').innerText()).includes('Atividade de outro docente'));
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'dashboard overflow '+width);
+  assert.match(await page.locator('[data-notes-overview]').innerText(),/Lembrete particular do professor/);assert.doesNotMatch(await page.locator('#page').innerText(),/Nota privada da gestão/);
+  await page.locator('[data-action="new-note"]').click();await page.locator('#entryform [name=title]').fill('Minha nota '+width);await page.locator('#entryform [name=content]').fill('Texto privado '+width);
+  const noteResponse=page.waitForResponse(r=>r.url()===base+'/api/notes'&&r.request().method()==='POST');await page.locator('#entryform button[type=submit]').click();const createdNote=await noteResponse;assert.equal(createdNote.status(),201);const noteId=(await createdNote.json()).id;await page.locator('.modal').waitFor({state:'detached'});
+  await page.reload({waitUntil:'networkidle'});await page.waitForFunction(id=>state.notes.some(x=>x.id===id),noteId);assert.match(await page.locator('[data-notes-overview]').innerText(),new RegExp('Minha nota '+width));
+  await page.evaluate(()=>setPage('notas'));const noteArticle=page.locator('.personal-note').filter({hasText:'Minha nota '+width});await noteArticle.locator('[data-edit]').click();await page.locator('#entryform [name=content]').fill('Texto corrigido '+width);
+  const noteEdited=page.waitForResponse(r=>r.url()===base+'/api/notes/'+noteId&&r.request().method()==='PATCH');await page.locator('#entryform button[type=submit]').click();assert.equal((await noteEdited).status(),200);await page.locator('.modal').waitFor({state:'detached'});
+  await page.reload({waitUntil:'networkidle'});await page.waitForFunction(id=>state.notes.some(x=>x.id===id),noteId);assert.match(await page.locator('#page').innerText(),new RegExp('Texto corrigido '+width));
+  await page.evaluate(()=>setPage('notas'));await page.locator('.personal-note').filter({hasText:'Minha nota '+width}).locator('[data-edit]').click();page.once('dialog',dialog=>dialog.accept());
+  const noteDeleted=page.waitForResponse(r=>r.url()===base+'/api/notes/'+noteId&&r.request().method()==='DELETE');await page.getByRole('button',{name:'Remover registro',exact:true}).click();assert.equal((await noteDeleted).status(),200);await page.locator('.modal').waitFor({state:'detached'});
+  const teamPage=await context.newPage();await teamPage.goto(staff+'/equipe',{waitUntil:'networkidle'});await teamPage.waitForFunction(()=>currentUser?.role==='direction'&&state.notes.length>0);assert.match(await teamPage.locator('[data-notes-overview]').innerText(),/Nota privada da gestão/);assert.doesNotMatch(await teamPage.locator('#page').innerText(),/Lembrete particular do professor/);await teamPage.close();
   await page.evaluate(()=>setPage('solicitacoes'));assert.ok(await page.locator('.teacher-order').count()>=4);
   await page.locator('[data-teacher-kind]').selectOption('xerox');assert.ok(await page.locator('.teacher-order').count()>=1);await page.locator('[data-teacher-kind]').selectOption('');
   await page.locator('[data-duplicate-kind="staff-requests"]').first().click();assert.equal(await page.locator('#donicia-feedback').isVisible(),false);assert.equal(await page.locator('#entryform [name=description]').inputValue(),'Papel');assert.equal(await page.locator('#entryform [name=type]').inputValue(),'material');assert.equal(await page.locator('#entryform [name=deadline]').inputValue(),'');await page.locator('[data-close]').first().click();
@@ -64,7 +75,7 @@ try{
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'final dashboard overflow '+width);assert.deepEqual(errors,[]);
   await page.evaluate(()=>scrollTo(0,0));
   if(width===390||width===1440){await imageLog(page,'teacher-'+width+'-top',false);await imageLog(page,'teacher-'+width+'-full',true)}
-  console.log('TEACHER_DAY_QA '+JSON.stringify({width,ownRecords:true,duplicateWithoutAttachment:true,newApprovalRequired:true,dayWeekAvailability:true,formationChangeAfterReload:true,errors}));
+  console.log('TEACHER_DAY_QA '+JSON.stringify({width,ownRecords:true,duplicateWithoutAttachment:true,newApprovalRequired:true,dayWeekAvailability:true,formationChangeAfterReload:true,notesCRUDAndReload:true,notesOwnerIsolation:true,errors}));
   await context.close();
   const cleanup=sqlite(database);try{cleanup.exec("DELETE FROM xerox WHERE id<>'old-xerox'; DELETE FROM reservations WHERE id NOT IN ('own-approved','own-pending','foreign')")}finally{cleanup.close()}
  }
