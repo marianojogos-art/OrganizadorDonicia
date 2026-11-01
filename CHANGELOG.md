@@ -1,5 +1,15 @@
 # Histórico de mudanças
 
+## 01/11/2026 — notas pessoais, AEE e sessão de 30 dias
+
+- **Minhas notas** no início da gestão e em **Meu dia**, com três notas recentes e atalhos para criar, editar e ver todas. Professores têm CRUD de suas próprias notas; a API mantém privacidade por dono, controle de versão e proteção de origem. A prévia da gestão continua somente leitura.
+- A Supervisão separa **Anos finais**, **Anos iniciais** e **AEE**. A coleta inclui AEE e professores auxiliares nas turmas elegíveis; turmas de apoio continuam excluídas.
+- Cloudflare Access da aplicação existente confirmado em **720 horas (30 dias)** para novas sessões, após autorização geral expressa. Cookie HttpOnly, políticas e destinos foram preservados; **Sair** encerra a sessão. Sessões anteriores podem conservar o prazo antigo.
+- Contribuições reais acompanhadas com 13 novos registros e auditorias: **12 implementadas**, **uma em análise** e **uma nova**. Textos, autores e histórico anterior preservados; dados privados não foram copiados para o GitHub.
+
+Publicação confirmada em 01/11/2026 às **00:32 (Brasília)**, commit `f27d0b8b6987dd0011e874299566ff3e36a9e7f7`, build `f768730e-b813-4994-86a9-7ffd06c1f0d1`. **261 testes web e 14 mobile**, lint, TypeScript, build, runtimes, QA Chromium e verificação HTTP pós-publicação aprovados. Notas no site em **Contribuições → Histórico de atualizações publicadas**. [Detalhes e evidências](docs/notas-aee-sessao-2026-11.md).
+
+
 ## 22/10/2026 — revisão da área pública
 
 Página pública revisada com calendário mais confiável, recuperação de falhas em cada seção, melhor contraste e navegação por teclado. O logo carrega em versões leves e a apresentação foi compactada no celular. O post-it provisório continua disponível para opiniões, com tamanho e controles adaptados ao celular. Foram cadastrados três projetos históricos identificados por ano, três documentos oficiais, seis datas do calendário da rede e um aviso de orientação com validade.

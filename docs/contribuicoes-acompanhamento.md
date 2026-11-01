@@ -1,5 +1,16 @@
 # Contribuições e atualizações publicadas
 
+## Atualização de 01/11/2026
+
+A consulta autorizada pelo conector Cloudflare ao banco de produção permitiu conferir as 14 contribuições reais. Após a publicação validada do PR29, foram acrescentados 13 acompanhamentos, identificados como atualizações automáticas a pedido do gestor e vinculados à conta institucional existente indicada por ele. Nenhum usuário adicional foi criado.
+
+O resultado conferido no banco é **12 Implementadas**, **uma Em análise** (contato da orientação incompleto) e **uma Nova** (documentos padrão). Cada acompanhamento inclui explicação e evidência da publicação/teste. Os pedidos originais, autores, contexto de página, datas de criação e comentários anteriores foram preservados.
+
+Situação, histórico e auditoria foram gravados em um lote transacional com versões esperadas. A leitura após a operação confirmou os 13 acompanhamentos e 13 auditorias. O comportamento de rollback do endpoint REST de lotes foi verificado previamente com dados fictícios em tabela temporária no banco de prévia; a tabela de teste foi removida. Uma tentativa anterior sem identidade de auditoria válida falhou integralmente, sem atualizar contribuições.
+
+Dados pessoais, textos privados, identificadores das contribuições e o e-mail do gestor ficam fora deste repositório público. A documentação abaixo preserva o registro histórico da etapa anterior, na qual a consulta privada estava bloqueada.
+
+
 A aba **Contribuições** fica imediatamente depois de **Biblioteca**, no menu da equipe pedagógica. O histórico da própria aba resume etapas cuja publicação foi confirmada, com horário de Brasília, commit e link da execução Cloudflare. Datas não são inferidas de pedidos, planos, merges ou apenas de testes locais.
 
 ## Evidências das entradas do histórico
@@ -14,9 +25,9 @@ Consultadas no GitHub em 15/10/2026; os checks `Workers Builds: organizadordonic
 
 As duas primeiras datas aparecem como **14/10/2026** na interface, pois Brasília está três horas atrás de UTC. O histórico é um registro de etapas verificadas, não uma lista de todos os commits nem uma release do aplicativo Android. Novas entradas exigem confirmação da publicação antes de serem adicionadas.
 
-## Acompanhamento das sugestões reais
+## Acompanhamento das sugestões reais — registro anterior
 
-Nesta execução, a consulta direta a `/api/feedback` não chegou ao aplicativo: o proxy do executor recusou o túnel HTTPS (`CONNECT tunnel failed`, HTTP 000 na consulta). Não há sessão institucional autenticada disponibilizada ao executor. As verificações HTTP anteriores confirmam que a rota privada redireciona usuários sem autenticação; não se deve remover essa proteção para obter a lista.
+Na etapa anterior documentada em outubro, a consulta direta a `/api/feedback` não chegou ao aplicativo: o proxy do executor recusou o túnel HTTPS (`CONNECT tunnel failed`, HTTP 000 na consulta). Não há sessão institucional autenticada disponibilizada ao executor. As verificações HTTP anteriores confirmam que a rota privada redireciona usuários sem autenticação; não se deve remover essa proteção para obter a lista.
 
 **Não foi possível ler, responder nem alterar sugestões reais nesta etapa.** Nenhum status de produção foi marcado como Implementada, e nenhum autor, texto ou registro foi reescrito. Exemplos dos testes são fictícios em SQLite descartável e não representam as contribuições da escola.
 
@@ -44,7 +55,7 @@ Um erro conserva o rascunho em memória até a nova tentativa; não há promessa
 
 Testes com dados fictícios cobrem os três papéis pedagógicos, bloqueio de visitante/professor, preservação de autoria/texto/datas preexistentes, migração sobre contribuição antiga, evidência obrigatória para Implementada, histórico paginado, conflitos concorrentes, transação desfeita se a auditoria falhar e imutabilidade dos registros. QA Chromium verifica resposta parcial, erro/repetição preservando rascunho, histórico após recarga e layout em 320/390/1440 px. Nenhuma contribuição real foi usada nesses testes.
 
-A publicação de código e migração aditiva está autorizada no destino Cloudflare existente. A análise e as respostas às contribuições reais continuam bloqueadas pela ausência de acesso autenticado descrita acima; o novo recurso não muda permissões para contornar esse bloqueio.
+A publicação de código e migração aditiva está autorizada no destino Cloudflare existente. Naquela etapa, a análise e as respostas às contribuições reais estavam bloqueadas pela ausência de acesso autenticado descrita acima. A operação de 01/11/2026, registrada no início deste documento, foi autorizada e auditada por um caminho administrativo conectado; as permissões do portal permanecem protegidas.
 
 ## Verificação desta alteração
 
