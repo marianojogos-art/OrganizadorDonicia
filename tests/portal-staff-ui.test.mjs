@@ -184,13 +184,13 @@ test('site metrics panel is pedagogical-only, shows aggregates and sends selecte
 test('opening the metrics hash directly also fetches its initial aggregates',async()=>{const p=page('direction');p.data['site-metrics']={from:'2026-10-07',to:'2026-10-13',totals:{views:0,estimatedVisits:0,sectionClicks:0,whatsappClicks:0},byDay:[],bySection:[]};p.context.window={};p.context.location={hash:'#metricas'};await p.run('boot()');await new Promise(resolve=>setImmediate(resolve));assert.equal(p.run('state.section'),'metricas');assert.ok(p.calls.some(call=>call.path.startsWith('site-metrics?')));assert.match(p.document.querySelector('#page').textContent,/Visitas estimadas/)});
 
 
-test('management can preview the six teacher sections and return without changing identity',async()=>{
+test('management can preview the seven teacher sections and return without changing identity',async()=>{
  for(const role of ['direction','supervision','guidance']){
   const p=page(role);await p.run('boot()');p.run("setPage('tarefas')");
   assert.match(p.document.querySelector('[data-toggle-teacher-view]').textContent,/Visão de professor/);
   await p.run('toggleTeacherPreview()');
   assert.equal(p.run('currentUser.role'),role);assert.equal(p.run('hasPedagogicalAccess()'),true);
-  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,6,p.document.querySelector('#page').textContent);
+  assert.equal(p.document.querySelectorAll('#nav [data-section]').length,7,p.document.querySelector('#page').textContent);
   assert.match(p.document.querySelector('#view-switcher').textContent,/somente leitura/);
   assert.equal(p.run("allowedAction('new-task')"),false);
   p.run("modal('new-booking')");assert.equal(p.document.querySelector('#entryform button[type=submit]').disabled,true);
