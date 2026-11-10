@@ -1,5 +1,12 @@
 # Histórico de mudanças
 
+## Novembro de 2026 — revisão visual do portal
+
+- O portal público ganhou uma abertura com mais destaque para a identidade da escola, atalhos compactos no celular e avisos e calendário mais próximos do início.
+- As áreas da equipe, do professor e da Secretaria adotaram a mesma paleta. A navegação lateral acompanha a rolagem em telas grandes. Cartões, indicadores, formulários e foco por teclado ganharam contraste e espaçamento mais claros.
+- No celular, o post-it começa recolhido em um canto e o assistente ocupa o outro. O post-it continua arrastável e os rascunhos são mantidos no navegador.
+
+
 ## 01/11/2026 — notas pessoais, AEE e sessão de 30 dias
 
 - **Minhas notas** no início da gestão e em **Meu dia**, com três notas recentes e atalhos para criar, editar e ver todas. Professores têm CRUD de suas próprias notas; a API mantém privacidade por dono, controle de versão e proteção de origem. A prévia da gestão continua somente leitura.

@@ -26,17 +26,30 @@ export function mountFeedback(doc=document,win=window){
  const grip=root.querySelector('.df-grip'),toggle=root.querySelector('.df-toggle'),body=root.querySelector('.df-body'),form=root.querySelector('form'),message=form.elements.message,kind=form.elements.kind,contributor=form.elements.contributor,status=root.querySelector('.df-status'),usePage=root.querySelector('.df-use-page');
  message.value=draft.message;kind.value=['impression','improvement','feature'].includes(draft.kind)?draft.kind:'improvement';contributor.value=typeof draft.contributor==='string'?draft.contributor.slice(0,80):'';
  const publicPage=!doc.querySelector('#nav');
- let position={x:stored.x,y:stored.y},collapsed=typeof stored.collapsed==='boolean'?stored.collapsed:publicPage,drag=null,busy=false,layoutFrame=null;
+ // The old staff mobile default was saved at this point without a drag.
+ const legacyMobileDefault=!publicPage&&win.innerWidth<=480&&stored.moved===undefined&&stored.x===8&&stored.y===100;
+ let moved=!legacyMobileDefault&&(stored.moved===true||stored.moved===undefined&&Number.isFinite(stored.x)&&Number.isFinite(stored.y));
+ let position={x:stored.x,y:stored.y};
+ let collapsed=typeof stored.collapsed==='boolean'&&!legacyMobileDefault?stored.collapsed:publicPage||win.innerWidth<=480;
+ let drag=null,busy=false,layoutFrame=null;
  const viewport=()=>({left:win.visualViewport?.offsetLeft||0,top:win.visualViewport?.offsetTop||0,width:win.visualViewport?.width||win.innerWidth,height:win.visualViewport?.height||win.innerHeight});
  const headingText=root.querySelector('#df-heading'),gripHint=grip.querySelector('span');
- function rememberPosition(){write(positionKey,{...position,collapsed})}
+ function rememberPosition(){write(positionKey,{...position,collapsed,moved})}
  function layout(){
   const view=viewport(),compact=win.innerWidth<=480;
   headingText.textContent=compact&&collapsed?'✎ Sua opinião':'✎ Site em construção';
   gripHint.textContent=compact&&collapsed?'Ajude a melhorar o site':'Arraste pelo topo · deixe sua ideia';
   root.style.width=Math.min(collapsed?(compact?204:300):368,Math.max(1,view.width-16))+'px';root.style.maxHeight=Math.max(44,view.height-16)+'px';
-  const box=root.getBoundingClientRect();if(!Number.isFinite(position.x)||!Number.isFinite(position.y))position={x:view.left+view.width-box.width-20,y:publicPage&&collapsed?view.top+view.height-box.height-20:view.top+Math.min(100,Math.max(8,(view.height-box.height)/2))};
-  position=clampPosition(position,{width:box.width,height:box.height},view);root.style.left=position.x+'px';root.style.top=position.y+'px';
+  const box=root.getBoundingClientRect();
+  if(compact&&!moved||!Number.isFinite(position.x)||!Number.isFinite(position.y)){
+   position=compact
+    ?{x:view.left+12,y:view.top+view.height-box.height-12}
+    :{x:view.left+view.width-box.width-20,y:publicPage&&collapsed?view.top+view.height-box.height-20:view.top+Math.min(100,Math.max(8,(view.height-box.height)/2))};
+  }
+  position=clampPosition(position,{width:box.width,height:box.height},view);
+  root.style.left=position.x+'px';root.style.top=position.y+'px';
+  const overlapsAssistant=compact&&collapsed&&position.x+box.width>view.left+view.width-98&&position.y+box.height>view.top+view.height-64;
+  doc.body.classList.toggle('df-assistant-offset',overlapsAssistant);
  }
  function scheduleLayout(){if(layoutFrame!==null)return;layoutFrame=win.requestAnimationFrame(()=>{layoutFrame=null;layout();rememberPosition()})}
  function collapse(){
@@ -58,10 +71,10 @@ export function mountFeedback(doc=document,win=window){
   if(event.button!==0||drag)return;
   drag={id:event.pointerId,x:event.clientX,y:event.clientY,origin:{...position}};grip.setPointerCapture(event.pointerId);root.classList.add('df-dragging');event.preventDefault();
  });
- grip.addEventListener('pointermove',event=>{if(!drag||event.pointerId!==drag.id)return;position={x:drag.origin.x+event.clientX-drag.x,y:drag.origin.y+event.clientY-drag.y};layout()});
+ grip.addEventListener('pointermove',event=>{if(!drag||event.pointerId!==drag.id)return;moved=true;position={x:drag.origin.x+event.clientX-drag.x,y:drag.origin.y+event.clientY-drag.y};layout()});
  const finishDrag=()=>{if(!drag)return;drag=null;root.classList.remove('df-dragging');rememberPosition()};
  grip.addEventListener('pointerup',finishDrag);grip.addEventListener('pointercancel',finishDrag);grip.addEventListener('lostpointercapture',finishDrag);
- grip.addEventListener('keydown',event=>{const moves={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};if(!moves[event.key])return;event.preventDefault();const step=event.shiftKey?30:10;position={x:position.x+moves[event.key][0]*step,y:position.y+moves[event.key][1]*step};layout();rememberPosition()});
+ grip.addEventListener('keydown',event=>{const moves={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};if(!moves[event.key])return;event.preventDefault();const step=event.shiftKey?30:10;moved=true;position={x:position.x+moves[event.key][0]*step,y:position.y+moves[event.key][1]*step};layout();rememberPosition()});
  toggle.addEventListener('click',()=>{collapsed=!collapsed;collapse()});
  root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!collapsed&&win.innerWidth<=480){event.preventDefault();event.stopPropagation();collapsed=true;collapse();toggle.focus()}});
  for(const control of [message,kind,contributor])control.addEventListener('input',()=>{if(busy)return;saveDraft();status.textContent='Rascunho salvo neste navegador.'});

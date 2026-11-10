@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#163c50">
+  <meta name="theme-color" content="#112c43">
   <meta name="description" content="Conheça a EBM Donícia Maria da Costa, escola municipal de Ensino Fundamental no Saco Grande, em Florianópolis. Avisos, calendário e informações para as famílias.">
   <title>Donícia Maria da Costa · Escola e comunidade</title>
   <link rel="icon" href="/public-assets/logo.jpg" type="image/jpeg">
@@ -56,34 +56,204 @@
  .footer{padding-bottom:35px}.metrics-disclosure{padding-bottom:90px}
 }
 
+
+/* Identidade visual do portal */
+:root {
+  --paper:#f5f8fa; --ink:#112c43; --muted:#415b6d; --blue:#e6f0f5; --gold:#f5c46e;
+  --line:#d8e3e9; --white:#fff; --teal:#0a6b62; --teal-dark:#07554e;
+  --radius:20px; --surface-shadow:0 10px 28px #112c4314;
+}
+:focus-visible { outline-color:var(--teal); outline-offset:4px; }
+.wrap { width:min(1220px,calc(100% - 64px)); }
+.site-header { background:var(--white); }
+.header { padding-block:15px; gap:16px; }
+.brand { flex-basis:230px; gap:12px; }
+.brand img { width:52px; height:52px; border-radius:10px; }
+.brand strong { font-size:16px; }
+.brand small { font-size:11px; letter-spacing:.045em; }
+.nav { gap:4px; }
+.nav a {
+  display:inline-flex; align-items:center; justify-content:center; min-height:44px;
+  padding:8px 10px; border-radius:9px; font-size:13px;
+}
+.nav a:hover,.staff:hover,.footer-staff:hover { background:var(--blue); text-decoration:none; }
+.staff,.footer-staff { border:1px solid var(--line); border-radius:10px; padding:8px 12px; color:var(--ink); font-weight:650; }
+.hero { padding-block:clamp(32px,5vw,72px); background:radial-gradient(ellipse at top right,#e2f0ef 0,transparent 62%),var(--paper); }
+.hero-inner { gap:clamp(28px,5vw,70px); grid-template-columns:minmax(0,1.08fr) minmax(0,1fr); }
+.eyebrow,.kicker { color:var(--teal-dark); letter-spacing:.1em; }
+.eyebrow:before { width:24px; height:2px; border-radius:2px; background:var(--teal); }
+.hero-school { margin-bottom:13px; color:var(--muted); }
+.hero h1 {
+  font-size:clamp(2.75rem,5.25vw,4.75rem); line-height:1.02; letter-spacing:-.055em;
+  text-wrap:balance; margin-bottom:20px;
+}
+.hero h1 em { color:var(--teal); }
+.hero-copy { font-size:1rem; line-height:1.65; max-width:48ch; margin-bottom:22px; }
+.hero-actions { gap:8px 18px; }
+.primary { background:var(--teal); border-color:var(--teal); color:var(--white); border-radius:11px; padding-inline:17px; }
+.primary:hover { background:var(--teal-dark); border-color:var(--teal-dark); }
+.text-link { color:var(--teal-dark); font-weight:700; }
+.hero-visual {
+  min-height:240px; aspect-ratio:1.42; overflow:hidden; border-radius:28px;
+  background:linear-gradient(145deg,var(--ink),#103f50 61%,#0d645e);
+  padding:60px clamp(18px,3vw,42px); box-shadow:var(--surface-shadow);
+}
+.hero-visual:before,.hero-visual:after { width:230px; height:230px; left:auto; right:-80px; top:-95px; border:1px solid #f5c46e6b; }
+.hero-visual:after { width:300px; height:300px; top:-130px; right:-115px; }
+.visual-edition,.visual-caption { right:20px; left:20px; text-align:left; font-size:11px; letter-spacing:.1em; }
+.visual-edition { top:20px; color:var(--gold); }
+.visual-caption { bottom:18px; color:#e5f4f1; }
+.logo-frame { transform:none; border:0; border-radius:14px; padding:15px; box-shadow:0 16px 24px #071c2b44; }
+.logo-frame:before { display:none; }
+
+.quick-links { border:0; background:transparent; padding:0; gap:12px; }
+.quick-links a,.quick-links a:first-child,.quick-links a:last-child {
+  min-height:78px; display:flex; align-items:center; gap:12px; padding:14px;
+  background:var(--white); border:1px solid var(--line); border-radius:14px; box-shadow:var(--surface-shadow);
+}
+.quick-links a:hover { background:#edf8f4; border-color:#a6cfc7; }
+.quick-links .number {
+  width:37px; height:37px; flex:0 0 37px; display:grid; place-items:center;
+  border-radius:10px; background:#e2f2ed; color:var(--teal-dark);
+}
+.quick-links a:nth-child(2) .number { background:#fff0d2; color:#634109; }
+.quick-links a:nth-child(3) .number { background:#e7eff6; color:#244b6b; }
+.quick-links .number svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.quick-links strong { font-size:14px; line-height:1.35; }
+.quick-links .arrow { color:var(--teal-dark); }
+
+.section { padding-block:clamp(42px,6vw,80px); scroll-margin-top:20px; }
+.sectionhead { gap:16px 24px; margin-bottom:24px; }
+h2 { font-size:clamp(2rem,3.7vw,3.1rem); line-height:1.1; text-wrap:balance; }
+.section-lead,.about-copy { font-size:15px; line-height:1.7; }
+.week-section { padding-block:clamp(38px,4.5vw,64px); }
+.week-range { font-size:13px; font-weight:650; }
+.community-grid,.notice-list { gap:16px; }
+.community-card,.notice-card,.school-facts,.calendar-board,.contacts,.faq {
+  min-width:0; background:var(--white); border:1px solid var(--line);
+  border-radius:var(--radius); box-shadow:var(--surface-shadow);
+}
+.community-card,.notice-card { display:flex; flex-direction:column; }
+.community-card .card-copy { flex:1; padding:clamp(16px,2.4vw,26px); }
+.community-card h3,.community-card h4,.notice-card h3 {
+  font-family:inherit; font-size:clamp(1.1rem,1.8vw,1.32rem); font-weight:750;
+  line-height:1.3; letter-spacing:-.02em; margin:10px 0 9px;
+}
+.community-card p,.notice-card p { font-size:14px; line-height:1.65; color:var(--muted); }
+.community-card .card-label,.notice-meta span {
+  padding:4px 8px; background:#e3f2ee; color:var(--teal-dark);
+  border-radius:999px; font-size:11px; font-weight:750; line-height:1.45;
+}
+.community-card img { height:auto; aspect-ratio:3/2; object-fit:contain; background:var(--blue); border-bottom:1px solid var(--line); }
+.week-card { border-top:3px solid #d2942a; }
+.week-card.event-card { border-top-color:var(--teal); }
+.empty,.calendar-board .empty { padding:22px; background:var(--white); border:1px dashed #a9beca; border-radius:12px; }
+.empty strong { font-family:inherit; font-weight:750; font-size:1rem; }
+.notices-section { background:#eaf2f5; }
+.notice-card { padding:clamp(16px,2.4vw,26px); }
+.notice-meta { align-items:center; color:var(--muted); letter-spacing:0; text-transform:none; font-size:12px; }
+.about-grid,.calendar-layout,.contact-grid,.social-inner { gap:clamp(26px,5vw,72px); }
+.school-facts { padding:0 20px; }
+.school-facts div:last-child { border-bottom:0; }
+.school-facts .fact-icon { width:38px; height:38px; background:#e3f2ee; color:var(--teal-dark); border-radius:11px; }
+.fact-icon svg { width:22px; height:22px; }
+.values-line { padding-left:14px; border-left:3px solid var(--gold); color:var(--teal-dark); }
+.calendar-board,.contacts,.faq { padding:clamp(16px,2.8vw,32px); }
+.calendar-top { border-bottom-color:var(--line); padding-bottom:16px; }
+.calendar-top h3 { font-size:1.1rem; }
+.month-control input { border:1px solid #75909f; border-radius:9px; padding-inline:12px; }
+.event { padding-block:17px; gap:15px; }
+.event:last-child { border-bottom:0; }
+.date-tile { background:#e3f2ee; color:var(--teal-dark); border-radius:11px; }
+.date-tile strong { font-family:inherit; font-size:23px; font-weight:750; }
+.tag { background:#fff0d2; color:#634109; border-radius:999px; }
+.documents-section { background:#f7f1e6; }
+.document-group .community-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.document-group .community-card:only-child { grid-column:1/-1; }
+.contacts dt,.faq summary:after,.faq-note { color:var(--teal-dark); }
+.contacts dd { font-size:15px; }
+.contacts .whatsapp-button { background:var(--teal); border-color:var(--teal); border-radius:10px; }
+.contact-links a,.faq summary { font-size:14px; }
+.faq summary { min-height:48px; }
+.social-band { background-color:var(--ink); background-image:linear-gradient(120deg,transparent,#124c57); }
+.social-band .kicker,.social-band .arrow { color:var(--gold); }
+.social-band p,.social-link small { color:#dbe9ed; }
+.social-link,.social-link:first-child { border-color:#ffffff4d; }
+.social-band :focus-visible { outline-color:var(--gold); }
+.footer { background:var(--white); }
+.footer-staff { margin-top:12px; }
+.error { border-radius:12px; }
+.error button { border-radius:9px; font-size:14px; }
+@media (max-width:850px) {
+  .header { gap:8px 16px; }
+  .brand { flex:1 1 210px; }
+  .nav { padding-top:5px; }
+}
+@media (max-width:620px) {
+  .wrap { width:calc(100% - 32px); }
+  .header { gap:6px 9px; padding-block:10px; }
+  .brand { flex:1 1 135px; gap:8px; }
+  .brand img { width:40px; height:40px; }
+  .brand strong { font-size:14px; }
+  .brand small { font-size:10px; letter-spacing:0; }
+  .staff { min-width:44px; max-width:105px; margin-left:0; padding:6px 8px; white-space:normal; line-height:1.25; }
+  .nav { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:2px; }
+  .nav a { font-size:12px; padding:6px 3px; white-space:normal; text-align:center; }
+  .quick-wrap { margin-top:12px; }
+  .quick-links { gap:6px; }
+  .quick-links a,.quick-links a:first-child,.quick-links a:last-child {
+    min-height:70px; flex-direction:column; justify-content:center; gap:5px; text-align:center; padding:7px 3px;
+  }
+  .quick-links .number { width:26px; height:26px; flex:0 0 26px; border-radius:7px; }
+  .quick-links .number svg { width:17px; height:17px; }
+  .quick-links strong { font-size:12px; }
+  .hero { padding-block:22px 26px; }
+  .hero-inner { grid-template-columns:1fr; gap:17px; }
+  .hero h1 { font-size:clamp(2.12rem,8.9vw,2.75rem); margin-bottom:12px; }
+  .hero-school { margin-bottom:9px; }
+  .hero-copy { font-size:15px; margin-bottom:13px; }
+  .hero-visual { display:grid; width:100%; max-width:390px; min-height:0; aspect-ratio:auto; gap:8px; padding:12px 14px; border-radius:17px; }
+  .visual-caption { display:block; position:static; text-align:center; font-size:10px; }
+  .logo-frame { padding:8px; }
+  .sectionhead { display:block; margin-bottom:17px; }
+  .sectionhead .section-lead { margin-top:10px; }
+  .calendar-layout,.about-grid,.contact-grid,.social-inner { gap:20px; }
+  .calendar-note { display:block; max-width:none; margin-top:12px; padding-top:9px; }
+  .document-group .community-grid { grid-template-columns:1fr; }
+  .contact-links { gap:3px 12px; }
+}
+@media (forced-colors:active) {
+  .primary,.contacts .whatsapp-button { border:1px solid ButtonText; }
+  .hero-visual { border:1px solid CanvasText; }
+}
 </style>
   <link rel="stylesheet" href="/public-assets/feedback.css">
   <link rel="stylesheet" href="/public-assets/assistant.css">
 </head>
-<body>
+<body data-public-design="2026-11-portal">
 <a class="skip" href="#conteudo">Ir para o conteúdo</a>
 <header class="site-header"><div class="wrap header">
   <a class="brand" href="/" aria-label="Donícia Maria da Costa, início"><img src="/public-assets/logo.jpg" alt="" width="62" height="62"><span><strong>Donícia Maria da Costa</strong><small>Escola Básica Municipal</small></span></a>
-  <nav class="nav" aria-label="Navegação principal"><a data-site-metric="escola" href="#escola">Nossa escola</a><a data-site-metric="avisos" href="#avisos">Avisos</a><a data-site-metric="calendario" href="#calendario">Calendário</a><a href="#projetos">Projetos</a><a href="#documentos">Documentos</a><a data-site-metric="contatos" href="#contatos">Contato</a></nav>
+  <nav class="nav" aria-label="Navegação principal"><a data-site-metric="avisos" href="#avisos">Avisos</a><a data-site-metric="calendario" href="#calendario">Calendário</a><a data-site-metric="escola" href="#escola">Nossa escola</a><a href="#projetos">Projetos</a><a href="#documentos">Documentos</a><a data-site-metric="contatos" href="#contatos">Contato</a></nav>
   <a class="staff" data-site-metric="entrada_equipe" href="/equipe"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><rect x="5" y="8" width="10" height="9" rx="1.5"/><path d="M7 8V5a3 3 0 0 1 6 0v3M10 11v3"/></svg>Acesso de funcionários <span aria-hidden="true">↗</span></a>
 </div></header>
 <main id="conteudo" tabindex="-1">
   <section class="hero" aria-labelledby="welcome-title"><div class="wrap hero-inner">
-    <div><p class="eyebrow">Escola pública · Florianópolis</p><p class="hero-school">EBM Donícia Maria da Costa</p><h1 id="welcome-title">Aprender <em>juntos.</em><br>Crescer em<br>comunidade.</h1><p class="hero-copy">Avisos, encontros e descobertas da nossa escola. Um espaço para estudantes, famílias e comunidade acompanharem a Donícia.</p><div class="hero-actions"><a class="primary" data-site-metric="calendario" href="#calendario">Acompanhe o calendário <span class="arrow" aria-hidden="true">↗</span></a><a class="text-link" data-site-metric="escola" href="#escola">Conheça nossa escola <span aria-hidden="true">→</span></a></div></div>
-    <div class="hero-visual"><span class="visual-edition">Nossa escola, nossa identidade</span><span class="visual-star" aria-hidden="true">✳</span><div class="logo-frame"><img src="/public-assets/donicia-2026-960.707952f5d28c.webp" srcset="/public-assets/donicia-2026-480.c67023d134b5.webp 480w, /public-assets/donicia-2026-960.707952f5d28c.webp 960w, /public-assets/donicia-2026-1440.f4d9f138aee3.webp 1440w" sizes="(max-width:620px) 220px, (max-width:850px) 40vw, (max-width:1100px) 42vw, 520px" width="1976" height="796" fetchpriority="high" decoding="async" alt="Donícia 2026 — brasão da Escola Básica Municipal Donícia Maria da Costa"></div><p class="visual-note">Uma escola.<br>Muitas possibilidades.</p><span class="visual-caption">Saco Grande · Florianópolis, SC</span></div>
+    <div><p class="eyebrow">Escola pública · Florianópolis</p><p class="hero-school">EBM Donícia Maria da Costa</p><h1 id="welcome-title">Aprender <em>juntos.</em> Crescer em comunidade.</h1><p class="hero-copy">Avisos, encontros e descobertas da nossa escola. Um espaço para estudantes, famílias e comunidade acompanharem a Donícia.</p><div class="hero-actions"><a class="primary" data-site-metric="calendario" href="#calendario">Acompanhe o calendário <span class="arrow" aria-hidden="true">↗</span></a><a class="text-link" data-site-metric="escola" href="#escola">Conheça nossa escola <span aria-hidden="true">→</span></a></div></div>
+    <div class="hero-visual"><span class="visual-edition">Nossa escola, nossa identidade</span><div class="logo-frame"><img src="/public-assets/donicia-2026-960.707952f5d28c.webp" srcset="/public-assets/donicia-2026-480.c67023d134b5.webp 480w, /public-assets/donicia-2026-960.707952f5d28c.webp 960w, /public-assets/donicia-2026-1440.f4d9f138aee3.webp 1440w" sizes="(max-width:620px) min(346px, calc(100vw - 76px)), (max-width:850px) 33vw, (max-width:1250px) 36vw, 440px" width="1976" height="796" fetchpriority="high" decoding="async" alt="Donícia 2026 — brasão da Escola Básica Municipal Donícia Maria da Costa"></div><span class="visual-caption">Saco Grande · Florianópolis, SC</span></div>
   </div></section>
-  <div class="wrap quick-wrap"><nav class="quick-links" aria-label="Acesso rápido"><a data-site-metric="calendario" href="#calendario"><span class="number" aria-hidden="true">01</span><span><strong>Calendário escolar</strong><small>Datas para acompanhar</small></span><span class="arrow" aria-hidden="true">↗</span></a><a data-site-metric="contatos" href="#contatos"><span class="number" aria-hidden="true">02</span><span><strong>Fale com a secretaria</strong><small>Informações e atendimento</small></span><span class="arrow" aria-hidden="true">↗</span></a><a href="#documentos"><span class="number" aria-hidden="true">03</span><span><strong>Documentos úteis</strong><small>Orientações e referências</small></span><span class="arrow" aria-hidden="true">↗</span></a></nav></div>
+  <div class="wrap quick-wrap"><nav class="quick-links" aria-label="Acesso rápido"><a data-site-metric="calendario" href="#calendario"><span class="number" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-14 5h2m4 0h2"/></svg></span><span><strong>Calendário escolar</strong><small>Datas para acompanhar</small></span><span class="arrow" aria-hidden="true">↗</span></a><a data-site-metric="contatos" href="#contatos"><span class="number" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M21 11.5a7.5 7.5 0 0 1-7.5 7.5h-3.1L5 22v-4.9A7.5 7.5 0 0 1 9.5 4h4a7.5 7.5 0 0 1 7.5 7.5Z"/><path d="M9 10h6m-6 4h4"/></svg></span><span><strong>Fale com a secretaria</strong><small>Informações e atendimento</small></span><span class="arrow" aria-hidden="true">↗</span></a><a href="#documentos"><span class="number" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M6 3h8l4 4v14H6zM14 3v5h4m-9 4h6m-6 4h6"/></svg></span><span><strong>Documentos úteis</strong><small>Orientações e referências</small></span><span class="arrow" aria-hidden="true">↗</span></a></nav></div>
   <section class="section week-section" id="semana" aria-labelledby="week-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Perto de você</p><h2 id="week-title">Nesta semana.</h2><p class="week-range" id="week-range"></p></div><a class="text-link" href="#calendario">Ver calendário completo <span aria-hidden="true">→</span></a></div><p id="week-status" class="section-status" role="status"></p><div id="week-agenda-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar a agenda da semana.</span><button data-retry-public type="button">Tentar novamente</button></div><div id="week-highlights-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar os destaques da semana.</span><button data-retry-highlights type="button">Tentar novamente</button></div><div class="community-grid" id="week-items" aria-live="polite"><p class="empty">Carregando a agenda pública da semana…</p></div></div></section>
+  <section class="section notices-section" id="avisos" aria-labelledby="notices-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Da escola para você</p><h2 id="notices-title">Avisos da escola</h2></div><p class="section-lead">Os comunicados para acompanhar nossa rotina e estar mais perto da escola.</p></div><div id="load-status" role="status">Carregando avisos e calendário…</div><div id="load-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar os avisos.</span><button data-retry-public id="retry" type="button">Tentar novamente</button></div><div class="notice-list" id="notices" aria-live="polite"><p class="empty">Carregando avisos…</p></div></div></section>
+  <section class="section" id="calendario" aria-labelledby="calendar-title"><div class="wrap calendar-layout"><div class="calendar-aside"><p class="kicker">Anote na agenda</p><h2 id="calendar-title">Calendário escolar</h2><p class="section-lead">Consulte as datas e os eventos compartilhados com estudantes, famílias e comunidade.</p><p class="calendar-note">Para orientações sobre uma atividade, fale com a secretaria da escola.</p></div><div class="calendar-board"><div class="calendar-top"><h3 id="calendar-period">Calendário da escola</h3><div class="month-control"><label for="calendar-month">Escolha um mês</label><input id="calendar-month" type="month"></div></div><p id="calendar-status" class="section-status" role="status"></p><div id="calendar-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar o calendário.</span><button data-retry-public type="button">Tentar novamente</button></div><div id="events" aria-live="polite"><p class="empty">Carregando eventos…</p></div></div></div></section>
   <section class="section" id="escola" aria-labelledby="about-heading"><div class="wrap about-grid">
     <div><p class="kicker">Nossa escola, nossa comunidade</p><h2 id="about-heading">Um lugar de aprender.<br>Um espaço de pertencer.</h2><p class="school-name" id="school-title">EBM Donícia Maria da Costa</p><p class="about-copy copy" id="school-introduction">Somos uma escola da rede municipal de Florianópolis, no bairro Saco Grande. Atendemos estudantes do 1º ao 9º ano do Ensino Fundamental e compartilhamos com as famílias a caminhada de aprender e conviver.</p><p class="values-line">Curiosidade para aprender. Respeito para conviver. Espaço para fazer parte.</p></div>
     <dl class="school-facts"><div><span class="fact-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M4 7c5-2 8-1 12 1v19c-4-2-7-3-12-1V7Zm24 0c-5-2-8-1-12 1v19c4-2 7-3 12-1V7Z"/><path d="M8 12h4m-4 5h4m8-5h4m-4 5h4"/></svg></span><dt>Ensino Fundamental</dt><dd>Do 1º ao 9º ano</dd></div><div><span class="fact-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M24 13c0 6-8 14-8 14S8 19 8 13a8 8 0 1 1 16 0Z"/><circle cx="16" cy="13" r="3"/></svg></span><dt>Nosso bairro</dt><dd>Saco Grande, Florianópolis</dd></div><div><span class="fact-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m3 12 13-7 13 7-13 7-13-7Zm6 4v7c4 4 10 4 14 0v-7m6-4v10"/></svg></span><dt>Educação pública</dt><dd>Rede municipal de ensino</dd></div></dl>
   </div></section>
-  <section class="section notices-section" id="avisos" aria-labelledby="notices-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Da escola para você</p><h2 id="notices-title">Acontece na Donícia.</h2></div><p class="section-lead">Os comunicados para acompanhar nossa rotina e estar mais perto da escola.</p></div><div id="load-status" role="status">Carregando avisos e calendário…</div><div id="load-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar os avisos.</span><button data-retry-public id="retry" type="button">Tentar novamente</button></div><div class="notice-list" id="notices" aria-live="polite"><p class="empty">Carregando avisos…</p></div></div></section>
   <section class="section" id="projetos" aria-labelledby="projects-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Aprendizagens que ganham vida</p><h2 id="projects-title">Projetos da escola.</h2></div><p class="section-lead">Conheça as experiências e iniciativas compartilhadas pela Donícia.</p></div><div id="content-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar projetos e documentos.</span><button data-retry-content id="retry-content" type="button">Tentar novamente</button></div><div class="community-grid" id="projects" aria-live="polite"><p class="empty">Carregando projetos…</p></div></div></section>
   <section class="section documents-section" id="documentos" aria-labelledby="documents-title"><div class="wrap"><div class="sectionhead"><div><p class="kicker">Encontre com facilidade</p><h2 id="documents-title">Documentos úteis.</h2></div><p class="section-lead">Links e orientações organizados por assunto, com a data da última atualização.</p></div><div id="documents-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar os documentos.</span><button data-retry-content type="button">Tentar novamente</button></div><div id="documents" aria-live="polite"><p class="empty">Carregando documentos…</p></div></div></section>
-  <section class="section" id="calendario" aria-labelledby="calendar-title"><div class="wrap calendar-layout"><div class="calendar-aside"><p class="kicker">Anote na agenda</p><h2 id="calendar-title">Nosso próximo<br>encontro.</h2><p class="section-lead">Consulte as datas e os eventos compartilhados com estudantes, famílias e comunidade.</p><p class="calendar-note">Para orientações sobre uma atividade, fale com a secretaria da escola.</p></div><div class="calendar-board"><div class="calendar-top"><h3 id="calendar-period">Calendário da escola</h3><div class="month-control"><label for="calendar-month">Escolha um mês</label><input id="calendar-month" type="month"></div></div><p id="calendar-status" class="section-status" role="status"></p><div id="calendar-error" class="error hidden" role="alert"><span data-error-message>Não foi possível carregar o calendário.</span><button data-retry-public type="button">Tentar novamente</button></div><div id="events" aria-live="polite"><p class="empty">Carregando eventos…</p></div></div></div></section>
-  <section class="social-band" id="redes" aria-labelledby="social-title"><div class="wrap social-inner"><div><p class="kicker">Conecte-se com a Donícia</p><h2 id="social-title">A escola também<br>acontece por aqui.</h2><p>Conheça nossos canais e acompanhe as publicações da escola.</p></div><div class="social-links"><a class="social-link" href="https://www.instagram.com/escoladoniciamariadacosta/" target="_blank" rel="noopener noreferrer" aria-label="Instagram da escola (abre em nova aba)"><span class="social-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="16" height="16" rx="5"/><circle cx="10" cy="10" r="3.5"/><circle cx="15" cy="5" r=".8" fill="currentColor" stroke="none"/></svg></span><span><strong>Instagram</strong><small>@escoladoniciamariadacosta</small></span><span class="arrow" aria-hidden="true">↗</span></a><a class="social-link" href="https://www.facebook.com/escoladonicia/" target="_blank" rel="noopener noreferrer" aria-label="Facebook da escola (abre em nova aba)"><span class="social-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M11.5 18v-7h2.4l.4-3h-2.8V6.4c0-.9.3-1.5 1.6-1.5H14V2.2c-.3 0-1.2-.2-2.2-.2C9.6 2 8.2 3.3 8.2 5.8V8H6v3h2.2v7h3.3Z"/></svg></span><span><strong>Facebook</strong><small>Escola Donícia</small></span><span class="arrow" aria-hidden="true">↗</span></a></div></div></section>
   <section class="section" id="contatos" aria-labelledby="contact-title"><div class="wrap contact-grid"><div class="contacts"><p class="kicker">Estamos por perto</p><h2 id="contact-title">Vamos conversar?</h2><p class="section-lead">Para orientações sobre a vida escolar, entre em contato com a nossa secretaria.</p><div id="school-contacts"><dl><div><dt>Endereço</dt><dd class="copy">Rodovia Virgílio Várzea, 1264 · Saco Grande<br>Florianópolis/SC · CEP 88032-001</dd></div><div><dt>Telefone</dt><dd><a href="tel:+554832382299">(48) 3238-2299</a></dd></div><div><dt>E-mail</dt><dd><a href="mailto:ebm.donicia@sme.pmf.sc.gov.br">ebm.donicia@sme.pmf.sc.gov.br</a></dd></div><div><dt>Atendimento</dt><dd>Confirme os horários com a secretaria.</dd></div></dl></div><div class="contact-links"><a id="school-map" href="https://www.google.com/maps/search/?api=1&amp;query=Rodovia%20Virg%C3%ADlio%20V%C3%A1rzea%201264%20Saco%20Grande%20Florian%C3%B3polis" target="_blank" rel="noopener noreferrer">Ver localização no mapa <span aria-hidden="true">↗</span><span class="sr-only"> (abre em nova aba)</span></a><a href="https://servicos.floripa.sc.gov.br/atendimento/servico-info/659" target="_blank" rel="noopener noreferrer">Informações na Prefeitura <span aria-hidden="true">↗</span><span class="sr-only"> (abre em nova aba)</span></a></div></div><div class="faq" aria-labelledby="faq-title"><h3 id="faq-title">Antes de falar com a gente</h3><details><summary>Como solicitar matrícula ou transferência?</summary><p>Entre em contato com a secretaria para consultar vagas, etapas de atendimento e orientações atualizadas da rede municipal.</p></details><details><summary>Quais documentos devo apresentar?</summary><p>A relação de documentos pode variar conforme o atendimento. Consulte a secretaria antes de ir à escola.</p></details><details><summary>Como confirmar datas e horários?</summary><p>Confira o calendário e os avisos deste portal. Para atendimento presencial, confirme o horário com a secretaria.</p></details><p class="faq-note">Família e escola, lado a lado.</p></div></div></section>
+  <section class="social-band" id="redes" aria-labelledby="social-title"><div class="wrap social-inner"><div><p class="kicker">Conecte-se com a Donícia</p><h2 id="social-title">A escola também<br>acontece por aqui.</h2><p>Conheça nossos canais e acompanhe as publicações da escola.</p></div><div class="social-links"><a class="social-link" href="https://www.instagram.com/escoladoniciamariadacosta/" target="_blank" rel="noopener noreferrer" aria-label="Instagram da escola (abre em nova aba)"><span class="social-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="16" height="16" rx="5"/><circle cx="10" cy="10" r="3.5"/><circle cx="15" cy="5" r=".8" fill="currentColor" stroke="none"/></svg></span><span><strong>Instagram</strong><small>@escoladoniciamariadacosta</small></span><span class="arrow" aria-hidden="true">↗</span></a><a class="social-link" href="https://www.facebook.com/escoladonicia/" target="_blank" rel="noopener noreferrer" aria-label="Facebook da escola (abre em nova aba)"><span class="social-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M11.5 18v-7h2.4l.4-3h-2.8V6.4c0-.9.3-1.5 1.6-1.5H14V2.2c-.3 0-1.2-.2-2.2-.2C9.6 2 8.2 3.3 8.2 5.8V8H6v3h2.2v7h3.3Z"/></svg></span><span><strong>Facebook</strong><small>Escola Donícia</small></span><span class="arrow" aria-hidden="true">↗</span></a></div></div></section>
 </main>
 <footer class="footer"><div class="wrap footer-inner"><div><div class="footer-name">Donícia Maria da Costa</div><p>Escola Básica Municipal · Portal da comunidade</p></div><div class="footer-place"><p>Saco Grande · Florianópolis, Santa Catarina</p><p>Educação pública. Comunidade presente.</p><a class="footer-staff" href="/equipe">Acesso de funcionários ↗</a></div></div></footer>
 <noscript>Ative o JavaScript para consultar avisos e calendário atualizados. Os contatos da secretaria estão disponíveis nesta página.</noscript>
