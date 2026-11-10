@@ -30,6 +30,6 @@ body:has(#modalroot .modal,#supervision-operation-root [role="dialog"]) #donicia
   body.df-assistant-offset #donicia-assistant:has(.da-panel[hidden]) { bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
   body:has(#donicia-feedback:not(.df-collapsed)) #donicia-assistant:has(.da-panel[hidden]) { visibility:hidden; }
   body:has(#donicia-assistant) .toast { bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
-  body.df-assistant-offset .toast { bottom:calc(132px + env(safe-area-inset-bottom,0px)); }
+  body.df-assistant-offset:has(#donicia-assistant) .toast { bottom:calc(132px + env(safe-area-inset-bottom,0px)); }
 }
 
