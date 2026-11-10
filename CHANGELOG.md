@@ -1,11 +1,12 @@
 # Histórico de mudanças
 
-## Novembro de 2026 — revisão visual do portal
+## 09/11/2026 — revisão visual do portal
 
 - O portal público ganhou uma abertura com mais destaque para a identidade da escola, atalhos compactos no celular e avisos e calendário mais próximos do início.
 - As áreas da equipe, do professor e da Secretaria adotaram a mesma paleta. A navegação lateral acompanha a rolagem em telas grandes. Cartões, indicadores, formulários e foco por teclado ganharam contraste e espaçamento mais claros.
 - No celular, o post-it começa recolhido em um canto e o assistente ocupa o outro. O post-it continua arrastável e os rascunhos são mantidos no navegador.
 
+Publicação confirmada às 22:22 (Brasília), commit `8e31cc4ba3858d7dee81154e50e7a11997966979` e build `383f82bc-7dad-4edd-a5cf-f74671992fba`. Testes no Chromium em 320, 390, 768 e 1440 px e [verificação HTTP pós-publicação](https://github.com/marianojogos-art/OrganizadorDonicia/actions/runs/42735224409/job/129562700703) aprovados. O registro está em **Contribuições → Histórico de atualizações publicadas**.
 
 ## 01/11/2026 — notas pessoais, AEE e sessão de 30 dias
 
