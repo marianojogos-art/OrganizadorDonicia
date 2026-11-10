@@ -78,6 +78,9 @@ try{
  const mobile=await touchContext.newPage();await mobile.goto(base+'/',{waitUntil:'networkidle'});await mobile.locator('.df-grip').waitFor();
  await mobile.evaluate(()=>{window.__feedbackTouchTrace=[];window.__feedbackTouchPhase='before-drag';for(const type of ['pointerdown','pointerup','click'])document.addEventListener(type,event=>window.__feedbackTouchTrace.push({phase:window.__feedbackTouchPhase,type,at:Math.round(performance.now()),pointerType:event.pointerType,defaultPrevented:event.defaultPrevented,target:event.target.closest?.('.df-toggle')?'toggle':event.target.className}),false)});
  assert.equal(await mobile.locator('.df-toggle').evaluate(node=>getComputedStyle(node).touchAction),'manipulation');
+ const dockedNote=await visible(mobile),assistantLauncher=await mobile.locator('.da-launch').boundingBox();
+ assert.ok(dockedNote.x<=dockedNote.left+14&&dockedNote.bottom>=dockedNote.top+dockedNote.viewHeight-16,'Mobile note should start in the lower left');
+ assert.ok(assistantLauncher&&dockedNote.right<=assistantLauncher.x,'Collapsed mobile note and assistant must have separate touch areas');
  // Ordinary repeated taps and taps after dragging both use the native click handler.
  await mobile.locator('.df-toggle').tap();await mobile.waitForFunction(()=>document.querySelector('.df-toggle')?.getAttribute('aria-expanded')==='true',{},{timeout:5000});
  await mobile.locator('.df-toggle').tap();await mobile.waitForFunction(()=>document.querySelector('.df-toggle')?.getAttribute('aria-expanded')==='false',{},{timeout:5000});
